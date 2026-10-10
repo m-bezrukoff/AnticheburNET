@@ -11,6 +11,8 @@
 
 Архив `forkop-plus-filogic-25.12.tar.gz` содержит шесть APK, контрольные суммы и manifest исходников. Перед установкой выполните `sha256sum -c SHA256SUMS` внутри распакованной папки. [Инструкция установки и настройки](https://github.com/m-bezrukoff/forkop-plus/blob/main/docs/REDMI-AX6000.md).
 
+Бинарники Go упакованы UPX 5.2.1 для 128 MB NAND AX6000. Протоколы и geodata сохранены; точный установленный размер указан в `installed-sizes.txt`. На диске требуется меньше места, рабочая память остаётся зависимой от нагрузки.
+
 Проверено: backend/ucode, lint, 510 frontend-тестов, воспроизводимость LuCI bundle, создание APK и запуск ARM64-бинарников. Под QEMU выполнены передача HTTP через зашифрованный Hysteria 2 и SOCKS Xray, а также AmneziaWG 3.1 handshake и трафик между двумя изолированными сетями. [Журнал протокольного испытания](https://github.com/m-bezrukoff/forkop-plus/actions/runs/38089960038).
 
 Физический Redmi AX6000 и производительность на нём не проверены. sing-box не содержит весь Xray: новые возможности Xray используются штатным отдельным ядром. Xray 26.10.10 имеет статус prerelease upstream. База sing-box extended — 1.14.1; Naive/Chromium исключён. Это набор приложений, не прошивка. APK не подписаны ключами OpenWrt; установка локальных пакетов описана в инструкции.

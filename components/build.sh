@@ -54,6 +54,16 @@ curl -fL --retry 3 "https://github.com/XTLS/Xray-core/releases/download/v$XRAY_V
 printf '%s  %s\n' "$XRAY_ARM64_SHA256" "$work/xray.zip" | sha256sum -c -
 unzip -oq "$work/xray.zip" xray geoip.dat geosite.dat -d "$work/xray"
 
+# AX6000 has 128 MB NAND. Pack executables without removing protocols or geodata.
+curl -fL --retry 3 "https://github.com/upx/upx/releases/download/v$UPX_VERSION/upx-$UPX_VERSION-amd64_linux.tar.xz" -o "$work/upx.tar.xz"
+printf '%s  %s\n' "$UPX_AMD64_SHA256" "$work/upx.tar.xz" | sha256sum -c -
+tar -xJf "$work/upx.tar.xz" -C "$work"
+upx="$work/upx-$UPX_VERSION-amd64_linux/upx"
+chmod 755 "$work/xray/xray"
+"$upx" --best --lzma "$work/sing-box.arm64" "$work/amneziawg-go.arm64" "$work/xray/xray"
+"$upx" -t "$work/sing-box.arm64" "$work/amneziawg-go.arm64" "$work/xray/xray"
+: > "$output/installed-sizes.txt"
+
 package_component() {
   local name="$1" package_version="$2" description="$3" depends="$4" license="$5" conffile="${6:-}"
   local package_root="$work/$name-root"
@@ -78,6 +88,7 @@ SH
   local asset_name="${name}_${package_version}_aarch64_cortex-a53.apk"
   [[ "$name" != sing-box-extended ]] || asset_name="${name}_${SING_BOX_VERSION}_openwrt_aarch64_cortex-a53.apk"
   generate_apk_metadata_files "$name" "$package_root" "$conffile"
+  printf '%s: %s bytes\n' "$name" "$(du -sb "$package_root" | cut -f1)" >> "$output/installed-sizes.txt"
   unshare -r sh -c 'chown -R 0:0 "$1"; shift; exec "$@"' sh "$package_root" \
     "$apk_bin" mkpkg --files "$package_root" --output "$output/$asset_name" \
     -I "name:$name" -I "version:$package_version" -I "description:$description" \

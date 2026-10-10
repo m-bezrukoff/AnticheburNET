@@ -13,6 +13,8 @@ bash components/build.sh 1.0.0 dist/filogic
 The second command needs `qemu-user`, `iproute2`, `iputils-ping`, `openssl`, Python 3 and sudo
 for isolated network tests. See `.github/workflows/filogic-build.yml` for all host dependencies.
 Go inputs use `go.sum`; the SDK and official Xray archive are checked against SHA256.
+UPX 5.2.1 is pinned and verified too. It packs the three Go executables to fit the
+AX6000 NAND budget; `upx -t` and all QEMU protocol tests run on the packed executables.
 sing-box and AWG are built from the exact commits below. There are no hidden binary patches.
 
 Corresponding upstream source and licenses:

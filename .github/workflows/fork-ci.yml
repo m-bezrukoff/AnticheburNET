@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5.0.0
+        with:
+          fetch-depth: 0
+      - run: git fetch --no-tags https://github.com/ushan0v/forkop.git refs/tags/0.7.19.9:refs/tags/0.7.19.9
       - run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libjson-c-dev pkg-config shellcheck

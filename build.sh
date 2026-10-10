@@ -786,4 +786,6 @@ main() {
   print_summary "$output_dir"
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

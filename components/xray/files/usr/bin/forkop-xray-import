@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+umask 077
+[ "$#" -eq 1 ] || { echo 'Usage: forkop-xray-import native-xray.json' >&2; exit 2; }
+mkdir -p /etc/forkop/xray
+candidate=$(mktemp /etc/forkop/xray/.config.XXXXXX)
+trap 'rm -f "$candidate"' EXIT
+ucode -L /usr/lib/forkop /usr/lib/forkop-components/xray.uc prepare "$1" "$candidate"
+/usr/bin/xray run -test -config "$candidate" >/dev/null
+mv "$candidate" /etc/forkop/xray/config.json
+echo 'Imported. Enable forkop_xray.settings.enabled and start /etc/init.d/forkop-xray.'

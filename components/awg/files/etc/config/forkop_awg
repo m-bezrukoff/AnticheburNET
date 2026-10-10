@@ -1,0 +1,4 @@
+config settings 'settings'
+    option enabled '0'
+    option interface 'awg0'
+    option config_file '/etc/forkop/awg0.conf'

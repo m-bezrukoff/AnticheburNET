@@ -19,7 +19,7 @@ jobs:
       - run: |
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           sudo apt-get update
-          sudo apt-get install -y build-essential curl fakeroot file gawk git patch perl tar unzip util-linux xz-utils zstd qemu-user
+          sudo apt-get install -y build-essential curl fakeroot file gawk git patch perl tar unzip util-linux xz-utils zstd qemu-user iproute2 iputils-ping openssl
       - name: Build Forkop and LuCI
         run: bash build.sh 1.0.0 "$PWD/dist/filogic"
       - name: Build ARM64 components

@@ -50,18 +50,40 @@ tags=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,badlinkname,t
 make -C "$work/awg-tools/src" -j2 CC="$cc" LDFLAGS=-static WITH_WGQUICK=no WITH_SYSTEMDUNITS=no
 curl -fL --retry 3 "https://github.com/XTLS/Xray-core/releases/download/v$XRAY_VERSION/Xray-linux-arm64-v8a.zip" -o "$work/xray.zip"
 printf '%s  %s\n' "$XRAY_ARM64_SHA256" "$work/xray.zip" | sha256sum -c -
-unzip -oq "$work/xray.zip" xray -d "$work/xray"
+unzip -oq "$work/xray.zip" xray geoip.dat geosite.dat -d "$work/xray"
 
 package_component() {
   local name="$1" package_version="$2" description="$3" depends="$4" license="$5" conffile="${6:-}"
   local package_root="$work/$name-root"
+  local service="$name"
+  case "$name" in sing-box-extended) service=sing-box ;; forkop-amneziawg) service=forkop-awg ;; esac
+  local scripts="$work/$name-scripts"
+  mkdir -p "$scripts"
+  printf '#!/bin/sh\nservice=%s\n' "$service" > "$scripts/post.sh"
+  cat >> "$scripts/post.sh" <<'SH'
+[ "${IPKG_NO_SCRIPT:-}" != 1 ] || exit 0
+[ -z "${IPKG_INSTROOT:-}" ] || exit 0
+"/etc/init.d/$service" enable
+"/etc/init.d/$service" restart || true
+SH
+  printf '#!/bin/sh\nservice=%s\n' "$service" > "$scripts/pre.sh"
+  cat >> "$scripts/pre.sh" <<'SH'
+[ "${IPKG_NO_SCRIPT:-}" != 1 ] || exit 0
+[ -z "${IPKG_INSTROOT:-}" ] || exit 0
+"/etc/init.d/$service" stop || true
+SH
+  chmod 755 "$scripts/"*.sh
+  local asset_name="${name}_${package_version}_aarch64_cortex-a53.apk"
+  [[ "$name" != sing-box-extended ]] || asset_name="${name}_${SING_BOX_VERSION}_openwrt_aarch64_cortex-a53.apk"
   generate_apk_metadata_files "$name" "$package_root" "$conffile"
   unshare -r sh -c 'chown -R 0:0 "$1"; shift; exec "$@"' sh "$package_root" \
-    "$apk_bin" mkpkg --files "$package_root" --output "$output/${name}_${package_version}_aarch64_cortex-a53.apk" \
+    "$apk_bin" mkpkg --files "$package_root" --output "$output/$asset_name" \
     -I "name:$name" -I "version:$package_version" -I "description:$description" \
     -I arch:aarch64_cortex-a53 -I "license:$license" -I origin:forkop-plus \
     -I 'maintainer:Max Bezrukov <73909358+m-bezrukoff@users.noreply.github.com>' \
-    -I url:https://github.com/m-bezrukoff/forkop-plus -I "depends:$depends"
+    -I url:https://github.com/m-bezrukoff/forkop-plus -I "depends:$depends" \
+    -s "post-install:$scripts/post.sh" -s "post-upgrade:$scripts/post.sh" \
+    -s "pre-upgrade:$scripts/pre.sh" -s "pre-deinstall:$scripts/pre.sh"
 }
 
 sb_root="$work/sing-box-extended-root"
@@ -82,6 +104,8 @@ for kind in xray awg; do
   chmod 755 "$work/$name-root/usr/bin/"* "$work/$name-root/etc/init.d/"*
 done
 install -m755 "$work/xray/xray" "$work/forkop-xray-root/usr/bin/xray"
+mkdir -p "$work/forkop-xray-root/usr/share/xray"
+install -m644 "$work/xray/geoip.dat" "$work/xray/geosite.dat" "$work/forkop-xray-root/usr/share/xray/"
 package_component forkop-xray 26.10.10-r1 'Native Xray 26.10.10 SOCKS bridge for Forkop' \
   'forkop ca-bundle !xray-core' MPL-2.0 /etc/config/forkop_xray
 install -m755 "$work/amneziawg-go.arm64" "$work/forkop-amneziawg-root/usr/bin/amneziawg-go"
@@ -103,3 +127,4 @@ cp "$component_root/components/versions.env" "$output/versions.env"
   cd "$output"
   sha256sum ./*.apk > SHA256SUMS
 )
+sudo bash "$component_root/components/test-runtime.sh" "$work"

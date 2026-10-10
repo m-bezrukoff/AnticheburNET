@@ -8,7 +8,7 @@ const LIB_DIR = getenv("FORKOP_LIB") || "/usr/lib/forkop";
 const BIN_PATH = getenv("FORKOP_BIN") || constants.FORKOP_BIN || "/usr/bin/forkop";
 const SERVICE_INIT = getenv("FORKOP_SERVICE_INIT") || constants.FORKOP_SERVICE_INIT || "/etc/init.d/forkop";
 const FORKOP_VERSION = getenv("FORKOP_VERSION") || constants.FORKOP_VERSION || "";
-const FORKOP_RELEASE_REPO = getenv("FORKOP_RELEASE_REPO") || constants.FORKOP_RELEASE_REPO || "ushan0v/forkop";
+const FORKOP_RELEASE_REPO = getenv("FORKOP_RELEASE_REPO") || constants.FORKOP_RELEASE_REPO || "m-bezrukoff/forkop-plus";
 const RUNTIME_STATE_DIR = getenv("FORKOP_RUNTIME_STATE_DIR") || "/var/run/forkop";
 const SYSTEM_INFO_CACHE_FILE = getenv("FORKOP_SYSTEM_INFO_CACHE_FILE") || RUNTIME_STATE_DIR + "/system-info.json";
 const COMPONENT_LOCK_DIR = getenv("UPDATES_LOCK_DIR") || RUNTIME_STATE_DIR + "/component-action.lock";
@@ -1253,6 +1253,10 @@ function set_sing_box_extended_release_from_json(release_json, compressed) {
     if (asset_url == "")
         return null;
 
+    // Fork releases carry several components; use the binary version in its asset name.
+    let component_version = match(path_basename(asset_url), /^sing-box-extended_(.+)_openwrt_[^/]+\.(apk|ipk)$/);
+    if (component_version) tag = component_version[1];
+
     let asset_size = int(trim(helper_output_input(
         release_json,
         "release-asset-size-by-url",
@@ -1269,12 +1273,15 @@ function set_sing_box_extended_release_from_json(release_json, compressed) {
 }
 
 function resolve_sing_box_extended_release(compressed) {
-    let release_json = fetch_github_release_json("shtorm-7", "sing-box-extended");
+    // The legacy compressed variant remains available from its original publisher.
+    let owner = compressed ? "shtorm-7" : "m-bezrukoff";
+    let repository = compressed ? "sing-box-extended" : "forkop-plus";
+    let release_json = fetch_github_release_json(owner, repository);
     let resolved = set_sing_box_extended_release_from_json(release_json, compressed);
     if (resolved != null)
         return resolved;
 
-    let releases_json = fetch_github_releases_json("shtorm-7", "sing-box-extended", "30");
+    let releases_json = fetch_github_releases_json(owner, repository, "30");
     if (releases_json == "")
         return null;
     let tag = trim(helper_output_input(releases_json, "sing-box-extended-release-tag", []));

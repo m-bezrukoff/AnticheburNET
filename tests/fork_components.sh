@@ -44,6 +44,13 @@ grep -Fqx 'PersistentKeepalive = 20-30' "$work/device.conf"
 grep -Fqx 'FwMark = 134217728' "$work/device.conf"
 if grep -Eq '^(Address|MTU|DNS) =' "$work/device.conf"; then exit 1; fi
 uc -e 'let fs=require("fs"); let c=json(fs.readfile(ARGV[0])); if(length(c.addresses)!=2 || c.mtu!=1376) die("AWG network metadata lost");' "$work/state.json"
+cat >> "$work/awg.conf" <<'CONF'
+[Peer]
+PublicKey = BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=
+AllowedIPs = 192.0.2.0/24
+CONF
+uc "$awg" prepare "$work/awg.conf" "$work/device.conf" > "$work/state.json"
+[ "$(grep -c '^\[Peer\]$' "$work/device.conf")" = 2 ]
 printf '\nPreUp = touch /tmp/unsafe\n' >> "$work/awg.conf"
 if uc "$awg" prepare "$work/awg.conf" "$work/unsafe.conf" 2>/dev/null; then
   echo 'AWG quick hook was accepted' >&2; exit 1

@@ -1,8 +1,5 @@
-name: Build packages
+name: Legacy generic packages (manual)
 on:
-  push:
-    tags:
-      - '*'
   workflow_dispatch:
     inputs:
       release_tag:

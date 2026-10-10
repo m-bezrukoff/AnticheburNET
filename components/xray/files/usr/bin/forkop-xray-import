@@ -1,5 +1,6 @@
 #!/bin/sh
 set -eu
+export XRAY_LOCATION_ASSET=/usr/share/xray
 umask 077
 [ "$#" -eq 1 ] || { echo 'Usage: forkop-xray-import native-xray.json' >&2; exit 2; }
 mkdir -p /etc/forkop/xray

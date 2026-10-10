@@ -13,6 +13,7 @@ function prepare(path) {
     let mtu = 1376;
     let peers = 0;
     let interface_seen = false;
+    let private_key_seen = false;
     // Pass AWG 3.1 fields verbatim to official awg, which validates their wire format.
     let interface_keys = [ "PrivateKey", "ListenPort", "Jc", "Jmin", "Jmax", "S1", "S2", "S3", "S4",
         "H1", "H2", "H3", "H4", "I1", "I2", "I3", "I4", "I5", "HeaderProtectionKey",
@@ -29,7 +30,7 @@ function prepare(path) {
                 interface_seen = true;
             }
             else {
-                if (!interface_seen || !seen.PrivateKey) die("Interface PrivateKey is required before peers\n");
+                if (!interface_seen || !private_key_seen) die("Interface PrivateKey is required before peers\n");
                 if (peers && (!seen.PublicKey || !seen.AllowedIPs)) die("Peer PublicKey and AllowedIPs are required\n");
                 peers++;
             }
@@ -67,6 +68,7 @@ function prepare(path) {
                     if (!ip.valid_ip_cidr(trim(prefix))) die("Invalid AWG AllowedIPs\n");
             }
             push(device, key + " = " + value);
+            if (section == "[Interface]" && key == "PrivateKey") private_key_seen = true;
         }
     }
     if (!peers || !seen.PublicKey || !seen.AllowedIPs || !length(addresses))

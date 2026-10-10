@@ -45,6 +45,8 @@ tags=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,badlinkname,t
 )
 (
   cd "$work/awg-go"
+  # Upstream's Makefile generates this file from git tags; a SHA checkout has no tags.
+  printf 'package main\n\nconst Version = "%s"\n' "$AWG_GO_VERSION" > version.go
   CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags '-s -w' -o "$work/amneziawg-go.arm64" .
 )
 make -C "$work/awg-tools/src" -j2 CC="$cc" LDFLAGS=-static WITH_WGQUICK=no WITH_SYSTEMDUNITS=no
@@ -92,6 +94,8 @@ install -m755 "$work/sing-box.arm64" "$sb_root/usr/bin/sing-box"
 cp "$component_root/components/sing-box/files/etc/init.d/sing-box" "$sb_root/etc/init.d/sing-box"
 cp "$component_root/components/sing-box/files/etc/config/sing-box" "$sb_root/etc/config/sing-box"
 chmod 755 "$sb_root/etc/init.d/sing-box"
+mkdir -p "$sb_root/usr/share/licenses/sing-box-extended"
+install -m644 "$work/sing-box/LICENSE" "$sb_root/usr/share/licenses/sing-box-extended/LICENSE"
 package_component sing-box-extended 1.14.1-r1 'Forkop extended sing-box with Hysteria 2 and XHTTP' \
   'ca-bundle kmod-tun !sing-box !sing-box-tiny' GPL-3.0-or-later /etc/config/sing-box
 
@@ -106,10 +110,16 @@ done
 install -m755 "$work/xray/xray" "$work/forkop-xray-root/usr/bin/xray"
 mkdir -p "$work/forkop-xray-root/usr/share/xray"
 install -m644 "$work/xray/geoip.dat" "$work/xray/geosite.dat" "$work/forkop-xray-root/usr/share/xray/"
+mkdir -p "$work/forkop-xray-root/usr/share/licenses/forkop-xray"
+curl -fL --retry 3 "https://raw.githubusercontent.com/XTLS/Xray-core/v$XRAY_VERSION/LICENSE" \
+  -o "$work/forkop-xray-root/usr/share/licenses/forkop-xray/LICENSE"
 package_component forkop-xray 26.10.10-r1 'Native Xray 26.10.10 SOCKS bridge for Forkop' \
   'forkop ca-bundle !xray-core' MPL-2.0 /etc/config/forkop_xray
 install -m755 "$work/amneziawg-go.arm64" "$work/forkop-amneziawg-root/usr/bin/amneziawg-go"
 install -m755 "$work/awg-tools/src/wg" "$work/forkop-amneziawg-root/usr/bin/awg"
+mkdir -p "$work/forkop-amneziawg-root/usr/share/licenses/forkop-amneziawg"
+install -m644 "$work/awg-go/LICENSE" "$work/forkop-amneziawg-root/usr/share/licenses/forkop-amneziawg/daemon-MIT"
+install -m644 "$work/awg-tools/COPYING" "$work/forkop-amneziawg-root/usr/share/licenses/forkop-amneziawg/tools-GPL-2.0"
 package_component forkop-amneziawg 3.1.20260828-r1 'Official AmneziaWG 3.1 userspace client for Forkop' \
   'forkop kmod-tun ip-full' 'MIT AND GPL-2.0' /etc/config/forkop_awg
 

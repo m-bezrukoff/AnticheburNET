@@ -1,26 +1,19 @@
-# Forkop (Podkop Plus)
+# Forkop Plus для Redmi AX6000 / OpenWrt 25.12
 
-[![Star](https://img.shields.io/github/stars/ushan0v/forkop?style=social)](https://github.com/ushan0v/forkop/stargazers)
-[![Releases](https://img.shields.io/github/v/release/ushan0v/forkop?label=releases)](https://github.com/ushan0v/forkop/releases)
-[![Telegram](https://img.shields.io/badge/Telegram-Forkop%20%7C%20Chat-2CA5E0?logo=telegram\&logoColor=white)](https://t.me/forkop_chat)
-[![AI Assistant](https://img.shields.io/badge/Telegram-Forkop%20%7C%20AI%20Assistant-2CA5E0?logo=telegram\&logoColor=white)](https://t.me/forkop_aibot)
+Форк [ushan0v/forkop](https://github.com/ushan0v/forkop) на базе 20 проверенных pull requests.
+Целевая платформа: **Xiaomi Redmi Router AX6000, mediatek/filogic, aarch64_cortex-a53, OpenWrt 25.12**.
 
-> **Forkop — это бывший Podkop Plus.** Проект переименован и продолжает развиваться как независимый форк [Podkop](https://github.com/itdoginfo/podkop).
+- **sing-box extended 1.14.1 / extended 2.7.2**: собственная ARM64-сборка с Hysteria 2, XHTTP, uTLS, WireGuard и Clash API.
+- **Xray 26.10.10**: официальное полное ядро, подключённое к секциям Forkop через локальный SOCKS. Нативные outbound-настройки Xray сохраняются.
+- **AmneziaWG 3.1**: официальные userspace daemon и awg-tools, отдельный сервис и выбор интерфейса в Forkop; поддержаны новые поля 3.1.
 
-### Установка
+[Релизы и пакеты](https://github.com/m-bezrukoff/forkop-plus/releases) · [Установка и настройка](docs/REDMI-AX6000.md) · [Аудит всех PR](docs/PR-AUDIT.md) · [Закреплённые исходники компонентов](components/versions.env)
 
-```sh
-sh <(wget -O - https://raw.githubusercontent.com/ushan0v/forkop/main/install.sh)
-```
+Пакеты не являются прошивкой роутера. Поддержка Xray реализована отдельным штатным ядром: sing-box не содержит весь Xray. База extended — 1.14.1, а не официальный sing-box 1.14.3; объединение двух веток требует отдельного аудита. Сборка исключает Naive/Chromium, который требует другого runtime. AmneziaWG работает через `/dev/net/tun`, без зависимости от внешнего модуля ядра AWG.
 
-<details>
-<summary><sub>Альтернативный способ установки</sub></summary>
+Проверки выполняются в CI и под QEMU на точных ARM64-бинарниках. Установка и производительность на физическом AX6000 пока не проверены. Обязательная инструкция установки находится по ссылке выше; generic installer не устанавливает Xray/AWG автоматически.
 
-```sh
-sh <(wget -O - https://forkop.sourceforge.io/install.sh)
-```
-
-</details>
+## Возможности исходного проекта
 
 ### Что нового в этом форке
 

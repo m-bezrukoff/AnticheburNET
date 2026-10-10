@@ -50,6 +50,7 @@ tags=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,badlinkname,t
   CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags '-s -w' -o "$work/amneziawg-go.arm64" .
 )
 make -C "$work/awg-tools/src" -j2 CC="$cc" LDFLAGS=-static WITH_WGQUICK=no WITH_SYSTEMDUNITS=no
+"$cc" -static -Wall -Wextra -Werror "$component_root/components/test-socket-mark.c" -o "$work/test-socket-mark.arm64"
 curl -fL --retry 3 "https://github.com/XTLS/Xray-core/releases/download/v$XRAY_VERSION/Xray-linux-arm64-v8a.zip" -o "$work/xray.zip"
 printf '%s  %s\n' "$XRAY_ARM64_SHA256" "$work/xray.zip" | sha256sum -c -
 unzip -oq "$work/xray.zip" xray geoip.dat geosite.dat -d "$work/xray"

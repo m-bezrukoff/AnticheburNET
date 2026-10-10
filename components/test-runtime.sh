@@ -14,6 +14,7 @@ cleanup() {
   rm -rf "$test_dir"
 }
 trap cleanup EXIT
+qemu-aarch64 "$work/test-socket-mark.arm64"
 printf 'forkop-arm64-runtime-ok\n' > "$test_dir/probe.txt"
 python3 -m http.server 18080 --bind 127.0.0.1 --directory "$test_dir" > "$test_dir/http.log" 2>&1 &
 pids+=("$!")

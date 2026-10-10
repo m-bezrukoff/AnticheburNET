@@ -114,6 +114,7 @@ CONF
   if ! ip netns exec "$ns" qemu-aarch64 "$work/awg-tools/src/wg" setconf "fawg$index" "$test_dir/device$index.conf"; then
     cat "$test_dir/awg$index.log"; exit 1
   fi
+  [[ "$(ip netns exec "$ns" qemu-aarch64 "$work/awg-tools/src/wg" show "fawg$index" fwmark)" == 0x8000000 ]]
   ip -n "$ns" address add "10.201.0.$index/32" dev "fawg$index"
   ip -n "$ns" link set "fawg$index" mtu 1376 up
   ip -n "$ns" route add "10.201.0.$peer/32" dev "fawg$index"

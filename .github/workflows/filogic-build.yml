@@ -19,12 +19,14 @@ jobs:
       - run: |
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libjson-c-dev pkg-config curl fakeroot file gawk git patch perl tar unzip util-linux xz-utils zstd bzip2 squashfs-tools qemu-user iproute2 iputils-ping openssl
+          sudo apt-get install -y build-essential cmake libjson-c-dev libglib2.0-dev python3-venv ninja-build pkg-config curl fakeroot file gawk git patch perl tar unzip util-linux xz-utils zstd bzip2 squashfs-tools qemu-user iproute2 iputils-ping openssl
           git clone --depth 1 --branch v0.0.20250529 https://github.com/jow-/ucode.git /tmp/ucode
           cmake -S /tmp/ucode -B /tmp/ucode/build -DUBUS_SUPPORT=OFF -DUCI_SUPPORT=OFF -DULOOP_SUPPORT=OFF
           cmake --build /tmp/ucode/build --parallel
           sudo cmake --install /tmp/ucode/build
           sudo ldconfig
+      - name: Build test emulator with Linux SO_MARK forwarding
+        run: bash components/build-test-emulator.sh
       - name: Build Forkop and LuCI
         run: bash build.sh 1.0.0 "$PWD/dist/filogic"
       - name: Build ARM64 components

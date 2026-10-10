@@ -147,14 +147,17 @@ done
 # Count every installed file from all six packages, not their compressed APK size.
 total=0
 allocated=0
-for package_root in "$BUILD_DIR/manual/backend-root" "$BUILD_DIR/manual/app-root" "$BUILD_DIR/manual/i18n-root" \
-  "$sb_root" "$work/forkop-xray-root" "$work/forkop-amneziawg-root"; do
-  bytes=$(du -sb "$package_root" | cut -f1)
-  blocks=$(du -sB1 "$package_root" | cut -f1)
+for package in "$output/"*.apk; do
+  "$apk_bin" adbdump "$package" > "$work/size-metadata.txt"
+  bytes=$(awk '$1 == "installed-size:" { print $2; exit }' "$work/size-metadata.txt")
+  [[ "$bytes" =~ ^[0-9]+$ ]] || { echo "Missing installed size: $package" >&2; exit 1; }
+  entries=$(awk '/^ *- name:/ { count++ } END { print count+1 }' "$work/size-metadata.txt")
+  # At most one extra 4 KiB block per metadata/file/directory entry.
+  blocks=$((bytes + entries * 4096))
   total=$((total + bytes))
   allocated=$((allocated + blocks))
 done
-printf 'All six packages: %s file bytes; %s allocated bytes (4 KiB host blocks)\n' "$total" "$allocated" >> "$output/installed-sizes.txt"
+printf 'All six packages: %s file bytes; at most %s bytes including 4 KiB entry overhead\n' "$total" "$allocated" >> "$output/installed-sizes.txt"
 cat "$output/installed-sizes.txt"
 # Leave 5 MB for package database, generated configuration and filesystem overhead.
 (( total <= 35000000 && allocated <= 35000000 )) || { echo '40 MB flash budget exceeded (including reserve)' >&2; exit 1; }

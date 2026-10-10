@@ -37,7 +37,7 @@
 
 - [Интеграционные проверки исходной объединённой базы](https://github.com/m-bezrukoff/forkop-plus/actions/runs/38089568754): backend и frontend прошли.
 - [Первая ARM64-сборка](https://github.com/m-bezrukoff/forkop-plus/actions/runs/38089568813): успешное создание APK и запуск всех четырёх ARM64-бинарников под QEMU.
-- Последующие сборки добавляют передачу HTTP через Hysteria 2 и Xray, а также AmneziaWG 3.1 handshake между двумя сетевыми пространствами. Их результаты доступны в Actions и примечаниях релиза.
+- [Проверки ARM64-протоколов](https://github.com/m-bezrukoff/forkop-plus/actions/runs/38089960038): HTTP через Hysteria 2 и Xray, AmneziaWG 3.1 handshake между двумя сетевыми пространствами и три полученных пакета без потерь. Использованы header protection, padding ranges, random trailers и disable cookies.
 
 Первый CI запуск выявил отсутствие исторического тега `0.7.19.9` в новом fork, необходимого contract-тесту. Workflow теперь получает этот тег явно из upstream. Это исправление инфраструктуры; сам contract-тест сохранён.
 

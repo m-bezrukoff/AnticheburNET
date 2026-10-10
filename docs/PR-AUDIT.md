@@ -35,6 +35,8 @@
 
 ## Проверки объединённой версии
 
+- [Итоговые проверки исходников](https://github.com/m-bezrukoff/forkop-plus/actions/runs/38092351662) и [комплект ARM64 с лимитом flash](https://github.com/m-bezrukoff/forkop-plus/actions/runs/38092351620): успешны, включая полный GeoIP/GeoSite, реальную socket mark, Hysteria 2, Xray и AmneziaWG 3.1 через рабочие importers.
+
 - [Интеграционные проверки исходной объединённой базы](https://github.com/m-bezrukoff/forkop-plus/actions/runs/38089568754): backend и frontend прошли.
 - [Первая ARM64-сборка](https://github.com/m-bezrukoff/forkop-plus/actions/runs/38089568813): успешное создание APK и запуск всех четырёх ARM64-бинарников под QEMU.
 - [Проверки ARM64-протоколов](https://github.com/m-bezrukoff/forkop-plus/actions/runs/38089960038): HTTP через Hysteria 2 и Xray, AmneziaWG 3.1 handshake между двумя сетевыми пространствами и три полученных пакета без потерь. Использованы header protection, padding ranges, random trailers и disable cookies.

@@ -7,3 +7,6 @@ fe-app-forkop/.env
 sandbox/
 .build/
 dist/
+
+.audit/
+graphify-out/

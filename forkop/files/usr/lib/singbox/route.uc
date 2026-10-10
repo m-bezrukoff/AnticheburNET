@@ -27,7 +27,6 @@ function config(settings, runtime) {
     let result = {
         rules: [
             { action: "sniff", inbound: sniff_inbounds },
-            { action: "hijack-dns", port: 53 },
             { action: "hijack-dns", protocol: "dns" }
         ],
         rule_set: [],
@@ -38,6 +37,11 @@ function config(settings, runtime) {
             : runtime_constants.DNS_SERVER_TAG,
         default_mark: runtime_constants.OUTBOUND_MARK
     };
+
+    // source-dns-in only receives nft-redirected :53 traffic; the original destination is lost,
+    // so anything that is not DNS would be routed back into this inbound (self-connect loop).
+    if (type(runtime) == "object" && bool_value(runtime.source_aware_dns))
+        push(result.rules, { action: "reject", inbound: runtime_constants.SOURCE_DNS_INBOUND_TAG });
 
     if (output_network_interface != "")
         result.default_interface = output_network_interface;

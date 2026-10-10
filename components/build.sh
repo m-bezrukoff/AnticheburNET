@@ -120,7 +120,8 @@ for kind in xray awg; do
 done
 install -m755 "$work/xray/xray" "$work/forkop-xray-root/usr/bin/xray"
 mkdir -p "$work/forkop-xray-root/usr/share/xray"
-install -m644 "$work/xray/geoip.dat" "$work/xray/geosite.dat" "$work/forkop-xray-root/usr/share/xray/"
+rm -f "$work/forkop-xray-root/usr/share/xray/geoip.dat" "$work/forkop-xray-root/usr/share/xray/geosite.dat"
+bash "$component_root/components/compare-packing.sh" "$work" "$output"
 mkdir -p "$work/forkop-xray-root/usr/share/licenses/forkop-xray"
 curl -fL --retry 3 "https://raw.githubusercontent.com/XTLS/Xray-core/v$XRAY_VERSION/LICENSE" \
   -o "$work/forkop-xray-root/usr/share/licenses/forkop-xray/LICENSE"
@@ -143,6 +144,20 @@ for package in "$output/"*_aarch64_cortex-a53.apk; do
   "$apk_bin" adbdump "$package" > "$work/package-metadata.txt"
   head -60 "$work/package-metadata.txt"
 done
+# Count every installed file from all six packages, not their compressed APK size.
+total=0
+allocated=0
+for package_root in "$BUILD_DIR/manual/backend-root" "$BUILD_DIR/manual/app-root" "$BUILD_DIR/manual/i18n-root" \
+  "$sb_root" "$work/forkop-xray-root" "$work/forkop-amneziawg-root"; do
+  bytes=$(du -sb "$package_root" | cut -f1)
+  blocks=$(du -sB1 "$package_root" | cut -f1)
+  total=$((total + bytes))
+  allocated=$((allocated + blocks))
+done
+printf 'All six packages: %s file bytes; %s allocated bytes (4 KiB host blocks)\n' "$total" "$allocated" >> "$output/installed-sizes.txt"
+cat "$output/installed-sizes.txt"
+# Leave 5 MB for package database, generated configuration and filesystem overhead.
+(( total <= 35000000 && allocated <= 35000000 )) || { echo '40 MB flash budget exceeded (including reserve)' >&2; exit 1; }
 cp "$component_root/components/versions.env" "$output/versions.env"
 (
   cd "$output"

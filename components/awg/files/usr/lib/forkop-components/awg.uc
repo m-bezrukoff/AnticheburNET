@@ -59,6 +59,11 @@ function prepare(path) {
         else if (section == "[Interface]" && (key == "DNS" || key == "Table" || key == "FwMark")) {
             // DNS and traffic selection remain owned by Forkop. Never execute quick hooks.
         }
+        else if (section == "[Peer]" && key == "AdvancedSecurity") {
+            // Official Go 3.1 always uses AWG; tools' legacy per-peer flag is kernel-only.
+            if (index([ "on", "true", "yes", "1" ], lc(value)) < 0)
+                die("Userspace AWG 3.1 requires AdvancedSecurity=on; use a separate WireGuard interface for off\n");
+        }
         else {
             let allowed = section == "[Interface]" ? interface_keys : peer_keys;
             if (index(allowed, key) < 0) die("Unsupported AWG field (hooks are forbidden): " + key + "\n");

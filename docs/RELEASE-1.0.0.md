@@ -11,7 +11,7 @@
 
 Архив `forkop-plus-filogic-25.12.tar.gz` содержит шесть APK, контрольные суммы и manifest исходников. Перед установкой выполните `sha256sum -c SHA256SUMS` внутри распакованной папки. [Инструкция установки и настройки](https://github.com/m-bezrukoff/forkop-plus/blob/main/docs/REDMI-AX6000.md).
 
-Бинарники Go упакованы UPX 5.2.1 для 128 MB NAND AX6000. Протоколы и geodata сохранены; точный установленный размер указан в `installed-sizes.txt`. На диске требуется меньше места, рабочая память остаётся зависимой от нагрузки.
+Бинарники Go упакованы UPX 5.2.1. Полные GeoIP/GeoSite хранятся с gzip-сжатием и разворачиваются в RAM. Протоколы и geodata сохранены. Контроль сборки ограничивает установленные файлы шести APK 35 MB, оставляя 5 MB в пределах лимита **40 MB на flash**; точный размер находится в `installed-sizes.txt`. Сравнение gzip/bzip2/xz/zstd/SquashFS находится в `packing-comparison.csv`. Рабочая память остаётся зависимой от нагрузки.
 
 Проверено: backend/ucode, lint, 510 frontend-тестов, воспроизводимость LuCI bundle, создание APK и запуск ARM64-бинарников. Под QEMU выполнены передача HTTP через зашифрованный Hysteria 2 и SOCKS Xray, а также AmneziaWG 3.1 handshake и трафик между двумя изолированными сетями. [Журнал протокольного испытания](https://github.com/m-bezrukoff/forkop-plus/actions/runs/38089960038).
 

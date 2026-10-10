@@ -42,7 +42,9 @@ grep -Fqx 'RandomTrailers = on' "$work/device.conf"
 grep -Fqx 'DisableCookies = on' "$work/device.conf"
 grep -Fqx 'HeaderProtectionKey = AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' "$work/device.conf"
 grep -Fqx 'PersistentKeepalive = 20-30' "$work/device.conf"
-grep -Fqx 'AdvancedSecurity = on' "$work/device.conf"
+if grep -q '^AdvancedSecurity' "$work/device.conf"; then exit 1; fi
+sed 's/AdvancedSecurity = on/AdvancedSecurity = off/' "$work/awg.conf" > "$work/legacy.conf"
+if uc "$awg" prepare "$work/legacy.conf" "$work/legacy-device.conf" 2>/dev/null; then exit 1; fi
 grep -Fqx 'FwMark = 134217728' "$work/device.conf"
 if grep -Eq '^(Address|MTU|DNS) =' "$work/device.conf"; then exit 1; fi
 uc -e 'let fs=require("fs"); let c=json(fs.readfile(ARGV[0])); if(length(c.addresses)!=2 || c.mtu!=1376) die("AWG network metadata lost");' "$work/state.json"

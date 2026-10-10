@@ -12,6 +12,10 @@ bash components/build.sh 1.0.0 dist/filogic
 
 The second command needs `qemu-user`, `iproute2`, `iputils-ping`, `openssl`, Python 3 and sudo
 for isolated network tests. See `.github/workflows/filogic-build.yml` for all host dependencies.
+The build also installs ucode for end-to-end importer tests and compares gzip, bzip2, xz,
+zstd and SquashFS compression of the full official geodata. gzip is selected because
+base OpenWrt can expand it without extra decoder packages or kernel modules. The helper
+keeps the expanded files in `/var/run` (RAM), leaving only the archive on flash.
 Go inputs use `go.sum`; the SDK and official Xray archive are checked against SHA256.
 UPX 5.2.1 is pinned and verified too. It packs the three Go executables to fit the
 AX6000 NAND budget; `upx -t` and all QEMU protocol tests run on the packed executables.
@@ -33,5 +37,11 @@ Runtime tests launch the exact ARM64 binaries through QEMU. Hysteria 2 and Xray 
 response to a local origin; AWG 3.1 performs a handshake and ICMP traffic between two network
 namespaces with header protection, padding ranges, random trailers and disabled cookies.
 These prove controlled protocol operation, not router throughput or every server option.
+
+All six packages must use at most 35,000,000 file/allocated bytes in the build, leaving
+5 MB within the requested 40 MB flash limit for metadata and generated configuration.
+AmneziaWG is retained when the complete set fits this budget. `AdvancedSecurity=on` is
+normalized by the importer: tools' legacy flag has no corresponding official Go 3.1
+UAPI field, and that daemon always runs AWG. `off` is rejected explicitly.
 
 Services and user configuration are documented in [the AX6000 guide](../docs/REDMI-AX6000.md).

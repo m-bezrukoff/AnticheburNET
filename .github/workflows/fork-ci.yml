@@ -26,7 +26,7 @@ jobs:
           find forkop/files/usr/lib components -name '*.uc' -print0 | xargs -0 -n1 ucode -S -c -o /dev/null
           printf '%s\0' tests/*.sh | xargs -0 -n1 -P4 bash
       - run: |
-          mapfile -d '' scripts < <(find . -not -path './.git/*' -not -path './.build/*' -type f \( -name '*.sh' -o -path '*/etc/init.d/*' -o -path '*/usr/bin/forkop-awg-run' -o -path '*/usr/bin/forkop-xray-import' \) -print0)
+          mapfile -d '' scripts < <(find . -not -path './.git/*' -not -path './.build/*' -type f \( -name '*.sh' -o -path '*/etc/init.d/*' -o -path '*/usr/bin/forkop-awg-run' -o -path '*/usr/bin/forkop-xray-*' \) -print0)
           shellcheck --severity=error "${scripts[@]}"
   frontend:
     runs-on: ubuntu-24.04

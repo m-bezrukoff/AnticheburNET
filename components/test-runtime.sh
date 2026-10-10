@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Exercise the exact ARM64 artifacts, including encrypted Hysteria 2 traffic.
 set -euo pipefail
+umask 077
 work="$1"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export FORKOP_LIB="$root/forkop/files/usr/lib"
 test_dir="$(mktemp -d)"
 pids=()
 namespaces=()
@@ -22,9 +25,16 @@ JSON
 cat > "$test_dir/hy-client.json" <<'JSON'
 {"inbounds":[{"type":"socks","listen":"127.0.0.1","listen_port":10820}],"outbounds":[{"type":"hysteria2","server":"127.0.0.1","server_port":18443,"password":"local-runtime-test","tls":{"enabled":true,"server_name":"localhost","insecure":true}}]}
 JSON
-cat > "$test_dir/xray.json" <<'JSON'
-{"inbounds":[{"listen":"127.0.0.1","port":10810,"protocol":"socks","settings":{"auth":"noauth","udp":true}}],"outbounds":[{"protocol":"freedom","streamSettings":{"sockopt":{"mark":134217728}}}]}
+cat > "$test_dir/xray-native.json" <<'JSON'
+{"outbounds":[{"tag":"direct","protocol":"freedom"}],"routing":{"rules":[{"type":"field","domain":["geosite:cn"],"outboundTag":"direct"},{"type":"field","ip":["geoip:private"],"outboundTag":"direct"}]}}
 JSON
+ucode -L "$FORKOP_LIB" "$root/components/xray/files/usr/lib/forkop-components/xray.uc" prepare "$test_dir/xray-native.json" "$test_dir/xray.json"
+export FORKOP_XRAY_ASSET_SOURCE="$work/forkop-xray-root/usr/share/xray"
+export FORKOP_XRAY_ASSET_STATE="$test_dir/xray-cache"
+XRAY_LOCATION_ASSET=$(sh "$root/components/xray/files/usr/bin/forkop-xray-assets")
+export XRAY_LOCATION_ASSET
+# A second invocation must reuse the verified RAM cache.
+[[ "$(sh "$root/components/xray/files/usr/bin/forkop-xray-assets")" == "$XRAY_LOCATION_ASSET" ]]
 qemu-aarch64 "$work/xray/xray" run -test -config "$test_dir/xray.json"
 qemu-aarch64 "$work/xray/xray" run -config "$test_dir/xray.json" > "$test_dir/xray.log" 2>&1 &
 pids+=("$!")
@@ -75,6 +85,7 @@ for index in 1 2; do
   cat > "$test_dir/awg$index.conf" <<CONF
 [Interface]
 PrivateKey = $(cat "$test_dir/private$index")
+Address = 10.201.0.$index/32
 ListenPort = 18444
 Jc = 2
 Jmin = 32
@@ -98,7 +109,9 @@ Endpoint = 192.0.2.$peer:18444
 PersistentKeepalive = 20-30
 AdvancedSecurity = on
 CONF
-  if ! ip netns exec "$ns" qemu-aarch64 "$work/awg-tools/src/wg" setconf "fawg$index" "$test_dir/awg$index.conf"; then
+  ucode -L "$FORKOP_LIB" "$root/components/awg/files/usr/lib/forkop-components/awg.uc" prepare \
+    "$test_dir/awg$index.conf" "$test_dir/device$index.conf" > "$test_dir/state$index.json"
+  if ! ip netns exec "$ns" qemu-aarch64 "$work/awg-tools/src/wg" setconf "fawg$index" "$test_dir/device$index.conf"; then
     cat "$test_dir/awg$index.log"; exit 1
   fi
   ip -n "$ns" address add "10.201.0.$index/32" dev "fawg$index"

@@ -96,6 +96,7 @@ PublicKey = $(cat "$test_dir/public$peer")
 AllowedIPs = 10.201.0.$peer/32
 Endpoint = 192.0.2.$peer:18444
 PersistentKeepalive = 20-30
+AdvancedSecurity = on
 CONF
   if ! ip netns exec "$ns" qemu-aarch64 "$work/awg-tools/src/wg" setconf "fawg$index" "$test_dir/awg$index.conf"; then
     cat "$test_dir/awg$index.log"; exit 1

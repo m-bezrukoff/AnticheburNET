@@ -35,12 +35,14 @@ PublicKey = AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 AllowedIPs = 0.0.0.0/0, ::/0
 Endpoint = example.com:443
 PersistentKeepalive = 20-30
+AdvancedSecurity = on
 CONF
 uc "$awg" prepare "$work/awg.conf" "$work/device.conf" > "$work/state.json"
 grep -Fqx 'RandomTrailers = on' "$work/device.conf"
 grep -Fqx 'DisableCookies = on' "$work/device.conf"
 grep -Fqx 'HeaderProtectionKey = AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' "$work/device.conf"
 grep -Fqx 'PersistentKeepalive = 20-30' "$work/device.conf"
+grep -Fqx 'AdvancedSecurity = on' "$work/device.conf"
 grep -Fqx 'FwMark = 134217728' "$work/device.conf"
 if grep -Eq '^(Address|MTU|DNS) =' "$work/device.conf"; then exit 1; fi
 uc -e 'let fs=require("fs"); let c=json(fs.readfile(ARGV[0])); if(length(c.addresses)!=2 || c.mtu!=1376) die("AWG network metadata lost");' "$work/state.json"

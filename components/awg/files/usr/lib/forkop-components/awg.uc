@@ -19,7 +19,7 @@ function prepare(path) {
         "H1", "H2", "H3", "H4", "I1", "I2", "I3", "I4", "I5", "HeaderProtectionKey",
         "ContentPaddingAddition", "RekeyAfterTime", "RekeyTimeout", "RejectAfterTime",
         "KeepaliveTimeout", "MaxHandshakeAttempts", "RandomTrailers", "DisableCookies" ];
-    let peer_keys = [ "PublicKey", "PresharedKey", "AllowedIPs", "Endpoint", "PersistentKeepalive" ];
+    let peer_keys = [ "PublicKey", "PresharedKey", "AllowedIPs", "Endpoint", "PersistentKeepalive", "AdvancedSecurity" ];
     for (let raw in split(text, "\n")) {
         let line = trim(replace(raw, /#.*$/, ""));
         if (line == "") continue;

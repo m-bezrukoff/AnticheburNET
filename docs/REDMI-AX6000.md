@@ -98,6 +98,8 @@ ip link show awg0
 
 Поддержаны `Jc/Jmin/Jmax`, `S1..S4`, диапазоны `H1..H4`, `I1..I5`, `HeaderProtectionKey`, `ContentPaddingAddition`, диапазоны времени rekey/keepalive/handshake, `RandomTrailers` и `DisableCookies`. Их окончательно проверяет официальный `awg-tools` 3.1. Неподдерживаемые поля и `PreUp/PostUp/PreDown/PostDown` отклоняются; shell hooks не выполняются. `Address` и `MTU` применяются сервисом; `DNS`, `Table` и пользовательский `FwMark` не применяются, поскольку DNS и выбор маршрута принадлежат Forkop. Endpoint может содержать DNS-имя.
 
+В секции `[Peer]` поддержан также `AdvancedSecurity`; он передаётся официальному инструменту без изменения.
+
 Сервис использует `/dev/net/tun` и userspace `amneziawg-go`, поэтому внешний модуль ядра AWG не нужен. Поддерживается один управляемый туннель, по умолчанию `awg0`, с отдельной routing table **311** и rules priority **10400** только для трафика, привязанного к интерфейсу. Основной WAN default route не заменяется. Занятая таблица 311 или существующий `awg0` блокируют старт; сервис не должен управлять интерфейсом одновременно с netifd AWG или другим VPN-клиентом.
 
 ## Проверка и диагностика

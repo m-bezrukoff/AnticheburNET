@@ -2615,7 +2615,8 @@ function source_aware_dns_sources(sections) {
         if (connections.has_dns_matchers(section))
             for (let value in legacy_condition_values(section, "source_ip_cidr"))
                 push(candidates, value);
-        if (action == "bypass" || action == "dns")
+        if (action == "bypass" || action == "dns" ||
+            (connections.is_connections_action(action) && connections.has_dns_matchers(section)))
             for (let value in list_option(section, "fully_routed_ips"))
                 push(candidates, value);
 
@@ -2895,6 +2896,11 @@ function add_combined_route_for_section(config, section) {
         delete scope.outbound;
         runtime_happ.append_routes(config, runtime_happ_policies[section_name], scope, outbound_tag(section_name));
         delete scope.inbound;
+        // A DNS question has no application port or destination IP yet.
+        // Keep domain/client constraints; traffic keeps the complete scope.
+        delete scope.port;
+        delete scope.port_range;
+        delete scope.ip_cidr;
         runtime_happ.append_dns(config, runtime_happ_policies[section_name], scope);
         return;
     }

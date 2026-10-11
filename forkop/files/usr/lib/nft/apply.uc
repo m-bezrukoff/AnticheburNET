@@ -1645,7 +1645,8 @@ function source_aware_dns_values(sections, deferred_sections) {
             }
         }
 
-        if (action == "bypass" || action == "dns") {
+        if (action == "bypass" || action == "dns" ||
+            (connections.is_connections_action(action) && connections.has_dns_matchers(section))) {
             for (let value in list_option(section, "fully_routed_ips")) {
                 value = trim(as_string(value));
                 if (value != "" && !seen[value]) {

@@ -782,4 +782,14 @@ assert_eq "$expected_signature" \
 nft_ucode nft-populate-runtime-sets-fixture "$WORK_DIR/populate-fixture.json" 0 "" ForkopTable forkop_subnets forkop_ports forkop_ip_ports forkop_interfaces localv4 0x00100000
 [ ! -s "$NFT_LOG" ] || fail "disabled nft population should not call nft"
 
+cat > "$WORK_DIR/happ-sources.json" <<'JSON'
+{"section":[
+ {".name":"happ","enabled":"1","action":"proxy","subscription_urls":["https://example.com/sub"],"source_ip_cidr":["192.0.2.20/32"],"fully_routed_ips":["192.0.2.21/32"]},
+ {".name":"awg","enabled":"1","action":"connection","interfaces":["awg0"],"source_ip_cidr":["2001:db8::20/128"],"fully_routed_ips":["2001:db8::21/128"]}
+]}
+JSON
+: > "$NFT_LOG"
+nft_ucode nft-populate-runtime-sets-fixture "$WORK_DIR/happ-sources.json" 1 "" ForkopTable forkop_subnets forkop_ports forkop_ip_ports forkop_interfaces localv4 0x00100000
+assert_contains "$NFT_LOG" $'ForkopTable\tforkop_dns_sources\t{ 192.0.2.20/32,192.0.2.21/32 }' "subscription client DNS source preservation"
+assert_contains "$NFT_LOG" $'ForkopTable\tforkop_dns_sources6\t{ 2001:db8::20/128,2001:db8::21/128 }' "AWG client DNS source preservation"
 printf 'NFT apply checks passed\n'

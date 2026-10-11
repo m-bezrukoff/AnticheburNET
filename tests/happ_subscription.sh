@@ -97,4 +97,24 @@ for(let order in ["block-proxy-direct","block-direct-proxy","proxy-block-direct"
   for(let rule in c.route.rules)if(rule.action=="resolve"&&rule.server!=null)die("Profile DNS must decide the resolver\n");
  }
 }
-' 
+'
+python3 - "$work/fixture" <<'PY'
+import json,sys
+p=sys.argv[1];v=json.load(open(p));s=v['section'][0]
+s.update(source_ip_cidr=['192.0.2.20/32'],fully_routed_ips=['192.0.2.21/32'],ports=['80'])
+open(p,'w').write(json.dumps(v))
+PY
+TMP_SUBSCRIPTION_FOLDER="$work/subscriptions" ucode -L "$lib" "$lib/singbox/generator.uc" generate-config-fixture "$work/fixture" "$work/scoped-config" 127.0.0.1 0 true '' 1.14.1
+python3 - "$work/scoped-config" <<'PY'
+import json,sys
+c=json.load(open(sys.argv[1]))
+assert any(i['tag']=='source-dns-in' for i in c['inbounds']), 'Device-scoped Happ must retain DNS client addresses'
+happ=[r for r in c['dns']['rules'] if '-happ-' in r.get('server','')]
+assert any('192.0.2.20/32' in json.dumps(r) for r in happ)
+assert any('192.0.2.21/32' in json.dumps(r) for r in happ)
+def check(r):
+ assert all(k not in r for k in ['port','port_range','ip_cidr']), 'DNS scope must not contain application matchers'
+ for child in r.get('rules',[]):check(child)
+for r in happ:check(r)
+assert any('"port": [80]' in json.dumps(r) for r in c['route']['rules']), 'Traffic must keep the port filter'
+PY

@@ -515,7 +515,11 @@ function rule_condition_csv(section, key, kind) {
 }
 
 function has_dns_matchers(section) {
-    return rule_condition_csv(section, "domain", "domains") != "" ||
+    // Subscription/interface profiles may supply their DNS policy at runtime.
+    // Preserve client addresses even when their UCI section has no domain list.
+    return (is_connections_action(option(section, "action", "")) &&
+            (length(subscription_urls(section)) > 0 || length(interfaces(section)) > 0)) ||
+        rule_condition_csv(section, "domain", "domains") != "" ||
         rule_condition_csv(section, "domain_suffix", "domains") != "" ||
         rule_condition_csv(section, "domain_keyword", "generic") != "" ||
         rule_condition_csv(section, "domain_regex", "generic") != "" ||

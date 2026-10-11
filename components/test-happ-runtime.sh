@@ -32,6 +32,7 @@ link='hy2://local-test@127.0.0.1:18445?'+urllib.parse.urlencode({'sni':'localhos
 (p/'subscription').write_text(base64.b64encode(link.encode()).decode())
 (p/'fixture').write_text(json.dumps({'settings':{'.name':'settings','.type':'settings','dns_server':'1.1.1.1','dns_type':'udp'},
  'section':[{'.name':'happ_runtime','.type':'section','enabled':'1','action':'proxy','subscription_urls':['http://127.0.0.1:18081/subscription'],
+ 'source_ip_cidr':['127.0.0.1/32'],'fully_routed_ips':['127.0.0.3/32'],'ports':['18081'],
  'subscription_user_agent':'Happ','mixed_proxy_enabled':'1','mixed_proxy_port':'10823'}]}))
 (p/'server.json').write_text(json.dumps({'dns':{'servers':[{'type':'hosts','tag':'fixture-dns','predefined':{name:'127.0.0.1' for name in ['www.direct.test','proxy.direct.test','other.test','hosts.test']}}],'final':'fixture-dns'},
  'route':{'default_domain_resolver':'fixture-dns'},'inbounds':[{'type':'hysteria2','listen':'127.0.0.1','listen_port':18445,'users':[{'password':'local-test'}],

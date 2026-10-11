@@ -3,6 +3,8 @@
 
 REPO_OWNER="m-bezrukoff"
 REPO_NAME="forkop-plus"
+INSTALL_MODE="full"
+FULL_COMPONENT_FILES=""
 
 REQUIRED_SPACE_KB=15360
 CONNECT_TIMEOUT_SECONDS=15
@@ -53,7 +55,15 @@ fail() {
 
 usage() {
     cat <<EOF
-Usage: $0
+Usage: $0 [--generic]
+
+By default installs the complete Forkop Plus suite from one GitHub release:
+  forkop, LuCI, Russian translation, sing-box extended, Xray and AmneziaWG.
+Requires OpenWrt 25.12, mediatek/filogic, aarch64_cortex-a53 and apk.
+Downloads and verifies SHA256SUMS before replacing installed packages.
+No interactive choices are required; configure your connections in LuCI afterwards.
+
+--generic retains the older, interactive installation for other OpenWrt targets.
 
 Installs or updates Forkop packages:
   - forkop
@@ -69,6 +79,9 @@ EOF
 parse_args() {
     while [ "$#" -gt 0 ]; do
         case "$1" in
+            --generic)
+                INSTALL_MODE="generic"
+                ;;
             -h|--help)
                 usage
                 exit 0
@@ -1222,6 +1235,20 @@ function installer_post_install() {
     return true;
 }
 
+function installer_prepare_full_suite() {
+    let init_script = env("FORKOP_INSTALLER_SING_BOX_INIT", "/etc/init.d/sing-box");
+    if (path_executable(init_script)) {
+        let result = installer_command_result([ init_script, "stop" ], INSTALLER_SERVICE_ACTION_TIMEOUT);
+        if (!result.complete || result.status != 0)
+            return false;
+    }
+    // These packages conflict with the extended APK. Keep user configuration.
+    for (let name in [ "sing-box", "sing-box-tiny" ])
+        if (!installer_remove_package(name))
+            return false;
+    return true;
+}
+
 function list_has(values, needle) {
     for (let value in words(values))
         if (value == needle)
@@ -1363,6 +1390,14 @@ function asset_matches(name, kind, ext, version) {
         return name == "luci-app-forkop_" + version + "." + ext;
     if (kind == "i18n")
         return name == "luci-i18n-forkop-ru_" + version + "." + ext;
+    if (kind == "checksums")
+        return name == "SHA256SUMS";
+    if (ext == "apk" && kind == "sing-box")
+        return match(as_string(name), /^sing-box-extended_[A-Za-z0-9.+_-]+_openwrt_aarch64_cortex-a53[.]apk$/) != null;
+    if (ext == "apk" && kind == "xray")
+        return match(as_string(name), /^forkop-xray_[A-Za-z0-9.+_-]+_aarch64_cortex-a53[.]apk$/) != null;
+    if (ext == "apk" && kind == "awg")
+        return match(as_string(name), /^forkop-amneziawg_[A-Za-z0-9.+_-]+_aarch64_cortex-a53[.]apk$/) != null;
     return false;
 }
 
@@ -1387,12 +1422,14 @@ function release_asset_url(kind, ext) {
     let version = as_string(release.tag_name || "");
     if (!release_version_valid(version))
         return;
+    let urls = [];
     for (let asset in release.assets) {
         if (type(asset) == "object" && asset_matches(asset.name, kind, ext, version)) {
-            print(as_string(asset.browser_download_url || ""), "\n");
-            return;
+            push(urls, as_string(asset.browser_download_url || ""));
         }
     }
+    if (length(urls) == 1)
+        print(urls[0], "\n");
 }
 
 let mode = ARGV[0] || "";
@@ -1416,6 +1453,8 @@ else if (mode == "installer-finalize-legacy")
     exit(installer_finalize_legacy() ? 0 : 1);
 else if (mode == "installer-post-install")
     exit(installer_post_install() ? 0 : 1);
+else if (mode == "installer-prepare-full-suite")
+    exit(installer_prepare_full_suite() ? 0 : 1);
 else
     exit(1);
 EOF
@@ -1573,6 +1612,16 @@ check_system() {
 
     [ -f /etc/openwrt_release ] || fail "This installer supports OpenWrt only"
 
+    if [ "$INSTALL_MODE" = "full" ]; then
+        check_full_suite_platform
+        REQUIRED_SPACE_KB=39063
+        tmp_available="$(df -Pk /tmp 2>/dev/null | awk 'NR==2 {print $4}')"
+        case "$tmp_available" in
+            ''|*[!0-9]*) fail "Failed to determine free space in /tmp" ;;
+        esac
+        [ "$tmp_available" -ge 65536 ] || fail "The complete suite requires 64 MB free in /tmp for downloads"
+    fi
+
     model="$(cat /tmp/sysinfo/model 2>/dev/null || true)"
     [ -n "$model" ] && msg "Router model: $model"
 
@@ -1583,12 +1632,93 @@ check_system() {
         fail "Forkop requires OpenWrt 24.10 or newer"
     fi
 
-    available_space="$(df /overlay 2>/dev/null | awk 'NR==2 {print $4}')"
-    [ -n "$available_space" ] || available_space="$(df / 2>/dev/null | awk 'NR==2 {print $4}')"
+    available_space="$(df -Pk /overlay 2>/dev/null | awk 'NR==2 {print $4}')"
+    [ -n "$available_space" ] || available_space="$(df -Pk / 2>/dev/null | awk 'NR==2 {print $4}')"
+
+    case "$available_space" in
+        ''|*[!0-9]*) fail "Failed to determine free flash space" ;;
+    esac
 
     if [ -n "$available_space" ] && [ "$available_space" -lt "$REQUIRED_SPACE_KB" ]; then
         fail "Not enough free flash space. Available: $((available_space / 1024)) MB, required: $((REQUIRED_SPACE_KB / 1024)) MB"
     fi
+}
+
+check_full_suite_platform() {
+    suite_release="$(read_openwrt_release_value DISTRIB_RELEASE)"
+    suite_target="$(read_openwrt_release_value DISTRIB_TARGET)"
+    suite_arch="$(read_openwrt_release_value DISTRIB_ARCH)"
+    case "$suite_release" in
+        25.12|25.12.*) ;;
+        *) fail "The complete suite requires OpenWrt 25.12; detected: $suite_release" ;;
+    esac
+    [ "$suite_target" = "mediatek/filogic" ] && [ "$suite_arch" = "aarch64_cortex-a53" ] ||
+        fail "The complete suite requires mediatek/filogic, aarch64_cortex-a53; detected: $suite_target, $suite_arch"
+    [ "$PKG_IS_APK" -eq 1 ] || fail "The complete suite requires the OpenWrt apk package manager"
+}
+
+download_full_suite() {
+    FULL_COMPONENT_FILES=""
+    for suite_kind in sing-box xray awg checksums; do
+        suite_url="$(printf '%s' "$FORKOP_RELEASE_JSON" | install_json_ucode release-asset-url "$suite_kind" apk)" ||
+            fail "Failed to read the $suite_kind release asset"
+        case "$suite_url" in
+            "https://github.com/$REPO_OWNER/$REPO_NAME/releases/download/$FORKOP_RELEASE_TAG/"*) ;;
+            *) fail "The release has no unique $suite_kind asset from $REPO_OWNER/$REPO_NAME" ;;
+        esac
+        suite_name="$(basename "$suite_url")"
+        case "$suite_name" in
+            ''|*[!A-Za-z0-9._+-]*) fail "Invalid release asset name: $suite_name" ;;
+        esac
+        download_with_retry "$suite_url" "$TMP_DIR/$suite_name" "$suite_name" || fail "Failed to download $suite_name"
+        [ "$suite_kind" = "checksums" ] || FULL_COMPONENT_FILES="$FULL_COMPONENT_FILES $TMP_DIR/$suite_name"
+    done
+    download_forkop_packages
+    verify_full_suite
+}
+
+verify_full_suite() {
+    # Only accept one checksum for each of the six selected APKs, with no paths
+    # outside the temporary directory. sha256sum -c alone allows omitted files.
+    suite_names="$(basename "$FORKOP_BACKEND_FILE") $(basename "$FORKOP_APP_FILE") $(basename "$FORKOP_I18N_FILE")"
+    for suite_file in $FULL_COMPONENT_FILES; do
+        suite_names="$suite_names $(basename "$suite_file")"
+    done
+    awk -v names="$suite_names" '
+        BEGIN { n = split(names, files, " "); for (i = 1; i <= n; i++) expected[files[i]] = 1 }
+        {
+            name = $2; sub(/^\*/, "", name); sub(/^\.\//, "", name)
+            if (NF != 2 || length($1) != 64 || $1 ~ /[^0-9a-fA-F]/ || !(name in expected) || seen[name]++) exit 1
+            count++
+        }
+        END { if (count != 6) exit 1 }
+    ' "$TMP_DIR/SHA256SUMS" || fail "SHA256SUMS must cover exactly the six selected APKs"
+    (cd "$TMP_DIR" && sha256sum -c SHA256SUMS) || fail "Package checksum verification failed; installation stopped"
+}
+
+install_full_suite() {
+    command_exists sha256sum || fail "sha256sum is required to verify the complete suite"
+    # Abort known unsupported conflicts before stopping services or removing packages.
+    for suite_conflict in nextdns luci-app-passwall luci-app-passwall2 xray-core; do
+        pkg_is_installed "$suite_conflict" && fail "Conflicting package installed: $suite_conflict. Remove it before installing the complete suite."
+    done
+    pkg_list_update || fail "Failed to update package lists"
+    ensure_bootstrap_ucode_runtime
+    FORKOP_I18N_REQUESTED=1
+    resolve_forkop_release
+    download_full_suite
+    detect_legacy_installation
+    cleanup_legacy_installation </dev/null
+    install_json_ucode installer-prepare-full-suite || fail "Failed to prepare sing-box for the complete suite"
+    # Package names are validated above and TMP_DIR is created by mktemp.
+    # shellcheck disable=SC2086
+    pkg_install_files "$FORKOP_BACKEND_FILE" "$FORKOP_APP_FILE" "$FORKOP_I18N_FILE" $FULL_COMPONENT_FILES ||
+        fail "Complete suite installation failed"
+    migrate_legacy_configuration
+    post_install
+    msg "Forkop Plus $FORKOP_PACKAGE_VERSION: Forkop, LuCI (RU), sing-box extended, Xray and AmneziaWG installed"
+    msg "Source release: ${REPO_OWNER}/${REPO_NAME}@${FORKOP_RELEASE_TAG}"
+    warn "Open LuCI, add your connections and apply routing settings before enabling Forkop"
 }
 
 installer_is_ru() {
@@ -1965,6 +2095,11 @@ main() {
     detect_fetcher
     sync_time
     check_system
+
+    if [ "$INSTALL_MODE" = "full" ]; then
+        install_full_suite
+        return
+    fi
 
     detect_legacy_installation
     decide_i18n_installation

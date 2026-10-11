@@ -3,6 +3,11 @@
 Target: OpenWrt 25.12, mediatek/filogic, aarch64_cortex-a53 (Redmi AX6000).
 The component build and services are separate from the architecture-independent Forkop backend.
 
+For installation on the router, run the single SSH command in
+[the AX6000 guide](../docs/REDMI-AX6000.md#установка). It downloads all six release APKs
+from GitHub, verifies their SHA-256 checksums and installs the complete suite.
+The commands below are for building packages on a Linux development host.
+
 Build on Linux with Go 1.26.8 and the Filogic SDK pinned in `versions.env`:
 
 ```sh

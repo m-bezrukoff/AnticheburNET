@@ -8,39 +8,23 @@
 
 ## Установка
 
-Сохраните резервную копию настроек через LuCI / System / Backup, скачайте её на компьютер. Проверьте архитектуру и свободное место:
+Сохраните резервную копию настроек через LuCI / System / Backup, скачайте её на компьютер. Войдите по SSH под `root` и выполните одну команду:
 
 ```sh
-ubus call system board
-df -h /overlay /tmp
+( f="$(mktemp /tmp/forkop-install.XXXXXX)" || exit 1; trap 'rm -f "$f"' EXIT; wget -T 30 -O "$f" https://raw.githubusercontent.com/m-bezrukoff/forkop-plus/main/install.sh && sh "$f" )
 ```
 
-Скачайте [релиз 1.0.1](https://github.com/m-bezrukoff/forkop-plus/releases/tag/1.0.1) на роутер. Архив содержит шесть APK, `SHA256SUMS` и версии исходников. Для установки всех компонентов потребуется место под sing-box, Xray и его geodata; проверяйте фактический размер APK и свободный overlay. Хранить приватные конфигурации нужно с правами `600`.
+Команда скачивает установщик с GitHub во временный файл и запускает его только после успешной загрузки. Установщик без вопросов скачивает **все шесть APK из одного последнего релиза**: Forkop, LuCI, русский интерфейс, sing-box extended, Xray и AmneziaWG. Пакеты устанавливаются одной транзакцией `apk add` после проверки каждого по `SHA256SUMS`; неполный релиз или неверная сумма останавливает установку до замены пакетов. Временные файлы удаляются при завершении.
 
-```sh
-mkdir -p /tmp/forkop-plus
-cd /tmp/forkop-plus
-wget -O packages.tar.gz https://github.com/m-bezrukoff/forkop-plus/releases/download/1.0.1/forkop-plus-filogic-25.12.tar.gz
-tar -xzf packages.tar.gz
-sha256sum -c SHA256SUMS
-apk update
-```
+Перед загрузкой пакетов проверяются OpenWrt 25.12, target `mediatek/filogic`, arch `aarch64_cortex-a53`, наличие `apk`, минимум **40 MB свободного overlay** и **64 MiB свободного `/tmp`**. Проверка места консервативная и действует также при повторной установке. Роутер должен иметь доступ к GitHub и репозиториям пакетов OpenWrt. Модули ядра и остальные зависимости скачиваются из feeds установленной прошивки, без сборки на роутере.
 
-Остановите существующие Forkop/sing-box перед заменой. Для уже установленного стандартного `sing-box` или `sing-box-tiny` удалите только соответствующий пакет перед установкой extended; APK объявляет конфликт с ними. Не удаляйте конфигурацию. Backend также сохраняет upstream-конфликты с Passwall, NextDNS и https-dns-proxy.
+Установщик останавливает существующие Forkop/sing-box перед заменой, автоматически заменяет стандартный `sing-box`/`sing-box-tiny` на extended и переносит поддерживаемую legacy-конфигурацию Forkop. Изменённые пользовательские конфигурации сохраняются пакетным менеджером. Конфликтующий https-dns-proxy с его LuCI-пакетами удаляется, DNS восстанавливается через backend. При наличии Passwall, NextDNS или `xray-core` установка останавливается до замены: сначала устраните конфликт. Хранить приватные конфигурации нужно с правами `600`.
 
-```sh
-/etc/init.d/forkop stop 2>/dev/null || true
-/etc/init.d/sing-box stop 2>/dev/null || true
-# Только если пакет установлен: apk del sing-box (или sing-box-tiny).
-apk add --allow-untrusted ./forkop_1.0.1.apk ./luci-app-forkop_1.0.1.apk ./luci-i18n-forkop-ru_1.0.1.apk \
-  ./sing-box-extended_1.14.1-extended-2.7.2-forkop.1_openwrt_aarch64_cortex-a53.apk \
-  ./forkop-xray_26.10.10-r1_aarch64_cortex-a53.apk \
-  ./forkop-amneziawg_3.1.20260828-r2_aarch64_cortex-a53.apk
-/etc/init.d/forkop enable
-/etc/init.d/forkop restart
-```
+Успешная установка завершается сообщением `Forkop Plus <версия>: Forkop, LuCI (RU), sing-box extended, Xray and AmneziaWG installed` и указанием исходного релиза. Если установщик сообщил об ошибке, устраните указанную причину и повторите ту же SSH-команду.
 
-APK подписываются не ключом OpenWrt, поэтому для этих локально проверенных пакетов указан `--allow-untrusted`. Не используйте это флагом для глобального обновления системы. Сервисы Xray и AWG зарегистрированы в procd, но по умолчанию выключены до добавления пользовательской конфигурации. Обновления Forkop и обычного extended берутся из этого форка. Legacy compressed extended по-прежнему использует источник shtorm-7; он не входит в этот комплект. Xray/AWG обновляются установкой соответствующих новых APK из релиза.
+После первой установки добавьте свои подключения и правила в LuCI и включите Forkop. При обновлении восстанавливается прежнее состояние Forkop. Xray и AWG по умолчанию выключены до добавления пользовательской конфигурации.
+
+APK подписываются не ключом OpenWrt, поэтому установщик применяет `--allow-untrusted` только к локальным пакетам после проверки SHA-256. Обновить весь комплект можно повтором той же команды. Для старого общего сценария на других платформах используйте `sh install.sh --generic`: он устанавливает только Forkop/LuCI и предлагает выбор sing-box, без Xray/AWG. Legacy compressed extended использует источник shtorm-7 и в полный комплект не входит.
 
 ## Hysteria 2
 

@@ -61,6 +61,7 @@ chmod +x "$WORK_DIR/bin/apk"
 export PATH="$WORK_DIR/bin:$PATH"
 export TEST_LOG="$WORK_DIR/actions"
 export TEST_REMOVED_FILE="$WORK_DIR/removed"
+export FORKOP_INSTALLER_SING_BOX_BIN="$WORK_DIR/sing-box-binary"
 PKG_IS_APK=1
 
 # Replace only router/network boundaries; retain argument parsing, release
@@ -130,7 +131,7 @@ detect_legacy_installation() { FORKOP_LEGACY_DETECTED=0; }
 run_installer() {
   : > "$TEST_LOG"
   : > "$TEST_REMOVED_FILE"
-  (main "$@") > "$WORK_DIR/output" 2>&1
+  (main --install "$@") > "$WORK_DIR/output" 2>&1
 }
 assert_no_replacement() {
   if grep -Eq '^(cleanup|prepare|apk|post)' "$TEST_LOG"; then
@@ -201,6 +202,29 @@ if run_installer; then fail 'fresh install accepted insufficient flash'; fi
 assert_no_replacement
 if grep -Eq '^backup' "$TEST_LOG"; then fail 'fresh install backed up configuration without sufficient flash'; fi
 unset TEST_PLAN TEST_FLASH_STATUS
+# Orphaned/manual sing-box must bypass the fresh-install flash check and reach
+# replacement before the authoritative post-removal check, even without APKs.
+printf 'old binary\n' > "$FORKOP_INSTALLER_SING_BOX_BIN"
+export TEST_PLAN=''
+run_installer || { cat "$WORK_DIR/output"; fail 'orphaned sing-box blocked installation'; }
+[[ "$(grep -c '^flash$' "$TEST_LOG")" = 1 ]] || fail 'orphaned binary checked flash before replacement'
+[[ "$(sed -n '3p' "$TEST_LOG")" = backup && "$(sed -n '6p' "$TEST_LOG")" = prepare ]] ||
+  fail 'orphaned binary skipped backed-up replacement'
+export TEST_FLASH_STATUS=1
+if run_installer; then fail 'orphan replacement accepted insufficient remaining flash'; fi
+grep -Fxq prepare "$TEST_LOG" || fail 'orphaned binary prevented replacement at low flash'
+if grep -Eq '^(apk add --allow-untrusted|post)' "$TEST_LOG"; then fail 'orphan replacement bypassed final flash check'; fi
+rm "$FORKOP_INSTALLER_SING_BOX_BIN"
+unset TEST_FLASH_STATUS
+if ln -s "$WORK_DIR/missing-binary" "$FORKOP_INSTALLER_SING_BOX_BIN" 2>/dev/null &&
+   [[ -L "$FORKOP_INSTALLER_SING_BOX_BIN" ]]; then
+  run_installer || fail 'dangling sing-box symlink blocked replacement'
+  [[ "$(grep -c '^flash$' "$TEST_LOG")" = 1 ]] || fail 'dangling symlink used fresh-install flash check'
+else
+  printf 'SKIP: dangling symlink fixture (unsupported on this host)\n'
+fi
+rm -f "$FORKOP_INSTALLER_SING_BOX_BIN"
+unset TEST_PLAN
 export TEST_BACKUP_STATUS=1
 if run_installer; then fail 'failed configuration backup was accepted'; fi
 assert_no_replacement
@@ -305,16 +329,21 @@ SH
   export FORKOP_INSTALLER_REMOVE_PACKAGES='sing-box sing-box-tiny'
   : > "$TEST_LOG"
   : > "$TEST_REMOVED_FILE"
+  printf 'old binary\n' > "$FORKOP_INSTALLER_SING_BOX_BIN"
   ucode "$helper" installer-prepare-full-suite || fail 'real component preparation failed'
   [[ "$(cat "$TEST_LOG")" = $'sing-box-stop\ndel sing-box sing-box-tiny' ]] || fail 'incorrect component preparation actions'
+  [[ ! -e "$FORKOP_INSTALLER_SING_BOX_BIN" ]] || fail 'existing sing-box binary survived replacement'
   : > "$TEST_LOG"
   export TEST_STOP_STATUS=1
+  printf 'old binary\n' > "$FORKOP_INSTALLER_SING_BOX_BIN"
   if ucode "$helper" installer-prepare-full-suite; then fail 'failed sing-box stop accepted'; fi
   [[ "$(cat "$TEST_LOG")" = sing-box-stop ]] || fail 'packages removed after stop failure'
+  [[ -s "$FORKOP_INSTALLER_SING_BOX_BIN" ]] || fail 'binary removed after stop failure'
   unset TEST_STOP_STATUS
   export TEST_DELETE_STATUS=1
   : > "$TEST_REMOVED_FILE"
   if ucode "$helper" installer-prepare-full-suite; then fail 'failed package removal accepted'; fi
+  [[ -s "$FORKOP_INSTALLER_SING_BOX_BIN" ]] || fail 'binary removed after package removal failure'
   unset TEST_DELETE_STATUS
   export TEST_INSTALLED='sing-box sing-box-tiny forkop unrelated-app'
   : > "$TEST_REMOVED_FILE"

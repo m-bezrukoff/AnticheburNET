@@ -42,7 +42,7 @@ VPN, прокси и управление маршрутизацией для Op
 ( f="$(mktemp /tmp/forkop-install.XXXXXX)" || exit 1; trap 'rm -f "$f"' EXIT; wget -T 30 -O "$f" https://raw.githubusercontent.com/m-bezrukoff/forkop-plus/main/install.sh && sh "$f" )
 ```
 
-Установщик автоматически скачает последний релиз с GitHub, проверит SHA-256 и установит **весь комплект**: Forkop, LuCI, русский интерфейс, sing-box extended (Hysteria 2/XHTTP), Xray и AmneziaWG. Выбор компонентов и ручное скачивание не требуются.
+При запуске установщик предложит выбрать `1) install` или `2) uninstall` (также можно ввести слово `install` или `uninstall`). После выбора `install` он автоматически скачает последний релиз с GitHub, проверит SHA-256 и установит **весь комплект**: Forkop, LuCI, русский интерфейс, sing-box extended (Hysteria 2/XHTTP), Xray и AmneziaWG. Выбор компонентов и ручное скачивание не требуются. Для запуска без вопроса используйте `sh install.sh --install` или `sh install.sh --uninstall`.
 
 Нужна установленная OpenWrt 25.12 с `apk`, target `mediatek/filogic`, arch `aarch64_cortex-a53`, минимум 40 MB свободного overlay **после удаления заменяемых компонентов** и 64 MiB в `/tmp`. Установщик сохраняет конфигурации, автоматически удаляет прежние компоненты и ненужные зависимости, сохраняя зависимости других приложений. Роутер должен иметь доступ к GitHub и репозиториям пакетов OpenWrt. Зависимости, включая модули ядра, устанавливаются из feeds вашей прошивки.
 

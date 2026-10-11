@@ -4,6 +4,7 @@
 REPO_OWNER="m-bezrukoff"
 REPO_NAME="forkop-plus"
 INSTALL_MODE="full"
+INSTALL_MODE_EXPLICIT=0
 FULL_COMPONENT_FILES=""
 FULL_REMOVE_PACKAGES=""
 FULL_BACKUP_DIR=""
@@ -59,13 +60,15 @@ fail() {
 
 usage() {
     cat <<EOF
-Usage: $0 [--generic | --uninstall]
+Usage: $0 [--install | --generic | --uninstall]
 
-By default installs the complete Forkop Plus suite from one GitHub release:
+Without arguments, asks whether to install or uninstall Forkop Plus.
+--install installs the complete Forkop Plus suite from one GitHub release:
   forkop, LuCI, Russian translation, sing-box extended, Xray and AmneziaWG.
 Requires OpenWrt 25.12, mediatek/filogic, aarch64_cortex-a53 and apk.
 Downloads and verifies SHA256SUMS before replacing installed packages.
-No interactive choices are required; configure your connections in LuCI afterwards.
+Explicit mode options skip the install/uninstall question.
+Configure your connections in LuCI after installation.
 
 --generic retains the older, interactive installation for other OpenWrt targets.
 --uninstall removes the Forkop Plus suite on OpenWrt with apk, without package downloads.
@@ -85,13 +88,17 @@ EOF
 parse_args() {
     while [ "$#" -gt 0 ]; do
         case "$1" in
-            --generic)
-                [ "$INSTALL_MODE" != "uninstall" ] || fail "--generic and --uninstall cannot be combined"
-                INSTALL_MODE="generic"
-                ;;
-            --uninstall)
-                [ "$INSTALL_MODE" != "generic" ] || fail "--generic and --uninstall cannot be combined"
-                INSTALL_MODE="uninstall"
+            --install|--generic|--uninstall)
+                case "$1" in
+                    --install) requested_mode="full" ;;
+                    --generic) requested_mode="generic" ;;
+                    --uninstall) requested_mode="uninstall" ;;
+                esac
+                if [ "$INSTALL_MODE_EXPLICIT" -eq 1 ] && [ "$INSTALL_MODE" != "$requested_mode" ]; then
+                    fail "--install, --generic and --uninstall cannot be combined"
+                fi
+                INSTALL_MODE="$requested_mode"
+                INSTALL_MODE_EXPLICIT=1
                 ;;
             -h|--help)
                 usage
@@ -102,6 +109,22 @@ parse_args() {
                 ;;
         esac
         shift
+    done
+}
+
+select_install_mode() {
+    [ "$INSTALL_MODE_EXPLICIT" -eq 0 ] || return 0
+
+    printf '\nForkop Plus: install or uninstall?\n'
+    printf '  1) install\n  2) uninstall\n'
+    while :; do
+        printf 'Select [1/2]: '
+        read -r mode_answer || fail "No action selected. Use --install or --uninstall for non-interactive execution."
+        case "$mode_answer" in
+            1|install) INSTALL_MODE="full"; return 0 ;;
+            2|uninstall) INSTALL_MODE="uninstall"; return 0 ;;
+            *) warn "Enter 1 (install) or 2 (uninstall)." ;;
+        esac
     done
 }
 
@@ -1297,7 +1320,21 @@ function installer_prepare_full_suite() {
         }
     }
 
-    return installer_remove_selected_packages();
+    if (!installer_remove_selected_packages())
+        return false;
+
+    // A manually installed or interrupted-upgrade binary can survive without
+    // an APK owner. Unlink only this path, never its symlink target or configs.
+    let binary = env("FORKOP_INSTALLER_SING_BOX_BIN", "/usr/bin/sing-box");
+    if (fs.lstat(binary) != null && !fs.unlink(binary)) {
+        warn("Failed to remove the existing sing-box binary: " + binary + "\n");
+        return false;
+    }
+    if (fs.lstat(binary) != null) {
+        warn("The existing sing-box binary is still present: " + binary + "\n");
+        return false;
+    }
+    return true;
 }
 
 function installer_full_suite_plan(uninstall) {
@@ -1926,7 +1963,11 @@ install_full_suite() {
     download_full_suite
     FULL_REMOVE_PACKAGES="$(install_json_ucode installer-full-suite-plan)" ||
         fail "Failed to plan component replacement; installed services were not stopped"
-    if [ -z "$FULL_REMOVE_PACKAGES" ]; then
+    # An unregistered sing-box binary also needs replacement before measuring
+    # flash. Include dangling symlinks, which -e alone does not detect.
+    if [ -z "$FULL_REMOVE_PACKAGES" ] &&
+        [ ! -e "${FORKOP_INSTALLER_SING_BOX_BIN:-/usr/bin/sing-box}" ] &&
+        [ ! -L "${FORKOP_INSTALLER_SING_BOX_BIN:-/usr/bin/sing-box}" ]; then
         check_flash_space
     fi
     backup_full_suite_configuration
@@ -1971,7 +2012,7 @@ backup_full_suite_configuration() {
         # Preserve managed UCI configs even when APK removes an unmodified
         # conffile. Restore before the new package's migration/postinst runs.
         mkdir "$TMP_DIR/suite-configs" || exit 1
-        for config_name in forkop forkop_xray forkop_awg; do
+        for config_name in forkop forkop_xray forkop_awg sing-box; do
             [ ! -f "/etc/config/$config_name" ] ||
                 cp -p "/etc/config/$config_name" "$TMP_DIR/suite-configs/$config_name" || exit 1
         done
@@ -1981,7 +2022,7 @@ backup_full_suite_configuration() {
 }
 
 restore_full_suite_configuration() {
-    for config_name in forkop forkop_xray forkop_awg; do
+    for config_name in forkop forkop_xray forkop_awg sing-box; do
         [ ! -f "$TMP_DIR/suite-configs/$config_name" ] ||
             cp -p "$TMP_DIR/suite-configs/$config_name" "/etc/config/$config_name" ||
             fail "Failed to restore $config_name; backup: $FULL_BACKUP_DIR"
@@ -2382,6 +2423,7 @@ main() {
 
     parse_args "$@"
     check_root
+    select_install_mode
     init_tmp_dir
     if [ "$INSTALL_MODE" = "uninstall" ]; then
         uninstall_full_suite

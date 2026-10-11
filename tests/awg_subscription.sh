@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-lib="$root/forkop/files/usr/lib"
+lib="$root/anticheburnet/files/usr/lib"
 component="$root/components/awg/files/usr/lib"
-parser="$component/forkop-components/awg-subscription.uc"
+parser="$component/anticheburnet-components/awg-subscription.uc"
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 python3 - "$work" <<'PY'
@@ -48,14 +48,14 @@ bad=json.loads(json.dumps(node));bad['amnezia']['i1']='hello\nPreUp = malicious'
 (p/'absent').write_text('hy2://pw@example.com:443#no-awg')
 (p/'headers').write_text('Routing: happ://routing/onadd/'+base64.b64encode(json.dumps({'DirectSites':['domain:example.ru']}).encode()).decode())
 PY
-uc() { ucode -L "$lib" -L "$component/forkop-components" "$parser" "$@"; }
+uc() { ucode -L "$lib" -L "$component/anticheburnet-components" "$parser" "$@"; }
 for format in native base64 mihomo yaml; do
   uc list "$work/$format" | grep -Fq 'AWG #1'
   uc extract "$work/$format" "$work/$format.conf" 'AWG #1' "$work/headers"
   grep -Fqx 'HeaderProtectionKey = AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=' "$work/$format.conf"
   grep -Fqx 'RandomTrailers = on' "$work/$format.conf"
   grep -Fqx 'DisableCookies = on' "$work/$format.conf"
-  grep -Fq '# Forkop-Happ-Routing = ' "$work/$format.conf"
+  grep -Fq '# AnticheburNET-Happ-Routing = ' "$work/$format.conf"
   [[ $(stat -c '%a' "$work/$format.conf") == 600 ]]
 done
 uc extract "$work/native.conf" "$work/ini.conf" AmneziaWG
@@ -69,8 +69,8 @@ if uc url 'file:///etc/shadow' 2>/dev/null; then exit 1; fi
 cat > "$work/fixture" <<'JSON'
 {"settings":{".name":"settings",".type":"settings","dns_server":"1.1.1.1"},"section":[{".name":"awg_policy",".type":"section","enabled":"1","action":"connection","interfaces":["awg0"]}]}
 JSON
-printf '%s\n' 'forkop_awg.settings=settings' 'forkop_awg.settings.interface=awg0' "forkop_awg.settings.config_file=$work/native.conf" > "$work/uci-state"
-FORKOP_UCI_STATE_FILE="$work/uci-state" ucode -L "$lib" "$lib/singbox/generator.uc" generate-config-fixture "$work/fixture" "$work/generated" 127.0.0.1 0 true '' 1.14.1
+printf '%s\n' 'anticheburnet_awg.settings=settings' 'anticheburnet_awg.settings.interface=awg0' "anticheburnet_awg.settings.config_file=$work/native.conf" > "$work/uci-state"
+ANTICHEBURNET_UCI_STATE_FILE="$work/uci-state" ucode -L "$lib" "$lib/singbox/generator.uc" generate-config-fixture "$work/fixture" "$work/generated" 127.0.0.1 0 true '' 1.14.1
 python3 - "$work/generated" <<'PY'
 import json,sys
 c=json.load(open(sys.argv[1]));assert any(o.get('bind_interface')=='awg0' for o in c['outbounds'])

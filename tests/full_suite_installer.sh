@@ -15,12 +15,12 @@ eval "$(declare -f check_system | sed '1s/check_system/real_check_system/; s|/et
 eval "$(declare -f check_flash_space | sed '1s/check_flash_space/real_check_flash_space/')"
 mkdir -p "$WORK_DIR/fixtures" "$WORK_DIR/bin"
 names=(
-  forkop_1.0.1.apk
-  luci-app-forkop_1.0.1.apk
-  luci-i18n-forkop-ru_1.0.1.apk
-  sing-box-extended_1.14.1-extended-2.7.2-forkop.1_openwrt_aarch64_cortex-a53.apk
-  forkop-xray_26.10.10-r1_aarch64_cortex-a53.apk
-  forkop-amneziawg_3.1.20260828-r2_aarch64_cortex-a53.apk
+  anticheburnet_1.0.1.apk
+  luci-app-anticheburnet_1.0.1.apk
+  luci-i18n-anticheburnet-ru_1.0.1.apk
+  sing-box-extended_1.14.1-extended-2.7.2-anticheburnet.1_openwrt_aarch64_cortex-a53.apk
+  anticheburnet-xray_26.10.10-r1_aarch64_cortex-a53.apk
+  anticheburnet-amneziawg_3.1.20260828-r2_aarch64_cortex-a53.apk
 )
 for name in "${names[@]}"; do
   printf 'fixture: %s\n' "$name" > "$WORK_DIR/fixtures/$name"
@@ -63,7 +63,7 @@ chmod +x "$WORK_DIR/bin/apk"
 export PATH="$WORK_DIR/bin:$PATH"
 export TEST_LOG="$WORK_DIR/actions"
 export TEST_REMOVED_FILE="$WORK_DIR/removed"
-export FORKOP_INSTALLER_SING_BOX_BIN="$WORK_DIR/sing-box-binary"
+export ANTICHEBURNET_INSTALLER_SING_BOX_BIN="$WORK_DIR/sing-box-binary"
 PKG_IS_APK=1
 
 # Replace only router/network boundaries; retain argument parsing, release
@@ -107,11 +107,11 @@ install_json_ucode() {
         checksums) name=SHA256SUMS ;;
         *) return 1 ;;
       esac
-      printf 'https://github.com/m-bezrukoff/forkop-plus/releases/download/1.0.1/%s\n' "$name"
+      printf 'https://github.com/m-bezrukoff/AnticheburNET/releases/download/1.0.1/%s\n' "$name"
       ;;
     installer-cleanup-legacy)
       printf 'cleanup\n' >> "$TEST_LOG"
-      printf 'FORKOP_WAS_ENABLED=0\nFORKOP_WAS_RUNNING=0\nFORKOP_LEGACY_DETECTED=0\n'
+      printf 'ANTICHEBURNET_WAS_ENABLED=0\nANTICHEBURNET_WAS_RUNNING=0\nANTICHEBURNET_LEGACY_DETECTED=0\n'
       ;;
     installer-full-suite-plan)
       [ "${TEST_PLAN_STATUS:-0}" -eq 0 ] || return 1
@@ -121,14 +121,17 @@ install_json_ucode() {
       printf 'prepare\n' >> "$TEST_LOG"
       return "${TEST_PREPARE_STATUS:-0}"
       ;;
-    installer-post-install) printf 'post\n' >> "$TEST_LOG" ;;
+    installer-post-install)
+      printf 'post\n' >> "$TEST_LOG"
+      printf '%s\n' "$ANTICHEBURNET_INSTALLER_LANG" > "$WORK_DIR/language"
+      ;;
     *) return 1 ;;
   esac
 }
 download_with_retry() { cp "$WORK_DIR/fixtures/$(basename "$1")" "$2"; }
 # Used by migrate_legacy_configuration() from the sourced installer.
 # shellcheck disable=SC2034
-detect_legacy_installation() { FORKOP_LEGACY_DETECTED=0; }
+detect_legacy_installation() { ANTICHEBURNET_LEGACY_DETECTED=0; }
 
 run_installer() {
   : > "$TEST_LOG"
@@ -142,7 +145,7 @@ assert_no_replacement() {
 }
 
 run_installer < /dev/null || { cat "$WORK_DIR/output"; fail 'complete installation failed'; }
-grep -Fq 'Forkop Plus 1.0.1:' "$WORK_DIR/output" || fail 'missing installation result'
+grep -Fq 'AnticheburNET 1.0.1:' "$WORK_DIR/output" || fail 'missing installation result'
 [[ "$(grep -c '^apk add --allow-untrusted ' "$TEST_LOG")" = 1 ]] || fail 'suite must use one apk transaction'
 grep -Fxq 'apk add ucode ucode-mod-fs ucode-mod-uci' "$TEST_LOG" ||
   fail 'installer runtime must be retained with OpenWrt-compatible apk options'
@@ -154,6 +157,11 @@ done
    "$(sed -n '8p' "$TEST_LOG")" = flash &&
    "$(tail -n 1 "$TEST_LOG")" = post ]] || fail 'incorrect install ordering'
 [[ ! -d "$WORK_DIR/downloads" ]] || fail 'temporary downloads were not removed'
+[[ "$(cat "$WORK_DIR/language")" = en ]] || fail 'default English was not passed to post-install'
+grep -Fq 'LuCI (en)' "$WORK_DIR/output" || fail 'result must report English'
+run_installer <<< '2' || fail 'Russian installation failed'
+[[ "$(cat "$WORK_DIR/language")" = ru ]] || fail 'Russian was not passed to post-install'
+grep -Fq 'LuCI (ru)' "$WORK_DIR/output" || fail 'result must report Russian'
 
 printf 'corrupted\n' >> "$WORK_DIR/fixtures/${names[4]}"
 if run_installer; then fail 'corrupted Xray APK was accepted'; fi
@@ -208,7 +216,7 @@ if grep -Eq '^backup' "$TEST_LOG"; then fail 'fresh install backed up configurat
 unset TEST_PLAN TEST_FLASH_STATUS
 # Orphaned/manual sing-box must bypass the fresh-install flash check and reach
 # replacement before the authoritative post-removal check, even without APKs.
-printf 'old binary\n' > "$FORKOP_INSTALLER_SING_BOX_BIN"
+printf 'old binary\n' > "$ANTICHEBURNET_INSTALLER_SING_BOX_BIN"
 export TEST_PLAN=''
 run_installer || { cat "$WORK_DIR/output"; fail 'orphaned sing-box blocked installation'; }
 [[ "$(grep -c '^flash$' "$TEST_LOG")" = 1 ]] || fail 'orphaned binary checked flash before replacement'
@@ -218,16 +226,16 @@ export TEST_FLASH_STATUS=1
 if run_installer; then fail 'orphan replacement accepted insufficient remaining flash'; fi
 grep -Fxq prepare "$TEST_LOG" || fail 'orphaned binary prevented replacement at low flash'
 if grep -Eq '^(apk add --allow-untrusted|post)' "$TEST_LOG"; then fail 'orphan replacement bypassed final flash check'; fi
-rm "$FORKOP_INSTALLER_SING_BOX_BIN"
+rm "$ANTICHEBURNET_INSTALLER_SING_BOX_BIN"
 unset TEST_FLASH_STATUS
-if ln -s "$WORK_DIR/missing-binary" "$FORKOP_INSTALLER_SING_BOX_BIN" 2>/dev/null &&
-   [[ -L "$FORKOP_INSTALLER_SING_BOX_BIN" ]]; then
+if ln -s "$WORK_DIR/missing-binary" "$ANTICHEBURNET_INSTALLER_SING_BOX_BIN" 2>/dev/null &&
+   [[ -L "$ANTICHEBURNET_INSTALLER_SING_BOX_BIN" ]]; then
   run_installer || fail 'dangling sing-box symlink blocked replacement'
   [[ "$(grep -c '^flash$' "$TEST_LOG")" = 1 ]] || fail 'dangling symlink used fresh-install flash check'
 else
   printf 'SKIP: dangling symlink fixture (unsupported on this host)\n'
 fi
-rm -f "$FORKOP_INSTALLER_SING_BOX_BIN"
+rm -f "$ANTICHEBURNET_INSTALLER_SING_BOX_BIN"
 unset TEST_PLAN
 export TEST_BACKUP_STATUS=1
 if run_installer; then fail 'failed configuration backup was accepted'; fi
@@ -331,33 +339,33 @@ printf 'sing-box-%s\n' "$1" >> "$TEST_LOG"
 exit "${TEST_STOP_STATUS:-0}"
 SH
   chmod +x "$WORK_DIR/sing-box-init"
-  export FORKOP_INSTALLER_SING_BOX_INIT="$WORK_DIR/sing-box-init"
-  export FORKOP_INSTALLER_DEADLINE_HELPER
-  FORKOP_INSTALLER_DEADLINE_HELPER="$(install_deadline_helper_path)"
-  export FORKOP_INSTALLER_COMMAND_RESULT="$WORK_DIR/command"
+  export ANTICHEBURNET_INSTALLER_SING_BOX_INIT="$WORK_DIR/sing-box-init"
+  export ANTICHEBURNET_INSTALLER_DEADLINE_HELPER
+  ANTICHEBURNET_INSTALLER_DEADLINE_HELPER="$(install_deadline_helper_path)"
+  export ANTICHEBURNET_INSTALLER_COMMAND_RESULT="$WORK_DIR/command"
   export TEST_INSTALLED='sing-box sing-box-tiny'
-  export FORKOP_INSTALLER_REMOVE_PACKAGES='sing-box sing-box-tiny'
+  export ANTICHEBURNET_INSTALLER_REMOVE_PACKAGES='sing-box sing-box-tiny'
   : > "$TEST_LOG"
   : > "$TEST_REMOVED_FILE"
-  printf 'old binary\n' > "$FORKOP_INSTALLER_SING_BOX_BIN"
+  printf 'old binary\n' > "$ANTICHEBURNET_INSTALLER_SING_BOX_BIN"
   ucode "$helper" installer-prepare-full-suite || fail 'real component preparation failed'
   [[ "$(cat "$TEST_LOG")" = $'sing-box-stop\ndel sing-box sing-box-tiny' ]] || fail 'incorrect component preparation actions'
-  [[ ! -e "$FORKOP_INSTALLER_SING_BOX_BIN" ]] || fail 'existing sing-box binary survived replacement'
+  [[ ! -e "$ANTICHEBURNET_INSTALLER_SING_BOX_BIN" ]] || fail 'existing sing-box binary survived replacement'
   : > "$TEST_LOG"
   export TEST_STOP_STATUS=1
-  printf 'old binary\n' > "$FORKOP_INSTALLER_SING_BOX_BIN"
+  printf 'old binary\n' > "$ANTICHEBURNET_INSTALLER_SING_BOX_BIN"
   if ucode "$helper" installer-prepare-full-suite; then fail 'failed sing-box stop accepted'; fi
   [[ "$(cat "$TEST_LOG")" = sing-box-stop ]] || fail 'packages removed after stop failure'
-  [[ -s "$FORKOP_INSTALLER_SING_BOX_BIN" ]] || fail 'binary removed after stop failure'
+  [[ -s "$ANTICHEBURNET_INSTALLER_SING_BOX_BIN" ]] || fail 'binary removed after stop failure'
   unset TEST_STOP_STATUS
   export TEST_DELETE_STATUS=1
   : > "$TEST_REMOVED_FILE"
   if ucode "$helper" installer-prepare-full-suite; then fail 'failed package removal accepted'; fi
-  [[ -s "$FORKOP_INSTALLER_SING_BOX_BIN" ]] || fail 'binary removed after package removal failure'
+  [[ -s "$ANTICHEBURNET_INSTALLER_SING_BOX_BIN" ]] || fail 'binary removed after package removal failure'
   unset TEST_DELETE_STATUS
-  export TEST_INSTALLED='sing-box sing-box-tiny forkop unrelated-app'
+  export TEST_INSTALLED='sing-box sing-box-tiny anticheburnet unrelated-app'
   : > "$TEST_REMOVED_FILE"
-  [[ "$(ucode "$helper" installer-full-suite-plan)" = $'sing-box\nsing-box-tiny\nforkop' ]] ||
+  [[ "$(ucode "$helper" installer-full-suite-plan)" = $'sing-box\nsing-box-tiny\nanticheburnet' ]] ||
     fail 'replacement plan selected unrelated packages or missed managed packages'
   export TEST_RDEPENDENCIES='unrelated-app-1.0-r1'
   : > "$TEST_LOG"

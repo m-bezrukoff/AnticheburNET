@@ -1,0 +1,85 @@
+{
+  "luci-app-anticheburnet": {
+    "description": "Grant UCI and RPC access to LuCI app AnticheburNET",
+    "read": {
+      "file": {
+        "/etc/init.d/anticheburnet": [
+          "exec"
+        ],
+        "/var/run/anticheburnet/section-cache/*": [
+          "read"
+        ],
+        "/tmp/run/anticheburnet/section-cache/*": [
+          "read"
+        ],
+        "/var/run/anticheburnet/component-actions/*": [
+          "read"
+        ],
+        "/tmp/run/anticheburnet/component-actions/*": [
+          "read"
+        ],
+        "/var/run/anticheburnet/ui-state/*": [
+          "read"
+        ],
+        "/tmp/run/anticheburnet/ui-state/*": [
+          "read"
+        ],
+        "/var/run/anticheburnet/ui-state/service-actions/*": [
+          "read"
+        ],
+        "/tmp/run/anticheburnet/ui-state/service-actions/*": [
+          "read"
+        ],
+        "/var/run/anticheburnet/ui-state/latency-actions/*": [
+          "read"
+        ],
+        "/tmp/run/anticheburnet/ui-state/latency-actions/*": [
+          "read"
+        ],
+        "/usr/bin/anticheburnet": [
+          "exec"
+        ]
+      },
+      "ubus": {
+        "luci-rpc": [
+          "getDHCPLeases",
+          "getHostHints"
+        ],
+        "network.interface": [
+          "dump"
+        ],
+        "service": [
+          "list"
+        ]
+      },
+      "uci": [
+        "anticheburnet"
+      ]
+    },
+    "write": {
+      "file": {
+        "/var/run/anticheburnet/ui-state/*": [
+          "write"
+        ],
+        "/tmp/run/anticheburnet/ui-state/*": [
+          "write"
+        ],
+        "/var/run/anticheburnet/ui-state/service-actions/*": [
+          "write"
+        ],
+        "/tmp/run/anticheburnet/ui-state/service-actions/*": [
+          "write"
+        ],
+        "/var/run/anticheburnet/ui-state/latency-actions/*": [
+          "write"
+        ],
+        "/tmp/run/anticheburnet/ui-state/latency-actions/*": [
+          "write"
+        ]
+      },
+      "uci": [
+        "anticheburnet"
+      ]
+    }
+  }
+}

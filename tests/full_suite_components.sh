@@ -17,4 +17,4 @@ awk '
 cat "$ROOT_DIR/tests/full_suite_components.uc" >> "$WORK_DIR/helper.uc"
 ucode -c -o /dev/null "$WORK_DIR/helper.uc"
 ucode -S -c -o /dev/null "$WORK_DIR/helper.uc"
-FORKOP_TEST_DIR="$WORK_DIR" ucode "$WORK_DIR/helper.uc"
+ANTICHEBURNET_TEST_DIR="$WORK_DIR" ucode "$WORK_DIR/helper.uc"

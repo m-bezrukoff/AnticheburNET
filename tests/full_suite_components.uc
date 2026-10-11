@@ -1,7 +1,7 @@
 // Appended to the production helper before its CLI dispatcher.
-let test_root = getenv("FORKOP_TEST_DIR");
+let test_root = getenv("ANTICHEBURNET_TEST_DIR");
 if (!test_root || substr(test_root, 0, 5) != "/tmp/")
-    die("FORKOP_TEST_DIR must be an isolated /tmp directory");
+    die("ANTICHEBURNET_TEST_DIR must be an isolated /tmp directory");
 let test_binary = test_root + "/sing-box";
 let test_target = test_root + "/target";
 let test_config = test_root + "/config";
@@ -16,7 +16,7 @@ function write_fixture(path) {
     handle.close();
 }
 env = function(name, fallback) {
-    return name == "FORKOP_INSTALLER_SING_BOX_BIN" ? test_binary : fallback;
+    return name == "ANTICHEBURNET_INSTALLER_SING_BOX_BIN" ? test_binary : fallback;
 };
 path_executable = function(path) { return path == "/etc/init.d/sing-box"; };
 installer_command_result = function(args, seconds) {

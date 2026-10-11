@@ -29,10 +29,10 @@ install_json_ucode() {
     installer-uninstall-plan)
       printf 'plan\n' >> "$TEST_LOG"
       [ "${TEST_PLAN_STATUS:-0}" -eq 0 ] || return 1
-      printf '%s\n' "${TEST_PLAN-forkop luci-app-forkop sing-box-extended forkop-xray forkop-amneziawg}"
+      printf '%s\n' "${TEST_PLAN-anticheburnet luci-app-anticheburnet sing-box-extended anticheburnet-xray anticheburnet-amneziawg}"
       ;;
     installer-uninstall-suite)
-      [[ "$FORKOP_INSTALLER_REMOVE_PACKAGES" = "$FULL_REMOVE_PACKAGES" ]] || return 1
+      [[ "$ANTICHEBURNET_INSTALLER_REMOVE_PACKAGES" = "$FULL_REMOVE_PACKAGES" ]] || return 1
       printf 'uninstall\n' >> "$TEST_LOG"
       return "${TEST_UNINSTALL_STATUS:-0}"
       ;;
@@ -46,7 +46,7 @@ run_uninstaller() {
 
 run_uninstaller --uninstall || { cat "$WORK_DIR/output"; fail 'uninstallation failed'; }
 [[ "$(cat "$TEST_LOG")" = $'plan\nbackup\nuninstall' ]] || fail 'incorrect uninstall ordering'
-grep -Fq 'Forkop Plus uninstalled.' "$WORK_DIR/output" || fail 'missing completion message'
+grep -Fq 'AnticheburNET uninstalled.' "$WORK_DIR/output" || fail 'missing completion message'
 [[ ! -d "$WORK_DIR/temporary" ]] || fail 'temporary files not cleaned after success'
 
 TEST_PLAN='' run_uninstaller --uninstall || fail 'repeated uninstall failed'

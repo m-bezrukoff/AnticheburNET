@@ -3,7 +3,7 @@
 set -euo pipefail
 work="$1"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-lib="$root/forkop/files/usr/lib"
+lib="$root/anticheburnet/files/usr/lib"
 test_dir=$(mktemp -d)
 pids=()
 cleanup() {

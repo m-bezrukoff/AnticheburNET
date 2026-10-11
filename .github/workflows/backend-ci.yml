@@ -3,8 +3,8 @@ name: Backend CI
 on:
   pull_request:
     paths:
-      - 'forkop/files/**'
-      - 'forkop/Makefile'
+      - 'anticheburnet/files/**'
+      - 'anticheburnet/Makefile'
       - 'build.sh'
       - 'install.sh'
       - 'tests/**'
@@ -14,8 +14,8 @@ on:
     branches:
       - main
     paths:
-      - 'forkop/files/**'
-      - 'forkop/Makefile'
+      - 'anticheburnet/files/**'
+      - 'anticheburnet/Makefile'
       - 'build.sh'
       - 'install.sh'
       - 'tests/**'
@@ -33,7 +33,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Fetch historical contract baseline
-        run: git fetch --no-tags https://github.com/ushan0v/forkop.git refs/tags/0.7.19.9:refs/tags/0.7.19.9
+        run: git fetch --no-tags https://github.com/m-bezrukoff/AnticheburNET.git refs/tags/0.7.19.9:refs/tags/0.7.19.9
 
       - name: Build ucode
         shell: bash
@@ -54,8 +54,8 @@ jobs:
       - name: Check ucode syntax
         shell: bash
         run: |
-          find forkop/files/usr/lib -name '*.uc' -print0 | xargs -0 -n1 ucode -c -o /dev/null
-          find forkop/files/usr/lib -name '*.uc' -print0 | xargs -0 -n1 ucode -S -c -o /dev/null
+          find anticheburnet/files/usr/lib -name '*.uc' -print0 | xargs -0 -n1 ucode -c -o /dev/null
+          find anticheburnet/files/usr/lib -name '*.uc' -print0 | xargs -0 -n1 ucode -S -c -o /dev/null
 
       - name: Run backend tests
         shell: bash

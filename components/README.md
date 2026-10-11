@@ -1,7 +1,7 @@
-# Forkop Plus components
+# AnticheburNET components
 
 Target: OpenWrt 25.12, mediatek/filogic, aarch64_cortex-a53 (Redmi AX6000).
-The component build and services are separate from the architecture-independent Forkop backend.
+The component build and services are separate from the architecture-independent AnticheburNET backend.
 
 For installation on the router, run the single SSH command in
 [the AX6000 guide](../docs/REDMI-AX6000.md#установка). It downloads all six release APKs
@@ -24,7 +24,14 @@ keeps the expanded files in `/var/run` (RAM), leaving only the archive on flash.
 Go inputs use `go.sum`; the SDK and official Xray archive are checked against SHA256.
 UPX 5.2.1 is pinned and verified too. It packs the three Go executables to fit the
 AX6000 NAND budget; `upx -t` and all QEMU protocol tests run on the packed executables.
-sing-box and AWG are built from the exact commits below. There are no hidden binary patches.
+sing-box and AWG are built from the exact commits below. The sing-box build applies
+the reviewed source patch `patches/utls-modern-browser-presets.patch` to a private
+copy of metacubex/uTLS 1.8.7; the Go module cache remains unchanged. Firefox 148,
+Safari 26.3 and Firefox hybrid/classical key reuse are backported from
+[the uTLS revision used by Xray 26.10.10](https://github.com/refraction-networking/utls/tree/aa6edf4b11af).
+Subscription fingerprints remain unchanged. The patch updates the browser presets
+behind `firefox` and `safari`, so their REALITY handshakes include X25519MLKEM768.
+The source build tests the actual generated key shares before compiling the core.
 
 Corresponding upstream source and licenses:
 

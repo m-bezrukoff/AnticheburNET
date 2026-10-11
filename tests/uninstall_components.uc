@@ -58,19 +58,19 @@ remove_path = function(path) { push(test_calls, "cleanup " + path); return true;
 remove_globs = function(patterns) { push(test_calls, "cleanup-cache"); return true; };
 
 test_packages = [ "sing-box-extended", "nextdns", "luci-app-passwall", "libc" ];
-check(installer_full_suite_plan(true), "no-Forkop uninstall plan failed");
-check(length(test_calls) == 0, "uninstall selected standalone VPN packages without Forkop");
+check(installer_full_suite_plan(true), "no-AnticheburNET uninstall plan failed");
+check(length(test_calls) == 0, "uninstall selected standalone VPN packages without AnticheburNET");
 
-test_packages = [ "forkop", "forkop-xray", "forkop-amneziawg", "luci-app-forkop", "luci-i18n-forkop-ru", "sing-box-extended", "nextdns", "luci-app-passwall", "another-app", "libc" ];
+test_packages = [ "anticheburnet", "anticheburnet-xray", "anticheburnet-amneziawg", "luci-app-anticheburnet", "luci-i18n-anticheburnet-ru", "sing-box-extended", "nextdns", "luci-app-passwall", "another-app", "libc" ];
 test_reverse = "another-app-1.0-r1";
-check(installer_full_suite_plan(true), "shared sing-box prevented uninstalling Forkop");
-check(join(" ", test_plan) == "forkop forkop-xray forkop-amneziawg luci-app-forkop luci-i18n-forkop-ru", "uninstall plan selected shared or unrelated packages");
-test_reverse_package = "forkop";
+check(installer_full_suite_plan(true), "shared sing-box prevented uninstalling AnticheburNET");
+check(join(" ", test_plan) == "anticheburnet anticheburnet-xray anticheburnet-amneziawg luci-app-anticheburnet luci-i18n-anticheburnet-ru", "uninstall plan selected shared or unrelated packages");
+test_reverse_package = "anticheburnet";
 test_calls = [];
-check(!installer_full_suite_plan(true), "external dependency on Forkop accepted");
+check(!installer_full_suite_plan(true), "external dependency on AnticheburNET accepted");
 check(index(join(" ", test_calls), "apk del") < 0, "external dependency rejection changed packages");
 test_reverse_package = "sing-box-extended";
-test_environment.FORKOP_INSTALLER_REMOVE_PACKAGES = join(" ", test_plan);
+test_environment.ANTICHEBURNET_INSTALLER_REMOVE_PACKAGES = join(" ", test_plan);
 
 test_calls = [];
 test_stop_status = 1;
@@ -93,7 +93,7 @@ check(installer_uninstall_suite(), "component uninstall failed");
 check(join(" ", test_packages) == "sing-box-extended nextdns luci-app-passwall another-app libc", "shared or unrelated packages removed");
 check(index(join(" ", test_calls), "/etc/init.d/sing-box stop") < 0, "shared sing-box stopped");
 check(index(join(" ", test_calls), "/etc/init.d/nextdns") < 0, "unrelated DNS service stopped");
-check(index(join(" ", test_calls), "cleanup /etc/config/forkop") >= 0, "Forkop settings not cleaned");
+check(index(join(" ", test_calls), "cleanup /etc/config/anticheburnet") >= 0, "AnticheburNET settings not cleaned");
 check(index(join(" ", test_calls), "/etc/sing-box") < 0, "shared sing-box settings changed");
 check(index(join(" ", test_calls), "/etc/init.d/rpcd reload") >= 0, "LuCI cache not refreshed");
 print("Embedded ucode uninstall checks passed\n");

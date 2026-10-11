@@ -3,10 +3,10 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
-export FORKOP_LIB="$root/forkop/files/usr/lib"
-uc() { ucode -L "$FORKOP_LIB" "$@"; }
-xray="$root/components/xray/files/usr/lib/forkop-components/xray.uc"
-awg="$root/components/awg/files/usr/lib/forkop-components/awg.uc"
+export ANTICHEBURNET_LIB="$root/anticheburnet/files/usr/lib"
+uc() { ucode -L "$ANTICHEBURNET_LIB" "$@"; }
+xray="$root/components/xray/files/usr/lib/anticheburnet-components/xray.uc"
+awg="$root/components/awg/files/usr/lib/anticheburnet-components/awg.uc"
 cat > "$work/native.json" <<'JSON'
 {"outbounds":[{"protocol":"vless","settings":{"vnext":[{"address":"example.com","port":443,"users":[{"id":"00000000-0000-4000-8000-000000000001","encryption":"none"}]}]},"streamSettings":{"network":"xhttp","xhttpSettings":{"mode":"auto","extra":{"scMaxEachPostBytes":1000000}},"sockopt":{"tcpFastOpen":true}}}]}
 JSON

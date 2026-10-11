@@ -2,15 +2,15 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FORKOP_LIB="$ROOT_DIR/forkop/files/usr/lib"
-STATE_UC="$ROOT_DIR/forkop/files/usr/lib/service/state.uc"
-NFT_UC="$ROOT_DIR/forkop/files/usr/lib/nft/apply.uc"
+ANTICHEBURNET_LIB="$ROOT_DIR/anticheburnet/files/usr/lib"
+STATE_UC="$ROOT_DIR/anticheburnet/files/usr/lib/service/state.uc"
+NFT_UC="$ROOT_DIR/anticheburnet/files/usr/lib/nft/apply.uc"
 UCODE_BIN="$(command -v ucode)"
 WORK_DIR="$(mktemp -d)"
 export ZAPRET_DEFAULT_NFQWS_OPT="--default-zapret"
 export ZAPRET2_DEFAULT_NFQWS2_OPT="--default-zapret2"
 export BYEDPI_DEFAULT_CMD_OPTS="--default-bye"
-export FORKOP_FAKE_INIT_CAPTURE="$WORK_DIR/pending-reload-init.args"
+export ANTICHEBURNET_FAKE_INIT_CAPTURE="$WORK_DIR/pending-reload-init.args"
 
 cleanup() {
   rm -rf "$WORK_DIR"
@@ -35,11 +35,11 @@ md5_file() {
 }
 
 state_ucode() {
-  ucode -L "$FORKOP_LIB" "$STATE_UC" "$@"
+  ucode -L "$ANTICHEBURNET_LIB" "$STATE_UC" "$@"
 }
 
 nft_ucode() {
-  ucode -L "$FORKOP_LIB" "$NFT_UC" "$@"
+  ucode -L "$ANTICHEBURNET_LIB" "$NFT_UC" "$@"
 }
 
 state_ucode list-has-remote-references "local.lst https://example.com/list.txt" >/dev/null ||
@@ -197,17 +197,17 @@ if ! PATH="$WORK_DIR/stable-start-bin:$PATH" \
   REAL_UCODE="$UCODE_BIN" \
   SING_BOX_TEST_PID_FILE="$WORK_DIR/sing-box.pid" \
   SING_BOX_TEST_NETSTAT_FILE="$WORK_DIR/sing-box.netstat" \
-  state_ucode forkop-running forkop ForkopTable 0x00100000; then
+  state_ucode anticheburnet-running anticheburnet AnticheburNETTable 0x00100000; then
   kill "$sing_box_pid" >/dev/null 2>&1 || true
   wait "$sing_box_pid" 2>/dev/null || true
-  fail "stable-start fixture must expose configured Forkop networking"
+  fail "stable-start fixture must expose configured AnticheburNET networking"
 fi
 sed '/127.0.0.42:53/d' "$WORK_DIR/sing-box.netstat" >"$WORK_DIR/sing-box.no-dns.netstat"
 if PATH="$WORK_DIR/stable-start-bin:$PATH" \
   REAL_UCODE="$UCODE_BIN" \
   SING_BOX_TEST_PID_FILE="$WORK_DIR/sing-box.pid" \
   SING_BOX_TEST_NETSTAT_FILE="$WORK_DIR/sing-box.no-dns.netstat" \
-  state_ucode forkop-running forkop ForkopTable 0x00100000 >/dev/null 2>&1; then
+  state_ucode anticheburnet-running anticheburnet AnticheburNETTable 0x00100000 >/dev/null 2>&1; then
   kill "$sing_box_pid" >/dev/null 2>&1 || true
   wait "$sing_box_pid" 2>/dev/null || true
   fail "runtime state must reject sing-box without the DNS inbound"
@@ -216,7 +216,7 @@ if ! PATH="$WORK_DIR/stable-start-bin:$PATH" \
   REAL_UCODE="$UCODE_BIN" \
   SING_BOX_TEST_PID_FILE="$WORK_DIR/sing-box.pid" \
   SING_BOX_TEST_NETSTAT_FILE="$WORK_DIR/sing-box.netstat" \
-  state_ucode wait-forkop-stable-start forkop ForkopTable 0x00100000 2 2; then
+  state_ucode wait-anticheburnet-stable-start anticheburnet AnticheburNETTable 0x00100000 2 2; then
   kill "$sing_box_pid" >/dev/null 2>&1 || true
   wait "$sing_box_pid" 2>/dev/null || true
   fail "stable-start wait must check runtime state after its final sleep"
@@ -242,17 +242,17 @@ fi
 
 cat >"$WORK_DIR/fake-init" <<'SH'
 #!/bin/sh
-printf '%s\n' "$1" >"$FORKOP_FAKE_INIT_CAPTURE"
+printf '%s\n' "$1" >"$ANTICHEBURNET_FAKE_INIT_CAPTURE"
 SH
 chmod +x "$WORK_DIR/fake-init"
 state_ucode mark-pending-reload "$PENDING_RELOAD_FILE" "reload_busy"
 state_ucode run-pending-reload-if-requested "$PENDING_RELOAD_FILE" "$WORK_DIR/fake-init"
 for _ in $(seq 1 20); do
-  [ -s "$FORKOP_FAKE_INIT_CAPTURE" ] && break
+  [ -s "$ANTICHEBURNET_FAKE_INIT_CAPTURE" ] && break
   sleep 0.1
 done
 assert_eq "reload" \
-  "$(cat "$FORKOP_FAKE_INIT_CAPTURE")" \
+  "$(cat "$ANTICHEBURNET_FAKE_INIT_CAPTURE")" \
   "pending reload should invoke init.d reload"
 [ ! -e "$PENDING_RELOAD_FILE" ] ||
   fail "pending reload should be consumed when worker is started"
@@ -319,9 +319,9 @@ cat >"$WORK_DIR/service-dns-state.json" <<'JSON'
     "server": [ "1.1.1.1#53", "8.8.8.8" ],
     "noresolv": "1",
     "cachesize": "0",
-    "forkop_server": [ "127.0.0.42#53" ],
-    "forkop_noresolv": "0",
-    "forkop_cachesize": "1500"
+    "anticheburnet_server": [ "127.0.0.42#53" ],
+    "anticheburnet_noresolv": "0",
+    "anticheburnet_cachesize": "1500"
   },
   "legacy_dnsmasq_present": true
 }
@@ -345,13 +345,13 @@ cat >"$WORK_DIR/dnsmasq-signature.expected" <<'EOF_DNSMASQ_SIG'
 1
 [dhcp.@dnsmasq[0].cachesize]
 0
-[dhcp.@dnsmasq[0].forkop_server]
+[dhcp.@dnsmasq[0].anticheburnet_server]
 127.0.0.42#53
-[dhcp.@dnsmasq[0].forkop_noresolv]
+[dhcp.@dnsmasq[0].anticheburnet_noresolv]
 0
-[dhcp.@dnsmasq[0].forkop_cachesize]
+[dhcp.@dnsmasq[0].anticheburnet_cachesize]
 1500
-[dhcp.forkop.present]
+[dhcp.anticheburnet.present]
 1
 EOF_DNSMASQ_SIG
 

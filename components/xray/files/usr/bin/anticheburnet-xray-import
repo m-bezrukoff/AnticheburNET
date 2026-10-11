@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+XRAY_LOCATION_ASSET=$(/usr/bin/anticheburnet-xray-assets)
+export XRAY_LOCATION_ASSET
+umask 077
+[ "$#" -eq 1 ] || { echo 'Usage: anticheburnet-xray-import native-xray.json' >&2; exit 2; }
+mkdir -p /etc/anticheburnet/xray
+candidate=$(mktemp /etc/anticheburnet/xray/.config.XXXXXX)
+trap 'rm -f "$candidate"' EXIT
+ucode -L /usr/lib/anticheburnet /usr/lib/anticheburnet-components/xray.uc prepare "$1" "$candidate"
+/usr/bin/xray run -test -config "$candidate" >/dev/null
+mv "$candidate" /etc/anticheburnet/xray/config.json
+echo 'Imported. Enable anticheburnet_xray.settings.enabled and start /etc/init.d/anticheburnet-xray.'

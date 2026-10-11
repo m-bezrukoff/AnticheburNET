@@ -2,8 +2,8 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FORKOP_LIB="$ROOT_DIR/forkop/files/usr/lib"
-GENERATOR="$FORKOP_LIB/singbox/generator.uc"
+ANTICHEBURNET_LIB="$ROOT_DIR/anticheburnet/files/usr/lib"
+GENERATOR="$ANTICHEBURNET_LIB/singbox/generator.uc"
 WORK_DIR="$(mktemp -d)"
 
 cleanup() {
@@ -43,7 +43,7 @@ generate_for_version() {
   local version="$1"
   local output="$2"
   mkdir -p "$output.section-cache" "$output.rulesets"
-  ucode -L "$FORKOP_LIB" "$GENERATOR" generate-config-fixture \
+  ucode -L "$ANTICHEBURNET_LIB" "$GENERATOR" generate-config-fixture \
     "$WORK_DIR/fixture.json" "$output" "127.0.0.1" "0" "1" "" "$version"
 }
 

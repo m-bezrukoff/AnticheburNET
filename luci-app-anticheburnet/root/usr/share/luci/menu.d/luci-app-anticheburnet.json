@@ -1,0 +1,14 @@
+{
+  "admin/services/anticheburnet": {
+    "title": "AnticheburNET",
+    "order": 42,
+    "action": {
+      "type": "view",
+      "path": "anticheburnet/anticheburnet"
+    },
+    "depends": {
+			"acl": [ "luci-app-anticheburnet" ],
+			"uci": { "anticheburnet": true }
+		}
+  }
+}

@@ -2,8 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SECTION_JS="$ROOT_DIR/luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js"
-CACHE_UC="$ROOT_DIR/forkop/files/usr/lib/subscription/cache.uc"
+SECTION_JS="$ROOT_DIR/luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js"
+CACHE_UC="$ROOT_DIR/anticheburnet/files/usr/lib/subscription/cache.uc"
 
 for key in custom_device_headers device_os ver_os device_model device_locale app_version accept_language; do
   grep -Fq "\"$key\"" "$SECTION_JS" || {

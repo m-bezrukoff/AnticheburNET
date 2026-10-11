@@ -1,1 +1,2 @@
 * text=auto eol=lf
+components/patches/*.patch whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab

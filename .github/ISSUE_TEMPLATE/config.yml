@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 📖 Возможности и ограничения Forkop Plus
-    url: https://github.com/m-bezrukoff/forkop-plus#readme
+  - name: 📖 Возможности и ограничения AnticheburNET
+    url: https://github.com/m-bezrukoff/AnticheburNET#readme
     about: Описание проекта, поддерживаемая платформа и ссылки на релизы
   - name: 📚 Установка и настройка Redmi AX6000
-    url: https://github.com/m-bezrukoff/forkop-plus/blob/main/docs/REDMI-AX6000.md
+    url: https://github.com/m-bezrukoff/AnticheburNET/blob/main/docs/REDMI-AX6000.md
     about: Установка пакетов, подписки, маршрутизация и настройка компонентов

@@ -1,0 +1,7 @@
+config settings 'settings'
+    option enabled '0'
+    option interface 'awg0'
+    option config_file '/etc/anticheburnet/awg0.conf'
+    option subscription_url ''
+    option subscription_profile ''
+    option subscription_user_agent 'Happ'

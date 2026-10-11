@@ -7,7 +7,7 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") <version> [output-directory]
 
-Build Forkop IPK and APK packages. The version must use x.y.z format.
+Build AnticheburNET IPK and APK packages. The version must use x.y.z format.
 EOF
 }
 
@@ -31,22 +31,22 @@ fi
 APK_INTERNAL_VERSION="$RELEASE_VERSION"
 
 BUILD_DIR="${BUILD_DIR:-$ROOT_DIR/.build}"
-SDK_CACHE_DIR="${SDK_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/forkop/openwrt-sdk}"
+SDK_CACHE_DIR="${SDK_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/anticheburnet/openwrt-sdk}"
 SDK_DIR="${SDK_DIR:-$SDK_CACHE_DIR/extracted}"
 IPK_SDK_URL="${IPK_SDK_URL:-https://downloads.openwrt.org/releases/24.10.6/targets/x86/64/openwrt-sdk-24.10.6-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst}"
 APK_SDK_URL="${APK_SDK_URL:-https://downloads.openwrt.org/releases/25.12.3/targets/x86/64/openwrt-sdk-25.12.3-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst}"
 
-BACKEND_DESCRIPTION="Rule-based Forkop backend with hybrid sing-box + zapret orchestration"
-APP_DESCRIPTION="Rule-based Forkop LuCI app with hybrid sing-box + zapret orchestration"
-I18N_DESCRIPTION="Translation for luci-app-forkop - Русский (Russian)"
+BACKEND_DESCRIPTION="Rule-based AnticheburNET backend with hybrid sing-box + zapret orchestration"
+APP_DESCRIPTION="Rule-based AnticheburNET LuCI app with hybrid sing-box + zapret orchestration"
+I18N_DESCRIPTION="Translation for luci-app-anticheburnet - Русский (Russian)"
 MAINTAINER="Max Bezrukov <73909358+m-bezrukoff@users.noreply.github.com>"
-PROJECT_URL="https://github.com/m-bezrukoff/forkop-plus"
+PROJECT_URL="https://github.com/m-bezrukoff/AnticheburNET"
 BACKEND_DEPENDS_IPK="libc, ca-bundle, kmod-inet-diag, kmod-netlink-diag, kmod-tun, curl, ucode, ucode-mod-fs, ucode-mod-uci, kmod-nft-tproxy, coreutils-base64, bind-dig, nftables, kmod-nft-nat, ip-full"
 BACKEND_DEPENDS_APK="bind-dig ca-bundle coreutils-base64 curl ip-full kmod-inet-diag kmod-netlink-diag kmod-nft-nat kmod-nft-tproxy kmod-tun libc nftables ucode ucode-mod-fs ucode-mod-uci !https-dns-proxy !nextdns !luci-app-passwall !luci-app-passwall2"
 BACKEND_CONFLICTS_IPK="https-dns-proxy, nextdns, luci-app-passwall, luci-app-passwall2"
-BACKEND_REQUIRE_USER="forkopbyedpi:forkopbyedpi"
-APP_DEPENDS_IPK="libc, luci-base, forkop"
-APP_DEPENDS_APK="libc luci-base forkop"
+BACKEND_REQUIRE_USER="anticheburnetbyedpi:anticheburnetbyedpi"
+APP_DEPENDS_IPK="libc, luci-base, anticheburnet"
+APP_DEPENDS_APK="libc luci-base anticheburnet"
 
 ensure_host_deps() {
   local missing=()
@@ -102,7 +102,7 @@ extract_sdk() {
   local archive_path="$2"
   local sdk_url="$3"
   local destination="$SDK_DIR/$kind"
-  local marker_file="$destination/.forkop-sdk-url"
+  local marker_file="$destination/.anticheburnet-sdk-url"
   local temp_dir
   local extracted_root
 
@@ -168,18 +168,18 @@ build_backend_root() {
   make_dir "$output_root/etc/init.d"
   make_dir "$output_root/etc/config"
   make_dir "$output_root/usr/bin"
-  make_dir "$output_root/usr/lib/forkop"
+  make_dir "$output_root/usr/lib/anticheburnet"
 
-  install -m 0755 "$ROOT_DIR/forkop/files/etc/init.d/forkop" "$output_root/etc/init.d/forkop"
-  install -m 0644 "$ROOT_DIR/forkop/files/etc/config/forkop" "$output_root/etc/config/forkop"
-  install -m 0755 "$ROOT_DIR/forkop/files/usr/bin/forkop" "$output_root/usr/bin/forkop"
-  cp -a "$ROOT_DIR/forkop/files/usr/lib/." "$output_root/usr/lib/forkop/"
+  install -m 0755 "$ROOT_DIR/anticheburnet/files/etc/init.d/anticheburnet" "$output_root/etc/init.d/anticheburnet"
+  install -m 0644 "$ROOT_DIR/anticheburnet/files/etc/config/anticheburnet" "$output_root/etc/config/anticheburnet"
+  install -m 0755 "$ROOT_DIR/anticheburnet/files/usr/bin/anticheburnet" "$output_root/usr/bin/anticheburnet"
+  cp -a "$ROOT_DIR/anticheburnet/files/usr/lib/." "$output_root/usr/lib/anticheburnet/"
 
   sed -i -e "s/__COMPILED_VERSION_VARIABLE__/${RELEASE_VERSION}/g" \
-    "$output_root/usr/lib/forkop/core/constants.uc"
+    "$output_root/usr/lib/anticheburnet/core/constants.uc"
 
   normalize_package_root_modes "$output_root"
-  chmod 0755 "$output_root/etc/init.d/forkop" "$output_root/usr/bin/forkop"
+  chmod 0755 "$output_root/etc/init.d/anticheburnet" "$output_root/usr/bin/anticheburnet"
 }
 
 build_app_root() {
@@ -188,10 +188,10 @@ build_app_root() {
   rm -rf "$output_root"
   make_dir "$output_root/www"
 
-  cp -a "$ROOT_DIR/luci-app-forkop/htdocs/." "$output_root/www/"
-  cp -a "$ROOT_DIR/luci-app-forkop/root/." "$output_root/"
+  cp -a "$ROOT_DIR/luci-app-anticheburnet/htdocs/." "$output_root/www/"
+  cp -a "$ROOT_DIR/luci-app-anticheburnet/root/." "$output_root/"
   sed -i -e "s/__COMPILED_VERSION_VARIABLE__/${RELEASE_VERSION}/g" \
-    "$output_root/www/luci-static/resources/view/forkop/main.js"
+    "$output_root/www/luci-static/resources/view/anticheburnet/main.js"
 
   normalize_package_root_modes "$output_root"
   find "$output_root/etc/uci-defaults" -type f -exec chmod 0755 {} + 2>/dev/null || true
@@ -200,17 +200,17 @@ build_app_root() {
 build_i18n_root() {
   local output_root="$1"
   local po2lmo_bin="$2"
-  local lmo_path="$output_root/usr/lib/lua/luci/i18n/forkop.ru.lmo"
+  local lmo_path="$output_root/usr/lib/lua/luci/i18n/anticheburnet.ru.lmo"
 
   rm -rf "$output_root"
   make_dir "$output_root/etc/uci-defaults"
   make_dir "$(dirname "$lmo_path")"
 
-  cat > "$output_root/etc/uci-defaults/luci-i18n-forkop-ru" <<'EOF'
+  cat > "$output_root/etc/uci-defaults/luci-i18n-anticheburnet-ru" <<'EOF'
 uci set luci.languages.ru='Русский (Russian)'; uci commit luci
 EOF
 
-  "$po2lmo_bin" "$ROOT_DIR/luci-app-forkop/po/ru/forkop.po" "$lmo_path"
+  "$po2lmo_bin" "$ROOT_DIR/luci-app-anticheburnet/po/ru/anticheburnet.po" "$lmo_path"
 
   normalize_package_root_modes "$output_root"
   find "$output_root/etc/uci-defaults" -type f -exec chmod 0755 {} + 2>/dev/null || true
@@ -256,7 +256,7 @@ write_backend_ipk_control() {
   make_dir "$control_dir"
 
   cat > "$control_dir/control" <<EOF
-Package: forkop
+Package: anticheburnet
 Version: ${RELEASE_VERSION}
 Depends: ${BACKEND_DEPENDS_IPK}
 Conflicts: ${BACKEND_CONFLICTS_IPK}
@@ -271,7 +271,7 @@ Description: ${BACKEND_DESCRIPTION}
 EOF
 
   cat > "$control_dir/conffiles" <<'EOF'
-/etc/config/forkop
+/etc/config/anticheburnet
 EOF
 
   cat > "$control_dir/postinst" <<'EOF'
@@ -279,18 +279,18 @@ EOF
 [ -s ${IPKG_INSTROOT}/lib/functions.sh ] || exit 0
 . ${IPKG_INSTROOT}/lib/functions.sh
 export root="${IPKG_INSTROOT}"
-export pkgname="forkop"
+export pkgname="anticheburnet"
 add_group_and_user
 [ -n "${IPKG_INSTROOT}" ] && exit 0
-FORKOP_LIB=/usr/lib/forkop ucode -L /usr/lib/forkop /usr/lib/forkop/config/migration.uc migrate || exit $?
-/usr/bin/forkop package_postinst
+ANTICHEBURNET_LIB=/usr/lib/anticheburnet ucode -L /usr/lib/anticheburnet /usr/lib/anticheburnet/config/migration.uc migrate || exit $?
+/usr/bin/anticheburnet package_postinst
 EOF
 
   cat > "$control_dir/prerm" <<'EOF'
 #!/usr/bin/ucode
 
 if (getenv("IPKG_INSTROOT") == null || getenv("IPKG_INSTROOT") == "")
-	system("/usr/bin/forkop package_prerm " + (ARGV[0] || "") + " >/dev/null 2>&1");
+	system("/usr/bin/anticheburnet package_prerm " + (ARGV[0] || "") + " >/dev/null 2>&1");
 
 exit(0);
 EOF
@@ -306,7 +306,7 @@ write_app_ipk_control() {
   make_dir "$control_dir"
 
   cat > "$control_dir/control" <<EOF
-Package: luci-app-forkop
+Package: luci-app-anticheburnet
 Version: ${RELEASE_VERSION}
 Depends: ${APP_DEPENDS_IPK}
 License: GPL-2.0-or-later
@@ -344,9 +344,9 @@ write_i18n_ipk_control() {
   make_dir "$control_dir"
 
   cat > "$control_dir/control" <<EOF
-Package: luci-i18n-forkop-ru
+Package: luci-i18n-anticheburnet-ru
 Version: ${RELEASE_VERSION}
-Depends: libc, luci-app-forkop
+Depends: libc, luci-app-anticheburnet
 License: GPL-2.0-or-later
 Section: luci
 URL: ${PROJECT_URL}
@@ -422,18 +422,18 @@ EOF
 [ -s ${IPKG_INSTROOT}/lib/functions.sh ] || exit 0
 . ${IPKG_INSTROOT}/lib/functions.sh
 export root="${IPKG_INSTROOT}"
-export pkgname="forkop"
+export pkgname="anticheburnet"
 add_group_and_user
 [ -n "${IPKG_INSTROOT}" ] && exit 0
-FORKOP_LIB=/usr/lib/forkop ucode -L /usr/lib/forkop /usr/lib/forkop/config/migration.uc migrate &&
-  /usr/bin/forkop package_postinst
+ANTICHEBURNET_LIB=/usr/lib/anticheburnet ucode -L /usr/lib/anticheburnet /usr/lib/anticheburnet/config/migration.uc migrate &&
+  /usr/bin/anticheburnet package_postinst
 EOF
 
   cat > "$scripts_dir/backend-pre-deinstall.sh" <<'EOF'
 #!/usr/bin/ucode
 
 if (getenv("IPKG_INSTROOT") == null || getenv("IPKG_INSTROOT") == "")
-	system("/usr/bin/forkop package_prerm remove >/dev/null 2>&1");
+	system("/usr/bin/anticheburnet package_prerm remove >/dev/null 2>&1");
 
 exit(0);
 EOF
@@ -441,7 +441,7 @@ EOF
   cat > "$scripts_dir/backend-pre-upgrade.sh" <<'EOF'
 #!/usr/bin/ucode
 if (getenv("IPKG_INSTROOT") == null || getenv("IPKG_INSTROOT") == "")
-    exit(system("/usr/bin/forkop package_prerm upgrade >/dev/null 2>&1"));
+    exit(system("/usr/bin/anticheburnet package_prerm upgrade >/dev/null 2>&1"));
 exit(0);
 EOF
 
@@ -452,11 +452,11 @@ export PKG_UPGRADE=1
 [ -s ${IPKG_INSTROOT}/lib/functions.sh ] || exit 0
 . ${IPKG_INSTROOT}/lib/functions.sh
 export root="${IPKG_INSTROOT}"
-export pkgname="forkop"
+export pkgname="anticheburnet"
 add_group_and_user
 [ -n "${IPKG_INSTROOT}" ] && exit 0
-FORKOP_LIB=/usr/lib/forkop ucode -L /usr/lib/forkop /usr/lib/forkop/config/migration.uc migrate &&
-  /usr/bin/forkop package_postinst
+ANTICHEBURNET_LIB=/usr/lib/anticheburnet ucode -L /usr/lib/anticheburnet /usr/lib/anticheburnet/config/migration.uc migrate &&
+  /usr/bin/anticheburnet package_postinst
 EOF
 
   chmod 0755 "$scripts_dir"/backend-*.sh
@@ -478,7 +478,7 @@ EOF
 [ -s ${IPKG_INSTROOT}/lib/functions.sh ] || exit 0
 . ${IPKG_INSTROOT}/lib/functions.sh
 export root="${IPKG_INSTROOT}"
-export pkgname="luci-app-forkop"
+export pkgname="luci-app-anticheburnet"
 add_group_and_user
 default_postinst
 EOF
@@ -488,7 +488,7 @@ EOF
 [ -s ${IPKG_INSTROOT}/lib/functions.sh ] || exit 0
 . ${IPKG_INSTROOT}/lib/functions.sh
 export root="${IPKG_INSTROOT}"
-export pkgname="luci-app-forkop"
+export pkgname="luci-app-anticheburnet"
 default_prerm
 exit 0
 EOF
@@ -505,7 +505,7 @@ export PKG_UPGRADE=1
 [ -s ${IPKG_INSTROOT}/lib/functions.sh ] || exit 0
 . ${IPKG_INSTROOT}/lib/functions.sh
 export root="${IPKG_INSTROOT}"
-export pkgname="luci-app-forkop"
+export pkgname="luci-app-anticheburnet"
 add_group_and_user
 default_postinst
 EOF
@@ -529,7 +529,7 @@ EOF
 [ -s ${IPKG_INSTROOT}/lib/functions.sh ] || exit 0
 . ${IPKG_INSTROOT}/lib/functions.sh
 export root="${IPKG_INSTROOT}"
-export pkgname="luci-i18n-forkop-ru"
+export pkgname="luci-i18n-anticheburnet-ru"
 add_group_and_user
 default_postinst
 EOF
@@ -539,7 +539,7 @@ EOF
 [ -s ${IPKG_INSTROOT}/lib/functions.sh ] || exit 0
 . ${IPKG_INSTROOT}/lib/functions.sh
 export root="${IPKG_INSTROOT}"
-export pkgname="luci-i18n-forkop-ru"
+export pkgname="luci-i18n-anticheburnet-ru"
 default_prerm
 EOF
 
@@ -555,7 +555,7 @@ export PKG_UPGRADE=1
 [ -s ${IPKG_INSTROOT}/lib/functions.sh ] || exit 0
 . ${IPKG_INSTROOT}/lib/functions.sh
 export root="${IPKG_INSTROOT}"
-export pkgname="luci-i18n-forkop-ru"
+export pkgname="luci-i18n-anticheburnet-ru"
 add_group_and_user
 default_postinst
 EOF
@@ -594,7 +594,7 @@ build_apk_package() {
     -I "description:${description}" \
     -I "arch:noarch" \
     -I "license:GPL-2.0-or-later" \
-    -I "origin:forkop" \
+    -I "origin:anticheburnet" \
     -I "maintainer:${maintainer}" \
     -I "url:${PROJECT_URL}" \
     -I "depends:${depends}" \
@@ -616,7 +616,7 @@ verify_ipk_metadata() {
   tar -xzf "$tmp_dir/control.tar.gz" -C "$tmp_dir"
   grep -q "^Package: ${expected_package}$" "$tmp_dir/control"
   grep -q "^Version: ${expected_version}$" "$tmp_dir/control"
-  if [[ "$expected_package" == "forkop" ]]; then
+  if [[ "$expected_package" == "anticheburnet" ]]; then
     grep -q "^Conflicts: ${BACKEND_CONFLICTS_IPK}$" "$tmp_dir/control"
     grep -q "^Require-User: ${BACKEND_REQUIRE_USER}$" "$tmp_dir/control"
   fi
@@ -634,7 +634,7 @@ verify_apk_metadata() {
   "$apk_bin" adbdump "$package_file" > "$dump_file"
   grep -q "^  name: ${expected_package}$" "$dump_file"
   grep -q "^  version: ${expected_version}$" "$dump_file"
-  if [[ "$expected_package" == "forkop" ]]; then
+  if [[ "$expected_package" == "anticheburnet" ]]; then
     for conflict in https-dns-proxy nextdns luci-app-passwall luci-app-passwall2; do
       grep -q "^[[:space:]]*- '!${conflict}'$" "$dump_file"
     done
@@ -681,12 +681,12 @@ main() {
   mkdir -p "$BUILD_DIR" "$SDK_CACHE_DIR"
   exec 9>"$SDK_CACHE_DIR/.build.lock"
   if ! flock -n 9; then
-    echo "Another Forkop package build is already running" >&2
+    echo "Another AnticheburNET package build is already running" >&2
     exit 1
   fi
   output_dir="$OUTPUT_DIR"
   mkdir -p "$output_dir"
-  rm -f "$output_dir"/forkop_* "$output_dir"/luci-app-forkop_* "$output_dir"/luci-i18n-forkop-ru_*
+  rm -f "$output_dir"/anticheburnet_* "$output_dir"/luci-app-anticheburnet_* "$output_dir"/luci-i18n-anticheburnet-ru_*
 
   ipk_archive="$(download_sdk_archive "$IPK_SDK_URL")"
   apk_archive="$(download_sdk_archive "$APK_SDK_URL")"
@@ -713,74 +713,74 @@ main() {
 
   build_ipk_package \
     "$ipkg_build_bin" \
-    "forkop" \
+    "anticheburnet" \
     "$backend_root" \
     "$backend_control" \
-    "$output_dir/forkop_${RELEASE_VERSION}.ipk"
+    "$output_dir/anticheburnet_${RELEASE_VERSION}.ipk"
 
   build_ipk_package \
     "$ipkg_build_bin" \
-    "luci-app-forkop" \
+    "luci-app-anticheburnet" \
     "$app_root" \
     "$app_control" \
-    "$output_dir/luci-app-forkop_${RELEASE_VERSION}.ipk"
+    "$output_dir/luci-app-anticheburnet_${RELEASE_VERSION}.ipk"
 
   build_ipk_package \
     "$ipkg_build_bin" \
-    "luci-i18n-forkop-ru" \
+    "luci-i18n-anticheburnet-ru" \
     "$i18n_root" \
     "$i18n_control" \
-    "$output_dir/luci-i18n-forkop-ru_${RELEASE_VERSION}.ipk"
+    "$output_dir/luci-i18n-anticheburnet-ru_${RELEASE_VERSION}.ipk"
 
-  generate_apk_metadata_files "forkop" "$backend_root" "/etc/config/forkop" "$BACKEND_REQUIRE_USER"
-  generate_apk_metadata_files "luci-app-forkop" "$app_root"
-  generate_apk_metadata_files "luci-i18n-forkop-ru" "$i18n_root"
+  generate_apk_metadata_files "anticheburnet" "$backend_root" "/etc/config/anticheburnet" "$BACKEND_REQUIRE_USER"
+  generate_apk_metadata_files "luci-app-anticheburnet" "$app_root"
+  generate_apk_metadata_files "luci-i18n-anticheburnet-ru" "$i18n_root"
   write_backend_apk_scripts "$apk_scripts"
   write_app_apk_scripts "$apk_scripts"
   write_i18n_apk_scripts "$apk_scripts"
 
   build_apk_package \
     "$apk_bin" \
-    "forkop" \
+    "anticheburnet" \
     "$APK_INTERNAL_VERSION" \
     "$BACKEND_DESCRIPTION" \
     "$BACKEND_DEPENDS_APK" \
     "$backend_root" \
     "$apk_scripts" \
     "backend" \
-    "$output_dir/forkop_${RELEASE_VERSION}.apk" \
+    "$output_dir/anticheburnet_${RELEASE_VERSION}.apk" \
     "$MAINTAINER"
 
   build_apk_package \
     "$apk_bin" \
-    "luci-app-forkop" \
+    "luci-app-anticheburnet" \
     "$APK_INTERNAL_VERSION" \
     "$APP_DESCRIPTION" \
     "$APP_DEPENDS_APK" \
     "$app_root" \
     "$apk_scripts" \
     "app" \
-    "$output_dir/luci-app-forkop_${RELEASE_VERSION}.apk" \
+    "$output_dir/luci-app-anticheburnet_${RELEASE_VERSION}.apk" \
     "$MAINTAINER"
 
   build_apk_package \
     "$apk_bin" \
-    "luci-i18n-forkop-ru" \
+    "luci-i18n-anticheburnet-ru" \
     "$APK_INTERNAL_VERSION" \
     "$I18N_DESCRIPTION" \
-    "libc luci-app-forkop" \
+    "libc luci-app-anticheburnet" \
     "$i18n_root" \
     "$apk_scripts" \
     "i18n" \
-    "$output_dir/luci-i18n-forkop-ru_${RELEASE_VERSION}.apk" \
+    "$output_dir/luci-i18n-anticheburnet-ru_${RELEASE_VERSION}.apk" \
     "$MAINTAINER"
 
-  verify_ipk_metadata "$output_dir/forkop_${RELEASE_VERSION}.ipk" "forkop" "$RELEASE_VERSION"
-  verify_ipk_metadata "$output_dir/luci-app-forkop_${RELEASE_VERSION}.ipk" "luci-app-forkop" "$RELEASE_VERSION"
-  verify_ipk_metadata "$output_dir/luci-i18n-forkop-ru_${RELEASE_VERSION}.ipk" "luci-i18n-forkop-ru" "$RELEASE_VERSION"
-  verify_apk_metadata "$apk_bin" "$output_dir/forkop_${RELEASE_VERSION}.apk" "forkop" "$APK_INTERNAL_VERSION"
-  verify_apk_metadata "$apk_bin" "$output_dir/luci-app-forkop_${RELEASE_VERSION}.apk" "luci-app-forkop" "$APK_INTERNAL_VERSION"
-  verify_apk_metadata "$apk_bin" "$output_dir/luci-i18n-forkop-ru_${RELEASE_VERSION}.apk" "luci-i18n-forkop-ru" "$APK_INTERNAL_VERSION"
+  verify_ipk_metadata "$output_dir/anticheburnet_${RELEASE_VERSION}.ipk" "anticheburnet" "$RELEASE_VERSION"
+  verify_ipk_metadata "$output_dir/luci-app-anticheburnet_${RELEASE_VERSION}.ipk" "luci-app-anticheburnet" "$RELEASE_VERSION"
+  verify_ipk_metadata "$output_dir/luci-i18n-anticheburnet-ru_${RELEASE_VERSION}.ipk" "luci-i18n-anticheburnet-ru" "$RELEASE_VERSION"
+  verify_apk_metadata "$apk_bin" "$output_dir/anticheburnet_${RELEASE_VERSION}.apk" "anticheburnet" "$APK_INTERNAL_VERSION"
+  verify_apk_metadata "$apk_bin" "$output_dir/luci-app-anticheburnet_${RELEASE_VERSION}.apk" "luci-app-anticheburnet" "$APK_INTERNAL_VERSION"
+  verify_apk_metadata "$apk_bin" "$output_dir/luci-i18n-anticheburnet-ru_${RELEASE_VERSION}.apk" "luci-i18n-anticheburnet-ru" "$APK_INTERNAL_VERSION"
 
   cleanup_work_dir
   print_summary "$output_dir"

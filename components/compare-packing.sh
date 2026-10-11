@@ -27,5 +27,5 @@ for pair in 'raw:dat' 'gzip:tar.gz' 'bzip2:tar.bz2' 'xz:tar.xz' 'zstd:tar.zst' '
 done
 cat "$output/packing-comparison.csv"
 # gzip is available in base OpenWrt and retains every byte of official geodata.
-cp "$work/packing/geodata.tar.gz" "$work/forkop-xray-root/usr/share/xray/"
-(cd "$data"; sha256sum geoip.dat geosite.dat) > "$work/forkop-xray-root/usr/share/xray/geodata.sha256"
+cp "$work/packing/geodata.tar.gz" "$work/anticheburnet-xray-root/usr/share/xray/"
+(cd "$data"; sha256sum geoip.dat geosite.dat) > "$work/anticheburnet-xray-root/usr/share/xray/geodata.sha256"

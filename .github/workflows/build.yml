@@ -55,7 +55,7 @@ jobs:
           PY
 
   build:
-    name: Build Forkop release packages
+    name: Build AnticheburNET release packages
     runs-on: ubuntu-24.04
     needs: preparation
     steps:

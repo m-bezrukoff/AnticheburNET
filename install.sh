@@ -2,7 +2,7 @@
 # shellcheck shell=dash
 
 REPO_OWNER="m-bezrukoff"
-REPO_NAME="forkop-plus"
+REPO_NAME="anticheburnet"
 INSTALL_MODE="full"
 INSTALL_MODE_EXPLICIT=0
 FULL_COMPONENT_FILES=""
@@ -19,25 +19,25 @@ DOWNLOAD_TIMEOUT_SECONDS=600
 PKG_IS_APK=0
 FETCHER=""
 TMP_DIR=""
-FORKOP_WAS_ENABLED=0
-FORKOP_WAS_RUNNING=0
-FORKOP_LEGACY_DETECTED=0
-FORKOP_I18N_REQUESTED=0
+ANTICHEBURNET_WAS_ENABLED=0
+ANTICHEBURNET_WAS_RUNNING=0
+ANTICHEBURNET_LEGACY_DETECTED=0
+ANTICHEBURNET_I18N_REQUESTED=0
 INSTALLER_LANG="en"
 SING_BOX_INSTALL_VARIANT=""
 
-FORKOP_RELEASE_JSON=""
-FORKOP_RELEASE_TAG=""
-FORKOP_BACKEND_URL=""
-FORKOP_BACKEND_NAME=""
-FORKOP_BACKEND_FILE=""
-FORKOP_APP_URL=""
-FORKOP_APP_NAME=""
-FORKOP_APP_FILE=""
-FORKOP_I18N_URL=""
-FORKOP_I18N_NAME=""
-FORKOP_I18N_FILE=""
-FORKOP_PACKAGE_VERSION=""
+ANTICHEBURNET_RELEASE_JSON=""
+ANTICHEBURNET_RELEASE_TAG=""
+ANTICHEBURNET_BACKEND_URL=""
+ANTICHEBURNET_BACKEND_NAME=""
+ANTICHEBURNET_BACKEND_FILE=""
+ANTICHEBURNET_APP_URL=""
+ANTICHEBURNET_APP_NAME=""
+ANTICHEBURNET_APP_FILE=""
+ANTICHEBURNET_I18N_URL=""
+ANTICHEBURNET_I18N_NAME=""
+ANTICHEBURNET_I18N_FILE=""
+ANTICHEBURNET_PACKAGE_VERSION=""
 LEGACY_BRAND="$(printf '\160\157\144\153\157\160')"
 LEGACY_BACKEND_PACKAGE="${LEGACY_BRAND}-plus"
 LEGACY_CONFIG_PACKAGE_ALT="${LEGACY_BRAND}_plus"
@@ -62,22 +62,24 @@ usage() {
     cat <<EOF
 Usage: $0 [--install | --generic | --uninstall]
 
-Without arguments, asks whether to install or uninstall Forkop Plus.
---install installs the complete Forkop Plus suite from one GitHub release:
-  forkop, LuCI, Russian translation, sing-box extended, Xray and AmneziaWG.
+Without arguments, asks whether to install or uninstall AnticheburNET.
+--install installs the complete AnticheburNET suite from one GitHub release:
+  anticheburnet, LuCI, Russian translation, sing-box extended, Xray and AmneziaWG.
 Requires OpenWrt 25.12, mediatek/filogic, aarch64_cortex-a53 and apk.
 Downloads and verifies SHA256SUMS before replacing installed packages.
 Explicit mode options skip the install/uninstall question.
+Installation asks for the interface language: 1) English (default), 2) Russian.
+Empty input or EOF selects English. The selection is saved as the LuCI language.
 Configure your connections in LuCI after installation.
 
 --generic retains the older, interactive installation for other OpenWrt targets.
---uninstall removes the Forkop Plus suite on OpenWrt with apk, without package downloads.
+--uninstall removes the AnticheburNET suite on OpenWrt with apk, without package downloads.
   Backs up settings, restores DNS and keeps engines used by other applications.
 
-Installs or updates Forkop packages:
-  - forkop
-  - luci-app-forkop
-  - luci-i18n-forkop-ru when requested or when LuCI language is Russian
+Installs or updates AnticheburNET packages:
+  - anticheburnet
+  - luci-app-anticheburnet
+  - luci-i18n-anticheburnet-ru when Russian is selected or its package needs updating
 
 Can also install or switch sing-box variant:
   - stable sing-box from OpenWrt feeds
@@ -115,7 +117,7 @@ parse_args() {
 select_install_mode() {
     [ "$INSTALL_MODE_EXPLICIT" -eq 0 ] || return 0
 
-    printf '\nForkop Plus: install or uninstall?\n'
+    printf '\nAnticheburNET: install or uninstall?\n'
     printf '  1) install\n  2) uninstall\n'
     while :; do
         printf 'Select [1/2]: '
@@ -124,6 +126,20 @@ select_install_mode() {
             1|install) INSTALL_MODE="full"; return 0 ;;
             2|uninstall) INSTALL_MODE="uninstall"; return 0 ;;
             *) warn "Enter 1 (install) or 2 (uninstall)." ;;
+        esac
+    done
+}
+
+select_install_language() {
+    printf '\nSelect interface language / Выберите язык интерфейса:\n'
+    printf '  1) English (default)\n  2) Русский\n'
+    while :; do
+        printf 'Select / Выберите [1]: '
+        read -r language_answer || language_answer=""
+        case "$language_answer" in
+            1|"") INSTALLER_LANG="en"; return 0 ;;
+            2) INSTALLER_LANG="ru"; return 0 ;;
+            *) warn "Enter 1 or 2 / Введите 1 или 2." ;;
         esac
     done
 }
@@ -155,10 +171,10 @@ command_exists() {
 }
 
 init_tmp_dir() {
-    TMP_DIR="$(mktemp -d /tmp/forkop.XXXXXX 2>/dev/null || true)"
+    TMP_DIR="$(mktemp -d /tmp/anticheburnet.XXXXXX 2>/dev/null || true)"
 
     if [ -z "$TMP_DIR" ]; then
-        TMP_DIR="/tmp/forkop.$$"
+        TMP_DIR="/tmp/anticheburnet.$$"
         mkdir -p "$TMP_DIR" || fail "Failed to create temporary directory: $TMP_DIR"
     fi
 }
@@ -174,24 +190,24 @@ detect_fetcher() {
         return 0
     fi
 
-    fail "wget or curl is required to download Forkop"
+    fail "wget or curl is required to download AnticheburNET"
 }
 
 run_with_deadline() {
-    forkop_deadline_seconds="$1"
+    anticheburnet_deadline_seconds="$1"
     shift
 
-    forkop_deadline_helper="${FORKOP_DEADLINE_HELPER_PATH:-}"
-    if [ -z "$forkop_deadline_helper" ]; then
-        forkop_deadline_helper="$(install_deadline_helper_path)" || return 1
+    anticheburnet_deadline_helper="${ANTICHEBURNET_DEADLINE_HELPER_PATH:-}"
+    if [ -z "$anticheburnet_deadline_helper" ]; then
+        anticheburnet_deadline_helper="$(install_deadline_helper_path)" || return 1
     fi
 
-    forkop_deadline_result="$TMP_DIR/deadline-result.$$"
-    "$forkop_deadline_helper" run "$forkop_deadline_seconds" "$forkop_deadline_result" "$@"
-    forkop_deadline_status=$?
-    rm -f "$forkop_deadline_result.output" "$forkop_deadline_result.error" \
-        "$forkop_deadline_result.status" "$forkop_deadline_result.timeout"
-    return "$forkop_deadline_status"
+    anticheburnet_deadline_result="$TMP_DIR/deadline-result.$$"
+    "$anticheburnet_deadline_helper" run "$anticheburnet_deadline_seconds" "$anticheburnet_deadline_result" "$@"
+    anticheburnet_deadline_status=$?
+    rm -f "$anticheburnet_deadline_result.output" "$anticheburnet_deadline_result.error" \
+        "$anticheburnet_deadline_result.status" "$anticheburnet_deadline_result.timeout"
+    return "$anticheburnet_deadline_status"
 }
 
 install_deadline_helper_path() {
@@ -633,57 +649,57 @@ function env(name, fallback) {
     return as_string(value);
 }
 
-const INSTALLER_FORKOP_INIT = env("FORKOP_INSTALLER_INIT", "/etc/init.d/forkop");
-const INSTALLER_FORKOP_BIN = env("FORKOP_INSTALLER_BIN", "/usr/bin/forkop");
-const INSTALLER_FORKOP_LIB = env("FORKOP_INSTALLER_LIB", "/usr/lib/forkop");
-const INSTALLER_FORKOP_PERSISTENT_DIR = env("FORKOP_INSTALLER_PERSISTENT_DIR", "/etc/forkop");
-const INSTALLER_FORKOP_UCI_DEFAULTS = env("FORKOP_INSTALLER_UCI_DEFAULTS", "/etc/uci-defaults/50_luci-forkop");
-const INSTALLER_FORKOP_LUCI_VIEW = env("FORKOP_INSTALLER_LUCI_VIEW", "/www/luci-static/resources/view/forkop");
-const INSTALLER_MENU_JSON = env("FORKOP_INSTALLER_MENU_JSON", "/usr/share/luci/menu.d/luci-app-forkop.json");
-const INSTALLER_ACL_JSON = env("FORKOP_INSTALLER_ACL_JSON", "/usr/share/rpcd/acl.d/luci-app-forkop.json");
-const INSTALLER_RU_LMO = env("FORKOP_INSTALLER_RU_LMO", "/usr/lib/lua/luci/i18n/forkop.ru.lmo");
-const INSTALLER_EN_LMO = env("FORKOP_INSTALLER_EN_LMO", "/usr/lib/lua/luci/i18n/forkop.en.lmo");
-const INSTALLER_RU_LUA = env("FORKOP_INSTALLER_RU_LUA", "/usr/lib/lua/luci/i18n/forkop.ru.lua");
-const INSTALLER_EN_LUA = env("FORKOP_INSTALLER_EN_LUA", "/usr/lib/lua/luci/i18n/forkop.en.lua");
-const INSTALLER_RPCD_INIT = env("FORKOP_INSTALLER_RPCD_INIT", "/etc/init.d/rpcd");
-const LEGACY_BRAND = env("FORKOP_INSTALLER_LEGACY_BRAND", "");
-const LEGACY_BACKEND_PACKAGE = env("FORKOP_INSTALLER_LEGACY_BACKEND", LEGACY_BRAND + "-plus");
-const LEGACY_CONFIG_PACKAGE_ALT = env("FORKOP_INSTALLER_LEGACY_CONFIG_ALT", LEGACY_BRAND + "_plus");
-const INSTALLER_LEGACY_INIT = env("FORKOP_INSTALLER_LEGACY_INIT", "/etc/init.d/" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_BASE_INIT = env("FORKOP_INSTALLER_LEGACY_BASE_INIT", "/etc/init.d/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_BIN = env("FORKOP_INSTALLER_LEGACY_BASE_BIN", "/usr/bin/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_LIB = env("FORKOP_INSTALLER_LEGACY_BASE_LIB", "/usr/lib/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_UCI_DEFAULTS = env("FORKOP_INSTALLER_LEGACY_BASE_UCI_DEFAULTS", "/etc/uci-defaults/50_luci-" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_LUCI_VIEW = env("FORKOP_INSTALLER_LEGACY_BASE_LUCI_VIEW", "/www/luci-static/resources/view/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_MENU_JSON = env("FORKOP_INSTALLER_LEGACY_BASE_MENU_JSON", "/usr/share/luci/menu.d/luci-app-" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_ACL_JSON = env("FORKOP_INSTALLER_LEGACY_BASE_ACL_JSON", "/usr/share/rpcd/acl.d/luci-app-" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_I18N = env("FORKOP_INSTALLER_LEGACY_BASE_I18N", "/usr/lib/lua/luci/i18n/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_CONFIG = env("FORKOP_INSTALLER_LEGACY_BASE_CONFIG", "/etc/config/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_PERSISTENT_DIR = env("FORKOP_INSTALLER_LEGACY_BASE_PERSISTENT_DIR", "/etc/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_RUNTIME_DIR = env("FORKOP_INSTALLER_LEGACY_BASE_RUNTIME_DIR", "/var/run/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_TMP_DIR = env("FORKOP_INSTALLER_LEGACY_BASE_TMP_DIR", "/tmp/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_TMP_PACKAGE_GLOB = env("FORKOP_INSTALLER_LEGACY_TMP_PACKAGE_GLOB", "/tmp/*" + LEGACY_BRAND + "*");
-const INSTALLER_LEGACY_SCAN_ROOTS = env("FORKOP_INSTALLER_LEGACY_SCAN_ROOTS", "/tmp /var/run /etc /usr/lib /usr/share/luci /usr/share/rpcd /www/luci-static/resources/view");
-const INSTALLER_LEGACY_BIN = env("FORKOP_INSTALLER_LEGACY_BIN", "/usr/bin/" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_LIB = env("FORKOP_INSTALLER_LEGACY_LIB", "/usr/lib/" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_UCI_DEFAULTS = env("FORKOP_INSTALLER_LEGACY_UCI_DEFAULTS", "/etc/uci-defaults/50_luci-" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_LUCI_VIEW = env("FORKOP_INSTALLER_LEGACY_LUCI_VIEW", "/www/luci-static/resources/view/" + LEGACY_CONFIG_PACKAGE_ALT);
-const INSTALLER_LEGACY_MENU_JSON = env("FORKOP_INSTALLER_LEGACY_MENU_JSON", "/usr/share/luci/menu.d/luci-app-" + LEGACY_BACKEND_PACKAGE + ".json");
-const INSTALLER_LEGACY_ACL_JSON = env("FORKOP_INSTALLER_LEGACY_ACL_JSON", "/usr/share/rpcd/acl.d/luci-app-" + LEGACY_BACKEND_PACKAGE + ".json");
-const INSTALLER_LEGACY_CONFIG = env("FORKOP_INSTALLER_LEGACY_CONFIG", "/etc/config/" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_CONFIG_ALT = env("FORKOP_INSTALLER_LEGACY_CONFIG_FILE_ALT", "/etc/config/" + LEGACY_CONFIG_PACKAGE_ALT);
-const INSTALLER_LEGACY_PERSISTENT_DIR = env("FORKOP_INSTALLER_LEGACY_PERSISTENT_DIR", "/etc/" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_RUNTIME_DIR = env("FORKOP_INSTALLER_LEGACY_RUNTIME_DIR", "/var/run/" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_TMP_DIR = env("FORKOP_INSTALLER_LEGACY_TMP_DIR", "/tmp/" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_TMP_ALT_DIR = env("FORKOP_INSTALLER_LEGACY_TMP_ALT_DIR", "/tmp/" + LEGACY_CONFIG_PACKAGE_ALT);
-const INSTALLER_DEADLINE_HELPER = env("FORKOP_INSTALLER_DEADLINE_HELPER", "");
-const INSTALLER_COMMAND_RESULT = env("FORKOP_INSTALLER_COMMAND_RESULT", "/tmp/forkop-installer-command");
-const INSTALLER_RC_DIR = env("FORKOP_INSTALLER_RC_DIR", "/etc/rc.d");
-const INSTALLER_START_RETRY_FILE = env("FORKOP_INSTALLER_START_RETRY_FILE", "/var/run/forkop/start.retry");
-const INSTALLER_START_RETRY_PID_FILE = env("FORKOP_INSTALLER_START_RETRY_PID_FILE", "/var/run/forkop/start-retry.pid");
-const INSTALLER_ORPHAN_PPID = env("FORKOP_INSTALLER_ORPHAN_PPID", "1");
-const INSTALLER_SERVICE_PROBE_TIMEOUT = int(env("FORKOP_INSTALLER_SERVICE_PROBE_TIMEOUT", "6")) || 6;
-const INSTALLER_SERVICE_ACTION_TIMEOUT = int(env("FORKOP_INSTALLER_SERVICE_ACTION_TIMEOUT", "60")) || 60;
+const INSTALLER_ANTICHEBURNET_INIT = env("ANTICHEBURNET_INSTALLER_INIT", "/etc/init.d/anticheburnet");
+const INSTALLER_ANTICHEBURNET_BIN = env("ANTICHEBURNET_INSTALLER_BIN", "/usr/bin/anticheburnet");
+const INSTALLER_ANTICHEBURNET_LIB = env("ANTICHEBURNET_INSTALLER_LIB", "/usr/lib/anticheburnet");
+const INSTALLER_ANTICHEBURNET_PERSISTENT_DIR = env("ANTICHEBURNET_INSTALLER_PERSISTENT_DIR", "/etc/anticheburnet");
+const INSTALLER_ANTICHEBURNET_UCI_DEFAULTS = env("ANTICHEBURNET_INSTALLER_UCI_DEFAULTS", "/etc/uci-defaults/50_luci-anticheburnet");
+const INSTALLER_ANTICHEBURNET_LUCI_VIEW = env("ANTICHEBURNET_INSTALLER_LUCI_VIEW", "/www/luci-static/resources/view/anticheburnet");
+const INSTALLER_MENU_JSON = env("ANTICHEBURNET_INSTALLER_MENU_JSON", "/usr/share/luci/menu.d/luci-app-anticheburnet.json");
+const INSTALLER_ACL_JSON = env("ANTICHEBURNET_INSTALLER_ACL_JSON", "/usr/share/rpcd/acl.d/luci-app-anticheburnet.json");
+const INSTALLER_RU_LMO = env("ANTICHEBURNET_INSTALLER_RU_LMO", "/usr/lib/lua/luci/i18n/anticheburnet.ru.lmo");
+const INSTALLER_EN_LMO = env("ANTICHEBURNET_INSTALLER_EN_LMO", "/usr/lib/lua/luci/i18n/anticheburnet.en.lmo");
+const INSTALLER_RU_LUA = env("ANTICHEBURNET_INSTALLER_RU_LUA", "/usr/lib/lua/luci/i18n/anticheburnet.ru.lua");
+const INSTALLER_EN_LUA = env("ANTICHEBURNET_INSTALLER_EN_LUA", "/usr/lib/lua/luci/i18n/anticheburnet.en.lua");
+const INSTALLER_RPCD_INIT = env("ANTICHEBURNET_INSTALLER_RPCD_INIT", "/etc/init.d/rpcd");
+const LEGACY_BRAND = env("ANTICHEBURNET_INSTALLER_LEGACY_BRAND", "");
+const LEGACY_BACKEND_PACKAGE = env("ANTICHEBURNET_INSTALLER_LEGACY_BACKEND", LEGACY_BRAND + "-plus");
+const LEGACY_CONFIG_PACKAGE_ALT = env("ANTICHEBURNET_INSTALLER_LEGACY_CONFIG_ALT", LEGACY_BRAND + "_plus");
+const INSTALLER_LEGACY_INIT = env("ANTICHEBURNET_INSTALLER_LEGACY_INIT", "/etc/init.d/" + LEGACY_BACKEND_PACKAGE);
+const INSTALLER_LEGACY_BASE_INIT = env("ANTICHEBURNET_INSTALLER_LEGACY_BASE_INIT", "/etc/init.d/" + LEGACY_BRAND);
+const INSTALLER_LEGACY_BASE_BIN = env("ANTICHEBURNET_INSTALLER_LEGACY_BASE_BIN", "/usr/bin/" + LEGACY_BRAND);
+const INSTALLER_LEGACY_BASE_LIB = env("ANTICHEBURNET_INSTALLER_LEGACY_BASE_LIB", "/usr/lib/" + LEGACY_BRAND);
+const INSTALLER_LEGACY_BASE_UCI_DEFAULTS = env("ANTICHEBURNET_INSTALLER_LEGACY_BASE_UCI_DEFAULTS", "/etc/uci-defaults/50_luci-" + LEGACY_BRAND);
+const INSTALLER_LEGACY_BASE_LUCI_VIEW = env("ANTICHEBURNET_INSTALLER_LEGACY_BASE_LUCI_VIEW", "/www/luci-static/resources/view/" + LEGACY_BRAND);
+const INSTALLER_LEGACY_BASE_MENU_JSON = env("ANTICHEBURNET_INSTALLER_LEGACY_BASE_MENU_JSON", "/usr/share/luci/menu.d/luci-app-" + LEGACY_BRAND);
+const INSTALLER_LEGACY_BASE_ACL_JSON = env("ANTICHEBURNET_INSTALLER_LEGACY_BASE_ACL_JSON", "/usr/share/rpcd/acl.d/luci-app-" + LEGACY_BRAND);
+const INSTALLER_LEGACY_BASE_I18N = env("ANTICHEBURNET_INSTALLER_LEGACY_BASE_I18N", "/usr/lib/lua/luci/i18n/" + LEGACY_BRAND);
+const INSTALLER_LEGACY_BASE_CONFIG = env("ANTICHEBURNET_INSTALLER_LEGACY_BASE_CONFIG", "/etc/config/" + LEGACY_BRAND);
+const INSTALLER_LEGACY_BASE_PERSISTENT_DIR = env("ANTICHEBURNET_INSTALLER_LEGACY_BASE_PERSISTENT_DIR", "/etc/" + LEGACY_BRAND);
+const INSTALLER_LEGACY_BASE_RUNTIME_DIR = env("ANTICHEBURNET_INSTALLER_LEGACY_BASE_RUNTIME_DIR", "/var/run/" + LEGACY_BRAND);
+const INSTALLER_LEGACY_BASE_TMP_DIR = env("ANTICHEBURNET_INSTALLER_LEGACY_BASE_TMP_DIR", "/tmp/" + LEGACY_BRAND);
+const INSTALLER_LEGACY_TMP_PACKAGE_GLOB = env("ANTICHEBURNET_INSTALLER_LEGACY_TMP_PACKAGE_GLOB", "/tmp/*" + LEGACY_BRAND + "*");
+const INSTALLER_LEGACY_SCAN_ROOTS = env("ANTICHEBURNET_INSTALLER_LEGACY_SCAN_ROOTS", "/tmp /var/run /etc /usr/lib /usr/share/luci /usr/share/rpcd /www/luci-static/resources/view");
+const INSTALLER_LEGACY_BIN = env("ANTICHEBURNET_INSTALLER_LEGACY_BIN", "/usr/bin/" + LEGACY_BACKEND_PACKAGE);
+const INSTALLER_LEGACY_LIB = env("ANTICHEBURNET_INSTALLER_LEGACY_LIB", "/usr/lib/" + LEGACY_BACKEND_PACKAGE);
+const INSTALLER_LEGACY_UCI_DEFAULTS = env("ANTICHEBURNET_INSTALLER_LEGACY_UCI_DEFAULTS", "/etc/uci-defaults/50_luci-" + LEGACY_BACKEND_PACKAGE);
+const INSTALLER_LEGACY_LUCI_VIEW = env("ANTICHEBURNET_INSTALLER_LEGACY_LUCI_VIEW", "/www/luci-static/resources/view/" + LEGACY_CONFIG_PACKAGE_ALT);
+const INSTALLER_LEGACY_MENU_JSON = env("ANTICHEBURNET_INSTALLER_LEGACY_MENU_JSON", "/usr/share/luci/menu.d/luci-app-" + LEGACY_BACKEND_PACKAGE + ".json");
+const INSTALLER_LEGACY_ACL_JSON = env("ANTICHEBURNET_INSTALLER_LEGACY_ACL_JSON", "/usr/share/rpcd/acl.d/luci-app-" + LEGACY_BACKEND_PACKAGE + ".json");
+const INSTALLER_LEGACY_CONFIG = env("ANTICHEBURNET_INSTALLER_LEGACY_CONFIG", "/etc/config/" + LEGACY_BACKEND_PACKAGE);
+const INSTALLER_LEGACY_CONFIG_ALT = env("ANTICHEBURNET_INSTALLER_LEGACY_CONFIG_FILE_ALT", "/etc/config/" + LEGACY_CONFIG_PACKAGE_ALT);
+const INSTALLER_LEGACY_PERSISTENT_DIR = env("ANTICHEBURNET_INSTALLER_LEGACY_PERSISTENT_DIR", "/etc/" + LEGACY_BACKEND_PACKAGE);
+const INSTALLER_LEGACY_RUNTIME_DIR = env("ANTICHEBURNET_INSTALLER_LEGACY_RUNTIME_DIR", "/var/run/" + LEGACY_BACKEND_PACKAGE);
+const INSTALLER_LEGACY_TMP_DIR = env("ANTICHEBURNET_INSTALLER_LEGACY_TMP_DIR", "/tmp/" + LEGACY_BACKEND_PACKAGE);
+const INSTALLER_LEGACY_TMP_ALT_DIR = env("ANTICHEBURNET_INSTALLER_LEGACY_TMP_ALT_DIR", "/tmp/" + LEGACY_CONFIG_PACKAGE_ALT);
+const INSTALLER_DEADLINE_HELPER = env("ANTICHEBURNET_INSTALLER_DEADLINE_HELPER", "");
+const INSTALLER_COMMAND_RESULT = env("ANTICHEBURNET_INSTALLER_COMMAND_RESULT", "/tmp/anticheburnet-installer-command");
+const INSTALLER_RC_DIR = env("ANTICHEBURNET_INSTALLER_RC_DIR", "/etc/rc.d");
+const INSTALLER_START_RETRY_FILE = env("ANTICHEBURNET_INSTALLER_START_RETRY_FILE", "/var/run/anticheburnet/start.retry");
+const INSTALLER_START_RETRY_PID_FILE = env("ANTICHEBURNET_INSTALLER_START_RETRY_PID_FILE", "/var/run/anticheburnet/start-retry.pid");
+const INSTALLER_ORPHAN_PPID = env("ANTICHEBURNET_INSTALLER_ORPHAN_PPID", "1");
+const INSTALLER_SERVICE_PROBE_TIMEOUT = int(env("ANTICHEBURNET_INSTALLER_SERVICE_PROBE_TIMEOUT", "6")) || 6;
+const INSTALLER_SERVICE_ACTION_TIMEOUT = int(env("ANTICHEBURNET_INSTALLER_SERVICE_ACTION_TIMEOUT", "60")) || 60;
 
 let installer_command_sequence = 0;
 
@@ -715,9 +731,9 @@ function installer_command_result(args, timeout_seconds) {
     };
 }
 
-let dns_owner_config = "forkop";
-let dns_owner_section = "forkop";
-let dns_owner_option_prefix = "forkop_";
+let dns_owner_config = "anticheburnet";
+let dns_owner_section = "anticheburnet";
+let dns_owner_option_prefix = "anticheburnet_";
 
 function path_exists(path) {
     return fs.stat(as_string(path)) != null;
@@ -933,7 +949,7 @@ function installer_cancel_stale_start_retry() {
     let pid = trim(read_text_file(INSTALLER_START_RETRY_PID_FILE));
     if (match(pid, /^[0-9]+$/)) {
         let args = installer_process_args(pid);
-        if (installer_args_contain(args, INSTALLER_FORKOP_INIT) &&
+        if (installer_args_contain(args, INSTALLER_ANTICHEBURNET_INIT) &&
             installer_args_contain(args, "retry_start_on_wan_up"))
             installer_kill_process_tree(pid);
     }
@@ -1028,9 +1044,9 @@ function select_dns_owner(legacy) {
         dns_owner_option_prefix = LEGACY_BRAND + "_";
     }
     else {
-        dns_owner_config = "forkop";
-        dns_owner_section = "forkop";
-        dns_owner_option_prefix = "forkop_";
+        dns_owner_config = "anticheburnet";
+        dns_owner_section = "anticheburnet";
+        dns_owner_option_prefix = "anticheburnet_";
     }
 }
 
@@ -1056,13 +1072,13 @@ function installer_deactivate_legacy_base() {
     }
 
     if (running.value) {
-        warn("Detected a running legacy service. Stopping it before installing Forkop.\n");
+        warn("Detected a running legacy service. Stopping it before installing AnticheburNET.\n");
         if (!installer_service_action(INSTALLER_LEGACY_BASE_INIT, "stop"))
             return false;
     }
 
     if (enabled.value) {
-        warn("Detected an enabled legacy autostart. Disabling it before installing Forkop.\n");
+        warn("Detected an enabled legacy autostart. Disabling it before installing AnticheburNET.\n");
         if (!installer_service_action(INSTALLER_LEGACY_BASE_INIT, "disable"))
             return false;
     }
@@ -1070,14 +1086,14 @@ function installer_deactivate_legacy_base() {
 }
 
 function installer_cleanup_legacy() {
-    let forkop_installed = installer_package_installed("forkop");
+    let anticheburnet_installed = installer_package_installed("anticheburnet");
     let legacy_installed = LEGACY_BRAND != "" && installer_package_installed(LEGACY_BACKEND_PACKAGE);
-    let active_init = legacy_installed ? INSTALLER_LEGACY_INIT : INSTALLER_FORKOP_INIT;
-    let active_bin = legacy_installed ? INSTALLER_LEGACY_BIN : INSTALLER_FORKOP_BIN;
+    let active_init = legacy_installed ? INSTALLER_LEGACY_INIT : INSTALLER_ANTICHEBURNET_INIT;
+    let active_bin = legacy_installed ? INSTALLER_LEGACY_BIN : INSTALLER_ANTICHEBURNET_BIN;
 
     installer_recover_interrupted_cleanup([
         active_init,
-        INSTALLER_FORKOP_INIT,
+        INSTALLER_ANTICHEBURNET_INIT,
         INSTALLER_LEGACY_INIT,
         INSTALLER_LEGACY_BASE_INIT
     ]);
@@ -1088,7 +1104,7 @@ function installer_cleanup_legacy() {
         { known: true, value: false } :
         installer_backend_status_running_state(active_bin);
     if (!enabled.known || (!running.known && !backend_running.known)) {
-        warn("Unable to determine the Forkop service state before installation.\n");
+        warn("Unable to determine the AnticheburNET service state before installation.\n");
         return false;
     }
     let was_enabled = enabled.value;
@@ -1125,9 +1141,9 @@ function installer_cleanup_legacy() {
             packages_removed = false;
     }
 
-    if (!installer_remove_package_prefix("luci-i18n-forkop"))
+    if (!installer_remove_package_prefix("luci-i18n-anticheburnet"))
         packages_removed = false;
-    if (!installer_remove_package("luci-app-forkop"))
+    if (!installer_remove_package("luci-app-anticheburnet"))
         packages_removed = false;
 
     if (!packages_removed) {
@@ -1148,17 +1164,17 @@ function installer_cleanup_legacy() {
             remove_path(path);
     }
 
-    if (!forkop_installed) {
-        remove_path(INSTALLER_FORKOP_LIB);
-        remove_path(INSTALLER_FORKOP_INIT);
-        remove_path(INSTALLER_FORKOP_BIN);
+    if (!anticheburnet_installed) {
+        remove_path(INSTALLER_ANTICHEBURNET_LIB);
+        remove_path(INSTALLER_ANTICHEBURNET_INIT);
+        remove_path(INSTALLER_ANTICHEBURNET_BIN);
     }
 
     for (let path in [
-        INSTALLER_FORKOP_LUCI_VIEW,
+        INSTALLER_ANTICHEBURNET_LUCI_VIEW,
         INSTALLER_MENU_JSON,
         INSTALLER_ACL_JSON,
-        INSTALLER_FORKOP_UCI_DEFAULTS,
+        INSTALLER_ANTICHEBURNET_UCI_DEFAULTS,
         INSTALLER_RU_LMO,
         INSTALLER_EN_LMO,
         INSTALLER_RU_LUA,
@@ -1166,9 +1182,9 @@ function installer_cleanup_legacy() {
     ])
         remove_path(path);
 
-    print("FORKOP_WAS_ENABLED=", was_enabled ? "1" : "0", "\n");
-    print("FORKOP_WAS_RUNNING=", was_running ? "1" : "0", "\n");
-    print("FORKOP_LEGACY_DETECTED=", legacy_installed ? "1" : "0", "\n");
+    print("ANTICHEBURNET_WAS_ENABLED=", was_enabled ? "1" : "0", "\n");
+    print("ANTICHEBURNET_WAS_RUNNING=", was_running ? "1" : "0", "\n");
+    print("ANTICHEBURNET_LEGACY_DETECTED=", legacy_installed ? "1" : "0", "\n");
     return true;
 }
 
@@ -1179,8 +1195,8 @@ function installer_finalize_legacy() {
     let legacy_tailscale_dir = INSTALLER_LEGACY_PERSISTENT_DIR + "/tailscale";
     if (path_exists(legacy_tailscale_dir)) {
         let entries = fs.lsdir(legacy_tailscale_dir);
-        let forkop_tailscale_dir = INSTALLER_FORKOP_PERSISTENT_DIR + "/tailscale";
-        if (type(entries) != "array" || !run_args([ "mkdir", "-p", forkop_tailscale_dir ])) {
+        let anticheburnet_tailscale_dir = INSTALLER_ANTICHEBURNET_PERSISTENT_DIR + "/tailscale";
+        if (type(entries) != "array" || !run_args([ "mkdir", "-p", anticheburnet_tailscale_dir ])) {
             warn("Failed to prepare legacy Tailscale state migration; the legacy directory was preserved.\n");
             return false;
         }
@@ -1188,11 +1204,11 @@ function installer_finalize_legacy() {
         for (let entry in entries) {
             entry = as_string(entry);
             let source = legacy_tailscale_dir + "/" + entry;
-            let target = forkop_tailscale_dir + "/" + entry;
+            let target = anticheburnet_tailscale_dir + "/" + entry;
             if (path_exists(target))
                 continue;
 
-            let temporary = forkop_tailscale_dir + "/." + entry + ".forkop-migrate";
+            let temporary = anticheburnet_tailscale_dir + "/." + entry + ".anticheburnet-migrate";
             if (!remove_path(temporary) ||
                 !run_args([ "cp", "-a", source, temporary ]) ||
                 !run_args([ "mv", temporary, target ])) {
@@ -1256,33 +1272,42 @@ function installer_finalize_legacy() {
 }
 
 function installer_post_install() {
-    remove_globs(env("FORKOP_INSTALLER_LUCI_CACHE_GLOBS", "/var/luci-indexcache* /tmp/luci-indexcache*"));
+    let language = env("ANTICHEBURNET_INSTALLER_LANG", "");
+    if (language != "") {
+        if (language != "en" && language != "ru")
+            return false;
+        let c = uci_cursor();
+        if (c == null || c.set("luci", "main", "lang", language) == false || !uci_commit("luci"))
+            return false;
+    }
+
+    remove_globs(env("ANTICHEBURNET_INSTALLER_LUCI_CACHE_GLOBS", "/var/luci-indexcache* /tmp/luci-indexcache*"));
     for (let path in [
-        env("FORKOP_INSTALLER_LATEST_VERSION_CACHE", "/tmp/forkop.latest-version.cache"),
-        env("FORKOP_INSTALLER_SYSTEM_INFO_CACHE", "/var/run/forkop/system-info.json"),
-        env("FORKOP_INSTALLER_SERVER_COUNTRY_CACHE", "/var/run/forkop/server-country-cache.json"),
-        env("FORKOP_INSTALLER_SING_BOX_VERSION_CACHE", "/var/run/forkop/ui-state/sing-box-version"),
-        env("FORKOP_INSTALLER_TMP_SYSTEM_INFO_CACHE", "/tmp/forkop/system-info.json")
+        env("ANTICHEBURNET_INSTALLER_LATEST_VERSION_CACHE", "/tmp/anticheburnet.latest-version.cache"),
+        env("ANTICHEBURNET_INSTALLER_SYSTEM_INFO_CACHE", "/var/run/anticheburnet/system-info.json"),
+        env("ANTICHEBURNET_INSTALLER_SERVER_COUNTRY_CACHE", "/var/run/anticheburnet/server-country-cache.json"),
+        env("ANTICHEBURNET_INSTALLER_SING_BOX_VERSION_CACHE", "/var/run/anticheburnet/ui-state/sing-box-version"),
+        env("ANTICHEBURNET_INSTALLER_TMP_SYSTEM_INFO_CACHE", "/tmp/anticheburnet/system-info.json")
     ])
         remove_path(path);
 
     if (path_executable(INSTALLER_RPCD_INIT))
         run_args([ INSTALLER_RPCD_INIT, "reload" ]);
 
-    if (env("FORKOP_WAS_ENABLED", "0") == "1" && path_executable(INSTALLER_FORKOP_INIT))
-        run_args([ INSTALLER_FORKOP_INIT, "enable" ]);
+    if (env("ANTICHEBURNET_WAS_ENABLED", "0") == "1" && path_executable(INSTALLER_ANTICHEBURNET_INIT))
+        run_args([ INSTALLER_ANTICHEBURNET_INIT, "enable" ]);
 
-    if (env("FORKOP_WAS_RUNNING", "0") == "1" && path_executable(INSTALLER_FORKOP_INIT)) {
-        if (!run_args([ INSTALLER_FORKOP_INIT, "start" ]) &&
-            !run_args([ INSTALLER_FORKOP_INIT, "restart" ]))
-            warn("Failed to start Forkop after upgrade.\n");
+    if (env("ANTICHEBURNET_WAS_RUNNING", "0") == "1" && path_executable(INSTALLER_ANTICHEBURNET_INIT)) {
+        if (!run_args([ INSTALLER_ANTICHEBURNET_INIT, "start" ]) &&
+            !run_args([ INSTALLER_ANTICHEBURNET_INIT, "restart" ]))
+            warn("Failed to start AnticheburNET after upgrade.\n");
     }
 
     return true;
 }
 
 function installer_remove_selected_packages() {
-    let names = words(env("FORKOP_INSTALLER_REMOVE_PACKAGES", ""));
+    let names = words(env("ANTICHEBURNET_INSTALLER_REMOVE_PACKAGES", ""));
     if (length(names) == 0)
         return true;
     let args = [ "apk", "del" ];
@@ -1307,9 +1332,9 @@ function installer_prepare_full_suite() {
     // Stop every managed engine before removing its executable. APK will keep
     // shared dependencies; never use --rdepends or --force-broken-world here.
     for (let init_script in [
-        env("FORKOP_INSTALLER_SING_BOX_INIT", "/etc/init.d/sing-box"),
-        env("FORKOP_INSTALLER_XRAY_INIT", "/etc/init.d/forkop-xray"),
-        env("FORKOP_INSTALLER_AWG_INIT", "/etc/init.d/forkop-awg"),
+        env("ANTICHEBURNET_INSTALLER_SING_BOX_INIT", "/etc/init.d/sing-box"),
+        env("ANTICHEBURNET_INSTALLER_XRAY_INIT", "/etc/init.d/anticheburnet-xray"),
+        env("ANTICHEBURNET_INSTALLER_AWG_INIT", "/etc/init.d/anticheburnet-awg"),
         "/etc/init.d/xray", "/etc/init.d/nextdns",
         "/etc/init.d/passwall", "/etc/init.d/passwall2"
     ]) {
@@ -1325,7 +1350,7 @@ function installer_prepare_full_suite() {
 
     // A manually installed or interrupted-upgrade binary can survive without
     // an APK owner. Unlink only this path, never its symlink target or configs.
-    let binary = env("FORKOP_INSTALLER_SING_BOX_BIN", "/usr/bin/sing-box");
+    let binary = env("ANTICHEBURNET_INSTALLER_SING_BOX_BIN", "/usr/bin/sing-box");
     if (fs.lstat(binary) != null && !fs.unlink(binary)) {
         warn("Failed to remove the existing sing-box binary: " + binary + "\n");
         return false;
@@ -1340,7 +1365,7 @@ function installer_prepare_full_suite() {
 function installer_full_suite_plan(uninstall) {
     let installed = installer_installed_package_names();
     let roots = [
-        "forkop", "luci-app-forkop", "forkop-xray", "forkop-amneziawg",
+        "anticheburnet", "luci-app-anticheburnet", "anticheburnet-xray", "anticheburnet-amneziawg",
         "sing-box", "sing-box-tiny", "sing-box-extended", "xray-core",
         "nextdns", "luci-app-nextdns", "https-dns-proxy", "luci-app-https-dns-proxy",
         "luci-app-passwall", "luci-app-passwall2",
@@ -1348,18 +1373,18 @@ function installer_full_suite_plan(uninstall) {
         "luci-app-" + LEGACY_BRAND, "luci-app-" + LEGACY_BACKEND_PACKAGE
     ];
     let prefixes = [
-        "luci-i18n-forkop-", "luci-i18n-nextdns-", "luci-i18n-https-dns-proxy-",
+        "luci-i18n-anticheburnet-", "luci-i18n-nextdns-", "luci-i18n-https-dns-proxy-",
         "luci-i18n-passwall-", "luci-i18n-passwall2-",
         "luci-i18n-" + LEGACY_BRAND + "-",
         "luci-i18n-" + LEGACY_BACKEND_PACKAGE + "-"
     ];
     if (uninstall) {
-        // Uninstall Forkop itself, not the unrelated VPNs that conflict with
+        // Uninstall AnticheburNET itself, not the unrelated VPNs that conflict with
         // installing it. Only associate sing-box with an installed backend.
-        roots = [ "forkop", "luci-app-forkop", "forkop-xray", "forkop-amneziawg" ];
-        prefixes = [ "luci-i18n-forkop-" ];
+        roots = [ "anticheburnet", "luci-app-anticheburnet", "anticheburnet-xray", "anticheburnet-amneziawg" ];
+        prefixes = [ "luci-i18n-anticheburnet-" ];
         for (let name in installed) {
-            if (name == "forkop" || name == "forkop-xray" || name == "forkop-amneziawg") {
+            if (name == "anticheburnet" || name == "anticheburnet-xray" || name == "anticheburnet-amneziawg") {
                 for (let engine in [ "sing-box", "sing-box-tiny", "sing-box-extended" ])
                     push(roots, engine);
                 break;
@@ -1438,27 +1463,27 @@ function installer_full_suite_plan(uninstall) {
 }
 
 function installer_uninstall_suite() {
-    let names = words(env("FORKOP_INSTALLER_REMOVE_PACKAGES", ""));
-    installer_recover_interrupted_cleanup([ INSTALLER_FORKOP_INIT ]);
-    if (path_executable(INSTALLER_FORKOP_INIT)) {
-        let stop = installer_command_result([ INSTALLER_FORKOP_INIT, "stop" ], INSTALLER_SERVICE_ACTION_TIMEOUT);
+    let names = words(env("ANTICHEBURNET_INSTALLER_REMOVE_PACKAGES", ""));
+    installer_recover_interrupted_cleanup([ INSTALLER_ANTICHEBURNET_INIT ]);
+    if (path_executable(INSTALLER_ANTICHEBURNET_INIT)) {
+        let stop = installer_command_result([ INSTALLER_ANTICHEBURNET_INIT, "stop" ], INSTALLER_SERVICE_ACTION_TIMEOUT);
         if (!stop.complete || stop.status != 0)
             return false;
     }
-    if (!installer_restore_dnsmasq(INSTALLER_FORKOP_BIN, false))
+    if (!installer_restore_dnsmasq(INSTALLER_ANTICHEBURNET_BIN, false))
         return false;
-    if (path_executable(INSTALLER_FORKOP_INIT)) {
-        let disable = installer_command_result([ INSTALLER_FORKOP_INIT, "disable" ], INSTALLER_SERVICE_ACTION_TIMEOUT);
+    if (path_executable(INSTALLER_ANTICHEBURNET_INIT)) {
+        let disable = installer_command_result([ INSTALLER_ANTICHEBURNET_INIT, "disable" ], INSTALLER_SERVICE_ACTION_TIMEOUT);
         if (!disable.complete || disable.status != 0)
             return false;
     }
 
     let engines = [
-        [ "forkop-xray", env("FORKOP_INSTALLER_XRAY_INIT", "/etc/init.d/forkop-xray") ],
-        [ "forkop-amneziawg", env("FORKOP_INSTALLER_AWG_INIT", "/etc/init.d/forkop-awg") ],
-        [ "sing-box", env("FORKOP_INSTALLER_SING_BOX_INIT", "/etc/init.d/sing-box") ],
-        [ "sing-box-tiny", env("FORKOP_INSTALLER_SING_BOX_INIT", "/etc/init.d/sing-box") ],
-        [ "sing-box-extended", env("FORKOP_INSTALLER_SING_BOX_INIT", "/etc/init.d/sing-box") ]
+        [ "anticheburnet-xray", env("ANTICHEBURNET_INSTALLER_XRAY_INIT", "/etc/init.d/anticheburnet-xray") ],
+        [ "anticheburnet-amneziawg", env("ANTICHEBURNET_INSTALLER_AWG_INIT", "/etc/init.d/anticheburnet-awg") ],
+        [ "sing-box", env("ANTICHEBURNET_INSTALLER_SING_BOX_INIT", "/etc/init.d/sing-box") ],
+        [ "sing-box-tiny", env("ANTICHEBURNET_INSTALLER_SING_BOX_INIT", "/etc/init.d/sing-box") ],
+        [ "sing-box-extended", env("ANTICHEBURNET_INSTALLER_SING_BOX_INIT", "/etc/init.d/sing-box") ]
     ];
     for (let engine in engines) {
         let selected = false;
@@ -1476,16 +1501,16 @@ function installer_uninstall_suite() {
     if (!installer_remove_selected_packages())
         return false;
 
-    // The backup lives in /root. Remove only Forkop-owned settings and caches;
+    // The backup lives in /root. Remove only AnticheburNET-owned settings and caches;
     // preserve standalone sing-box settings when another application uses it.
     for (let path in [
-        "/etc/config/forkop", "/etc/config/forkop_xray", "/etc/config/forkop_awg",
-        INSTALLER_FORKOP_PERSISTENT_DIR, "/var/run/forkop", "/var/run/forkop-xray",
-        "/var/run/forkop-awg", "/tmp/forkop", "/tmp/forkop.latest-version.cache"
+        "/etc/config/anticheburnet", "/etc/config/anticheburnet_xray", "/etc/config/anticheburnet_awg",
+        INSTALLER_ANTICHEBURNET_PERSISTENT_DIR, "/var/run/anticheburnet", "/var/run/anticheburnet-xray",
+        "/var/run/anticheburnet-awg", "/tmp/anticheburnet", "/tmp/anticheburnet.latest-version.cache"
     ])
         if (!remove_path(path))
             return false;
-    if (!remove_globs("/tmp/forkop-happ-* /tmp/luci-indexcache* /var/luci-indexcache*"))
+    if (!remove_globs("/tmp/anticheburnet-happ-* /tmp/luci-indexcache* /var/luci-indexcache*"))
         return false;
     if (path_executable(INSTALLER_RPCD_INIT) && !run_args([ INSTALLER_RPCD_INIT, "reload" ]))
         return false;
@@ -1628,19 +1653,19 @@ function asset_matches(name, kind, ext, version) {
         return false;
 
     if (kind == "backend")
-        return name == "forkop_" + version + "." + ext;
+        return name == "anticheburnet_" + version + "." + ext;
     if (kind == "app")
-        return name == "luci-app-forkop_" + version + "." + ext;
+        return name == "luci-app-anticheburnet_" + version + "." + ext;
     if (kind == "i18n")
-        return name == "luci-i18n-forkop-ru_" + version + "." + ext;
+        return name == "luci-i18n-anticheburnet-ru_" + version + "." + ext;
     if (kind == "checksums")
         return name == "SHA256SUMS";
     if (ext == "apk" && kind == "sing-box")
         return match(as_string(name), /^sing-box-extended_[A-Za-z0-9.+_-]+_openwrt_aarch64_cortex-a53[.]apk$/) != null;
     if (ext == "apk" && kind == "xray")
-        return match(as_string(name), /^forkop-xray_[A-Za-z0-9.+_-]+_aarch64_cortex-a53[.]apk$/) != null;
+        return match(as_string(name), /^anticheburnet-xray_[A-Za-z0-9.+_-]+_aarch64_cortex-a53[.]apk$/) != null;
     if (ext == "apk" && kind == "awg")
-        return match(as_string(name), /^forkop-amneziawg_[A-Za-z0-9.+_-]+_aarch64_cortex-a53[.]apk$/) != null;
+        return match(as_string(name), /^anticheburnet-amneziawg_[A-Za-z0-9.+_-]+_aarch64_cortex-a53[.]apk$/) != null;
     return false;
 }
 
@@ -1714,11 +1739,11 @@ EOF
 
 
 install_json_ucode() {
-    FORKOP_INSTALLER_LEGACY_BRAND="$LEGACY_BRAND" \
-    FORKOP_INSTALLER_LEGACY_BACKEND="$LEGACY_BACKEND_PACKAGE" \
-    FORKOP_INSTALLER_LEGACY_CONFIG_ALT="$LEGACY_CONFIG_PACKAGE_ALT" \
-    FORKOP_INSTALLER_DEADLINE_HELPER="$(install_deadline_helper_path)" \
-    FORKOP_INSTALLER_COMMAND_RESULT="$TMP_DIR/installer-command" \
+    ANTICHEBURNET_INSTALLER_LEGACY_BRAND="$LEGACY_BRAND" \
+    ANTICHEBURNET_INSTALLER_LEGACY_BACKEND="$LEGACY_BACKEND_PACKAGE" \
+    ANTICHEBURNET_INSTALLER_LEGACY_CONFIG_ALT="$LEGACY_CONFIG_PACKAGE_ALT" \
+    ANTICHEBURNET_INSTALLER_DEADLINE_HELPER="$(install_deadline_helper_path)" \
+    ANTICHEBURNET_INSTALLER_COMMAND_RESULT="$TMP_DIR/installer-command" \
         ucode "$(install_json_helper_path)" "$@"
 }
 
@@ -1878,7 +1903,7 @@ check_system() {
     major="$(printf '%s' "$release" | sed 's/[^0-9].*$//' | cut -d. -f1)"
 
     if [ -n "$major" ] && [ "$major" -lt 24 ]; then
-        fail "Forkop requires OpenWrt 24.10 or newer"
+        fail "AnticheburNET requires OpenWrt 24.10 or newer"
     fi
 
     if [ "$INSTALL_MODE" = "full" ]; then
@@ -1918,10 +1943,10 @@ check_full_suite_platform() {
 download_full_suite() {
     FULL_COMPONENT_FILES=""
     for suite_kind in sing-box xray awg checksums; do
-        suite_url="$(printf '%s' "$FORKOP_RELEASE_JSON" | install_json_ucode release-asset-url "$suite_kind" apk)" ||
+        suite_url="$(printf '%s' "$ANTICHEBURNET_RELEASE_JSON" | install_json_ucode release-asset-url "$suite_kind" apk)" ||
             fail "Failed to read the $suite_kind release asset"
         case "$suite_url" in
-            "https://github.com/$REPO_OWNER/$REPO_NAME/releases/download/$FORKOP_RELEASE_TAG/"*) ;;
+            "https://github.com/$REPO_OWNER/$REPO_NAME/releases/download/$ANTICHEBURNET_RELEASE_TAG/"*) ;;
             *) fail "The release has no unique $suite_kind asset from $REPO_OWNER/$REPO_NAME" ;;
         esac
         suite_name="$(basename "$suite_url")"
@@ -1931,14 +1956,14 @@ download_full_suite() {
         download_with_retry "$suite_url" "$TMP_DIR/$suite_name" "$suite_name" || fail "Failed to download $suite_name"
         [ "$suite_kind" = "checksums" ] || FULL_COMPONENT_FILES="$FULL_COMPONENT_FILES $TMP_DIR/$suite_name"
     done
-    download_forkop_packages
+    download_anticheburnet_packages
     verify_full_suite
 }
 
 verify_full_suite() {
     # Only accept one checksum for each of the six selected APKs, with no paths
     # outside the temporary directory. sha256sum -c alone allows omitted files.
-    suite_names="$(basename "$FORKOP_BACKEND_FILE") $(basename "$FORKOP_APP_FILE") $(basename "$FORKOP_I18N_FILE")"
+    suite_names="$(basename "$ANTICHEBURNET_BACKEND_FILE") $(basename "$ANTICHEBURNET_APP_FILE") $(basename "$ANTICHEBURNET_I18N_FILE")"
     for suite_file in $FULL_COMPONENT_FILES; do
         suite_names="$suite_names $(basename "$suite_file")"
     done
@@ -1958,16 +1983,16 @@ install_full_suite() {
     command_exists sha256sum || fail "sha256sum is required to verify the complete suite"
     pkg_list_update || fail "Failed to update package lists"
     ensure_bootstrap_ucode_runtime
-    FORKOP_I18N_REQUESTED=1
-    resolve_forkop_release
+    ANTICHEBURNET_I18N_REQUESTED=1
+    resolve_anticheburnet_release
     download_full_suite
     FULL_REMOVE_PACKAGES="$(install_json_ucode installer-full-suite-plan)" ||
         fail "Failed to plan component replacement; installed services were not stopped"
     # An unregistered sing-box binary also needs replacement before measuring
     # flash. Include dangling symlinks, which -e alone does not detect.
     if [ -z "$FULL_REMOVE_PACKAGES" ] &&
-        [ ! -e "${FORKOP_INSTALLER_SING_BOX_BIN:-/usr/bin/sing-box}" ] &&
-        [ ! -L "${FORKOP_INSTALLER_SING_BOX_BIN:-/usr/bin/sing-box}" ]; then
+        [ ! -e "${ANTICHEBURNET_INSTALLER_SING_BOX_BIN:-/usr/bin/sing-box}" ] &&
+        [ ! -L "${ANTICHEBURNET_INSTALLER_SING_BOX_BIN:-/usr/bin/sing-box}" ]; then
         check_flash_space
     fi
     backup_full_suite_configuration
@@ -1979,25 +2004,25 @@ install_full_suite() {
     detect_legacy_installation
     FULL_REPLACEMENT_STARTED=1
     cleanup_legacy_installation </dev/null
-    FORKOP_INSTALLER_REMOVE_PACKAGES="$FULL_REMOVE_PACKAGES" \
+    ANTICHEBURNET_INSTALLER_REMOVE_PACKAGES="$FULL_REMOVE_PACKAGES" \
         install_json_ucode installer-prepare-full-suite || fail "Failed to remove replaced components; backup: $FULL_BACKUP_DIR"
     restore_full_suite_configuration
     sync || fail "Failed to synchronize flash before the space check; backup: $FULL_BACKUP_DIR"
     check_flash_space
     # Package names are validated above and TMP_DIR is created by mktemp.
     # shellcheck disable=SC2086
-    pkg_install_files "$FORKOP_BACKEND_FILE" "$FORKOP_APP_FILE" "$FORKOP_I18N_FILE" $FULL_COMPONENT_FILES ||
+    pkg_install_files "$ANTICHEBURNET_BACKEND_FILE" "$ANTICHEBURNET_APP_FILE" "$ANTICHEBURNET_I18N_FILE" $FULL_COMPONENT_FILES ||
         fail "Complete suite installation failed"
     migrate_legacy_configuration
     post_install
     FULL_INSTALL_COMPLETE=1
-    msg "Forkop Plus $FORKOP_PACKAGE_VERSION: Forkop, LuCI (RU), sing-box extended, Xray and AmneziaWG installed"
-    msg "Source release: ${REPO_OWNER}/${REPO_NAME}@${FORKOP_RELEASE_TAG}"
-    warn "Open LuCI, add your connections and apply routing settings before enabling Forkop"
+    msg "AnticheburNET $ANTICHEBURNET_PACKAGE_VERSION: AnticheburNET, LuCI ($INSTALLER_LANG), sing-box extended, Xray and AmneziaWG installed"
+    msg "Source release: ${REPO_OWNER}/${REPO_NAME}@${ANTICHEBURNET_RELEASE_TAG}"
+    warn "Open LuCI, add your connections and apply routing settings before enabling AnticheburNET"
 }
 
 backup_full_suite_configuration() {
-    FULL_BACKUP_DIR="/root/forkop-backups/$(date +%Y%m%d-%H%M%S)-$$"
+    FULL_BACKUP_DIR="/root/anticheburnet-backups/$(date +%Y%m%d-%H%M%S)-$$"
     mkdir -p "$FULL_BACKUP_DIR" || fail "Failed to create the configuration backup directory"
     chmod 700 "$FULL_BACKUP_DIR" || fail "Failed to protect the configuration backup directory"
     (
@@ -2005,7 +2030,7 @@ backup_full_suite_configuration() {
         apk info > "$FULL_BACKUP_DIR/packages.txt" || exit 1
         [ ! -f /etc/apk/world ] || cp /etc/apk/world "$FULL_BACKUP_DIR/world" || exit 1
         set --
-        for backup_path in etc/config etc/forkop etc/sing-box \
+        for backup_path in etc/config etc/anticheburnet etc/sing-box \
             "etc/$LEGACY_BACKEND_PACKAGE" "etc/$LEGACY_BRAND"; do
             [ ! -e "/$backup_path" ] || set -- "$@" "$backup_path"
         done
@@ -2013,7 +2038,7 @@ backup_full_suite_configuration() {
         # Preserve managed UCI configs even when APK removes an unmodified
         # conffile. Restore before the new package's migration/postinst runs.
         mkdir "$TMP_DIR/suite-configs" || exit 1
-        for config_name in forkop forkop_xray forkop_awg sing-box; do
+        for config_name in anticheburnet anticheburnet_xray anticheburnet_awg sing-box; do
             [ ! -f "/etc/config/$config_name" ] ||
                 cp -p "/etc/config/$config_name" "$TMP_DIR/suite-configs/$config_name" || exit 1
         done
@@ -2023,7 +2048,7 @@ backup_full_suite_configuration() {
 }
 
 restore_full_suite_configuration() {
-    for config_name in forkop forkop_xray forkop_awg sing-box; do
+    for config_name in anticheburnet anticheburnet_xray anticheburnet_awg sing-box; do
         [ ! -f "$TMP_DIR/suite-configs/$config_name" ] ||
             cp -p "$TMP_DIR/suite-configs/$config_name" "/etc/config/$config_name" ||
             fail "Failed to restore $config_name; backup: $FULL_BACKUP_DIR"
@@ -2043,15 +2068,15 @@ uninstall_full_suite() {
     FULL_REMOVE_PACKAGES="$(install_json_ucode installer-uninstall-plan)" ||
         fail "Failed to plan uninstallation; installed services were not stopped"
     if [ -z "$FULL_REMOVE_PACKAGES" ]; then
-        msg "Forkop Plus packages are already absent"
+        msg "AnticheburNET packages are already absent"
         return 0
     fi
     backup_full_suite_configuration
     FULL_REPLACEMENT_STARTED=1
-    FORKOP_INSTALLER_REMOVE_PACKAGES="$FULL_REMOVE_PACKAGES" \
-        install_json_ucode installer-uninstall-suite || fail "Failed to uninstall Forkop Plus; backup: $FULL_BACKUP_DIR"
+    ANTICHEBURNET_INSTALLER_REMOVE_PACKAGES="$FULL_REMOVE_PACKAGES" \
+        install_json_ucode installer-uninstall-suite || fail "Failed to uninstall AnticheburNET; backup: $FULL_BACKUP_DIR"
     FULL_INSTALL_COMPLETE=1
-    msg "Forkop Plus uninstalled. Configuration backup: $FULL_BACKUP_DIR"
+    msg "AnticheburNET uninstalled. Configuration backup: $FULL_BACKUP_DIR"
 }
 
 installer_is_ru() {
@@ -2067,10 +2092,6 @@ installer_text() {
             no) printf '%s\n' "Нет" ;;
             select) printf '%s\n' "Выберите номер" ;;
             invalid_choice) printf '%s\n' "Введите номер из списка." ;;
-            i18n_installed) printf '%s\n' "Русский пакет интерфейса уже установлен и будет обновлен." ;;
-            i18n_prompt) printf '%s\n' "Установить русский пакет интерфейса?" ;;
-            i18n_skip) printf '%s\n' "Продолжаю без русского пакета интерфейса." ;;
-            luci_ru) printf '%s\n' "Русский пакет интерфейса будет установлен автоматически." ;;
             sing_box_prompt) printf '%s\n' "Какую сборку singbox ставить?" ;;
             sing_box_stable) printf '%s\n' "singbox stable" ;;
             sing_box_extended) printf '%s\n' "singbox extended (если нужен xhttp)" ;;
@@ -2085,29 +2106,11 @@ installer_text() {
         no) printf '%s\n' "No" ;;
         select) printf '%s\n' "Select a number" ;;
         invalid_choice) printf '%s\n' "Enter a number from the list." ;;
-        i18n_installed) printf '%s\n' "The Russian interface package is already installed and will be updated." ;;
-        i18n_prompt) printf '%s\n' "Install the Russian interface language package?" ;;
-        i18n_skip) printf '%s\n' "Continuing without the Russian interface language package." ;;
-        luci_ru) printf '%s\n' "The Russian interface package will be installed automatically." ;;
         sing_box_prompt) printf '%s\n' "Which singbox build should be installed?" ;;
         sing_box_stable) printf '%s\n' "singbox stable" ;;
         sing_box_extended) printf '%s\n' "singbox extended (if xhttp is needed)" ;;
         sing_box_skip_msg) printf '%s\n' "Skipping sing-box installation." ;;
         *) printf '%s\n' "$key" ;;
-    esac
-}
-
-detect_installer_language() {
-    luci_lang="$(get_luci_main_lang)"
-
-    INSTALLER_LANG="en"
-    if pkg_is_installed "luci-i18n-forkop-ru"; then
-        INSTALLER_LANG="ru"
-        return 0
-    fi
-
-    case "$luci_lang" in
-        ru|ru_*|ru-*) INSTALLER_LANG="ru" ;;
     esac
 }
 
@@ -2141,12 +2144,6 @@ numbered_yes_no_prompt() {
     done
 }
 
-get_luci_main_lang() {
-    command_exists ucode || return 0
-    ucode -e 'require("fs"); require("uci");' >/dev/null 2>&1 || return 0
-    install_json_ucode uci-get luci.main.lang 2>/dev/null || true
-}
-
 fetch_github_latest_release_json() {
     owner="$1"
     repo="$2"
@@ -2171,32 +2168,32 @@ fetch_github_latest_release_json() {
     printf '%s' "$response"
 }
 
-resolve_forkop_release() {
+resolve_anticheburnet_release() {
     asset_ext="ipk"
 
     [ "$PKG_IS_APK" -eq 1 ] && asset_ext="apk"
 
-    FORKOP_RELEASE_JSON="$(fetch_github_latest_release_json "$REPO_OWNER" "$REPO_NAME")"
-    FORKOP_RELEASE_TAG="$(printf '%s' "$FORKOP_RELEASE_JSON" | install_json_ucode release-tag 2>/dev/null)"
-    [ -n "$FORKOP_RELEASE_TAG" ] || fail "Failed to detect the Forkop release tag"
+    ANTICHEBURNET_RELEASE_JSON="$(fetch_github_latest_release_json "$REPO_OWNER" "$REPO_NAME")"
+    ANTICHEBURNET_RELEASE_TAG="$(printf '%s' "$ANTICHEBURNET_RELEASE_JSON" | install_json_ucode release-tag 2>/dev/null)"
+    [ -n "$ANTICHEBURNET_RELEASE_TAG" ] || fail "Failed to detect the AnticheburNET release tag"
 
-    FORKOP_BACKEND_URL="$(printf '%s' "$FORKOP_RELEASE_JSON" | install_json_ucode release-asset-url backend "$asset_ext" 2>/dev/null)"
-    [ -n "$FORKOP_BACKEND_URL" ] || fail "The Forkop release does not contain a forkop .$asset_ext package"
+    ANTICHEBURNET_BACKEND_URL="$(printf '%s' "$ANTICHEBURNET_RELEASE_JSON" | install_json_ucode release-asset-url backend "$asset_ext" 2>/dev/null)"
+    [ -n "$ANTICHEBURNET_BACKEND_URL" ] || fail "The AnticheburNET release does not contain a anticheburnet .$asset_ext package"
 
-    FORKOP_APP_URL="$(printf '%s' "$FORKOP_RELEASE_JSON" | install_json_ucode release-asset-url app "$asset_ext" 2>/dev/null)"
-    [ -n "$FORKOP_APP_URL" ] || fail "The Forkop release does not contain a luci-app-forkop .$asset_ext package"
+    ANTICHEBURNET_APP_URL="$(printf '%s' "$ANTICHEBURNET_RELEASE_JSON" | install_json_ucode release-asset-url app "$asset_ext" 2>/dev/null)"
+    [ -n "$ANTICHEBURNET_APP_URL" ] || fail "The AnticheburNET release does not contain a luci-app-anticheburnet .$asset_ext package"
 
-    FORKOP_BACKEND_NAME="$(basename "$FORKOP_BACKEND_URL")"
-    FORKOP_APP_NAME="$(basename "$FORKOP_APP_URL")"
-    FORKOP_PACKAGE_VERSION="$(printf '%s\n' "$FORKOP_BACKEND_NAME" | sed 's/^forkop_//;s/\.ipk$//;s/\.apk$//')"
+    ANTICHEBURNET_BACKEND_NAME="$(basename "$ANTICHEBURNET_BACKEND_URL")"
+    ANTICHEBURNET_APP_NAME="$(basename "$ANTICHEBURNET_APP_URL")"
+    ANTICHEBURNET_PACKAGE_VERSION="$(printf '%s\n' "$ANTICHEBURNET_BACKEND_NAME" | sed 's/^anticheburnet_//;s/\.ipk$//;s/\.apk$//')"
 
-    FORKOP_I18N_URL=""
-    FORKOP_I18N_NAME=""
+    ANTICHEBURNET_I18N_URL=""
+    ANTICHEBURNET_I18N_NAME=""
 
-    if [ "$FORKOP_I18N_REQUESTED" -eq 1 ]; then
-        FORKOP_I18N_URL="$(printf '%s' "$FORKOP_RELEASE_JSON" | install_json_ucode release-asset-url i18n "$asset_ext" 2>/dev/null)"
-        [ -n "$FORKOP_I18N_URL" ] || fail "The Forkop release does not contain a luci-i18n-forkop-ru .$asset_ext package"
-        FORKOP_I18N_NAME="$(basename "$FORKOP_I18N_URL")"
+    if [ "$ANTICHEBURNET_I18N_REQUESTED" -eq 1 ]; then
+        ANTICHEBURNET_I18N_URL="$(printf '%s' "$ANTICHEBURNET_RELEASE_JSON" | install_json_ucode release-asset-url i18n "$asset_ext" 2>/dev/null)"
+        [ -n "$ANTICHEBURNET_I18N_URL" ] || fail "The AnticheburNET release does not contain a luci-i18n-anticheburnet-ru .$asset_ext package"
+        ANTICHEBURNET_I18N_NAME="$(basename "$ANTICHEBURNET_I18N_URL")"
     fi
 }
 
@@ -2211,11 +2208,11 @@ select_sing_box_installation() {
     answer=""
     default_choice=1
 
-    if [ "$FORKOP_LEGACY_DETECTED" -eq 1 ] &&
+    if [ "$ANTICHEBURNET_LEGACY_DETECTED" -eq 1 ] &&
         [ -r /etc/init.d/sing-box ] &&
         grep -Fq 'managed sing-box service for binary variants' /etc/init.d/sing-box; then
         SING_BOX_INSTALL_VARIANT="extended-compressed"
-        msg "The legacy binary-managed sing-box variant will be reinstalled for Forkop"
+        msg "The legacy binary-managed sing-box variant will be reinstalled for AnticheburNET"
         return 0
     fi
 
@@ -2274,9 +2271,9 @@ install_selected_sing_box() {
             ;;
     esac
 
-    [ -x /usr/bin/forkop ] || fail "forkop backend must be installed before sing-box component action"
-    msg "Installing selected sing-box variant through Forkop ucode backend"
-    if ! /usr/bin/forkop component_action sing_box "$action" >"$output_file" 2>&1; then
+    [ -x /usr/bin/anticheburnet ] || fail "anticheburnet backend must be installed before sing-box component action"
+    msg "Installing selected sing-box variant through AnticheburNET ucode backend"
+    if ! /usr/bin/anticheburnet component_action sing_box "$action" >"$output_file" 2>&1; then
         cat "$output_file" >&2 2>/dev/null || true
         fail "Failed to install selected sing-box variant"
     fi
@@ -2286,14 +2283,14 @@ cleanup_legacy_installation() {
     state_file="$TMP_DIR/install-state.env"
 
     install_json_ucode installer-cleanup-legacy >"$state_file" ||
-        fail "Failed to prepare the system before Forkop package installation"
+        fail "Failed to prepare the system before AnticheburNET package installation"
 
     # shellcheck disable=SC1090
     . "$state_file"
 }
 
 detect_legacy_installation() {
-    FORKOP_LEGACY_DETECTED=0
+    ANTICHEBURNET_LEGACY_DETECTED=0
     LEGACY_CONFIG_BACKUP=""
 
     if ! pkg_is_installed "$LEGACY_BACKEND_PACKAGE"; then
@@ -2309,7 +2306,7 @@ detect_legacy_installation() {
         [ "$legacy_config_present" -eq 1 ] || return 0
     fi
 
-    FORKOP_LEGACY_DETECTED=1
+    ANTICHEBURNET_LEGACY_DETECTED=1
     for legacy_config_path in \
         "/etc/config/$LEGACY_BACKEND_PACKAGE" \
         "/etc/config/$LEGACY_CONFIG_PACKAGE_ALT"; do
@@ -2325,77 +2322,51 @@ detect_legacy_installation() {
 }
 
 decide_i18n_installation() {
-    luci_lang="$(get_luci_main_lang)"
-
-    detect_installer_language
-
-    if pkg_is_installed "luci-i18n-forkop-ru"; then
-        FORKOP_I18N_REQUESTED=1
-        msg "$(installer_text i18n_installed)"
-        return 0
+    ANTICHEBURNET_I18N_REQUESTED=0
+    # Keep an existing translation up to date without overriding the choice.
+    if installer_is_ru || pkg_is_installed "luci-i18n-anticheburnet-ru" ||
+        { [ "$ANTICHEBURNET_LEGACY_DETECTED" -eq 1 ] &&
+          pkg_is_installed "luci-i18n-${LEGACY_BACKEND_PACKAGE}-ru"; }; then
+        ANTICHEBURNET_I18N_REQUESTED=1
     fi
-
-    if [ "$FORKOP_LEGACY_DETECTED" -eq 1 ] &&
-        pkg_is_installed "luci-i18n-${LEGACY_BACKEND_PACKAGE}-ru"; then
-        FORKOP_I18N_REQUESTED=1
-        msg "$(installer_text i18n_installed)"
-        return 0
-    fi
-
-    case "$luci_lang" in
-        ru|ru_*|ru-*)
-            FORKOP_I18N_REQUESTED=1
-            INSTALLER_LANG="ru"
-            msg "$(installer_text luci_ru)"
-            return 0
-            ;;
-    esac
-
-    if numbered_yes_no_prompt "$(installer_text i18n_prompt)"; then
-        FORKOP_I18N_REQUESTED=1
-        INSTALLER_LANG="ru"
-        return 0
-    fi
-
-    warn "$(installer_text i18n_skip)"
 }
 
-download_forkop_packages() {
-    FORKOP_BACKEND_FILE="$TMP_DIR/$FORKOP_BACKEND_NAME"
-    FORKOP_APP_FILE="$TMP_DIR/$FORKOP_APP_NAME"
-    FORKOP_I18N_FILE=""
+download_anticheburnet_packages() {
+    ANTICHEBURNET_BACKEND_FILE="$TMP_DIR/$ANTICHEBURNET_BACKEND_NAME"
+    ANTICHEBURNET_APP_FILE="$TMP_DIR/$ANTICHEBURNET_APP_NAME"
+    ANTICHEBURNET_I18N_FILE=""
 
-    download_with_retry "$FORKOP_BACKEND_URL" "$FORKOP_BACKEND_FILE" "$FORKOP_BACKEND_NAME" || fail "Failed to download $FORKOP_BACKEND_NAME"
-    download_with_retry "$FORKOP_APP_URL" "$FORKOP_APP_FILE" "$FORKOP_APP_NAME" || fail "Failed to download $FORKOP_APP_NAME"
+    download_with_retry "$ANTICHEBURNET_BACKEND_URL" "$ANTICHEBURNET_BACKEND_FILE" "$ANTICHEBURNET_BACKEND_NAME" || fail "Failed to download $ANTICHEBURNET_BACKEND_NAME"
+    download_with_retry "$ANTICHEBURNET_APP_URL" "$ANTICHEBURNET_APP_FILE" "$ANTICHEBURNET_APP_NAME" || fail "Failed to download $ANTICHEBURNET_APP_NAME"
 
-    if [ -n "$FORKOP_I18N_URL" ]; then
-        FORKOP_I18N_FILE="$TMP_DIR/$FORKOP_I18N_NAME"
-        download_with_retry "$FORKOP_I18N_URL" "$FORKOP_I18N_FILE" "$FORKOP_I18N_NAME" || fail "Failed to download $FORKOP_I18N_NAME"
+    if [ -n "$ANTICHEBURNET_I18N_URL" ]; then
+        ANTICHEBURNET_I18N_FILE="$TMP_DIR/$ANTICHEBURNET_I18N_NAME"
+        download_with_retry "$ANTICHEBURNET_I18N_URL" "$ANTICHEBURNET_I18N_FILE" "$ANTICHEBURNET_I18N_NAME" || fail "Failed to download $ANTICHEBURNET_I18N_NAME"
     fi
 }
 
 install_backend_package() {
-    pkg_install_files "$FORKOP_BACKEND_FILE" || fail "forkop installation failed"
+    pkg_install_files "$ANTICHEBURNET_BACKEND_FILE" || fail "anticheburnet installation failed"
 }
 
 migrate_legacy_configuration() {
-    [ "$FORKOP_LEGACY_DETECTED" -eq 1 ] || return 0
+    [ "$ANTICHEBURNET_LEGACY_DETECTED" -eq 1 ] || return 0
 
     if [ -n "$LEGACY_CONFIG_BACKUP" ]; then
-        cp "$LEGACY_CONFIG_BACKUP" /etc/config/forkop ||
+        cp "$LEGACY_CONFIG_BACKUP" /etc/config/anticheburnet ||
             fail "Failed to restore the legacy configuration for migration"
-        chmod 0644 /etc/config/forkop ||
-            fail "Failed to set permissions on the Forkop configuration"
+        chmod 0644 /etc/config/anticheburnet ||
+            fail "Failed to set permissions on the AnticheburNET configuration"
 
-        msg "Migrating the legacy configuration to Forkop"
-        if ! FORKOP_CONFIG_NAME="forkop" \
-            FORKOP_LIB="/usr/lib/forkop" \
-            ucode -L /usr/lib/forkop /usr/lib/forkop/config/migration.uc migrate-podkop; then
-            cp "$LEGACY_CONFIG_BACKUP" /etc/config/forkop 2>/dev/null || true
+        msg "Migrating the legacy configuration to AnticheburNET"
+        if ! ANTICHEBURNET_CONFIG_NAME="anticheburnet" \
+            ANTICHEBURNET_LIB="/usr/lib/anticheburnet" \
+            ucode -L /usr/lib/anticheburnet /usr/lib/anticheburnet/config/migration.uc migrate-podkop; then
+            cp "$LEGACY_CONFIG_BACKUP" /etc/config/anticheburnet 2>/dev/null || true
             fail "Legacy configuration migration failed; the original configuration was restored"
         fi
     else
-        warn "The legacy package had no readable configuration; Forkop defaults will be used"
+        warn "The legacy package had no readable configuration; AnticheburNET defaults will be used"
     fi
 
     install_json_ucode installer-finalize-legacy ||
@@ -2403,17 +2374,18 @@ migrate_legacy_configuration() {
 }
 
 install_ui_packages() {
-    pkg_install_files "$FORKOP_APP_FILE" || fail "luci-app-forkop installation failed"
+    pkg_install_files "$ANTICHEBURNET_APP_FILE" || fail "luci-app-anticheburnet installation failed"
 
-    if [ -n "$FORKOP_I18N_FILE" ]; then
-        pkg_install_files "$FORKOP_I18N_FILE" || fail "luci-i18n-forkop-ru installation failed"
+    if [ -n "$ANTICHEBURNET_I18N_FILE" ]; then
+        pkg_install_files "$ANTICHEBURNET_I18N_FILE" || fail "luci-i18n-anticheburnet-ru installation failed"
     fi
 }
 
 post_install() {
-    FORKOP_WAS_ENABLED="$FORKOP_WAS_ENABLED" FORKOP_WAS_RUNNING="$FORKOP_WAS_RUNNING" \
+    ANTICHEBURNET_INSTALLER_LANG="$INSTALLER_LANG" \
+    ANTICHEBURNET_WAS_ENABLED="$ANTICHEBURNET_WAS_ENABLED" ANTICHEBURNET_WAS_RUNNING="$ANTICHEBURNET_WAS_RUNNING" \
         install_json_ucode installer-post-install ||
-        fail "Failed to complete Forkop post-install actions"
+        fail "Failed to complete AnticheburNET post-install actions"
 }
 
 main() {
@@ -2425,6 +2397,7 @@ main() {
     parse_args "$@"
     check_root
     select_install_mode
+    [ "$INSTALL_MODE" = "uninstall" ] || select_install_language
     init_tmp_dir
     if [ "$INSTALL_MODE" = "uninstall" ]; then
         uninstall_full_suite
@@ -2446,8 +2419,8 @@ main() {
     pkg_list_update || fail "Failed to update package lists"
     ensure_bootstrap_ucode_runtime
 
-    resolve_forkop_release
-    download_forkop_packages
+    resolve_anticheburnet_release
+    download_anticheburnet_packages
 
     cleanup_legacy_installation
     install_backend_package
@@ -2456,9 +2429,9 @@ main() {
     install_selected_sing_box
     post_install
 
-    msg "Forkop $FORKOP_PACKAGE_VERSION has been installed successfully"
-    msg "Source release: ${REPO_OWNER}/${REPO_NAME}@${FORKOP_RELEASE_TAG}"
-    warn "Open LuCI and review your rules before enabling Forkop"
+    msg "AnticheburNET $ANTICHEBURNET_PACKAGE_VERSION has been installed successfully"
+    msg "Source release: ${REPO_OWNER}/${REPO_NAME}@${ANTICHEBURNET_RELEASE_TAG}"
+    warn "Open LuCI and review your rules before enabling AnticheburNET"
 }
 
 main "$@"

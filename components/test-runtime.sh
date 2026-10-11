@@ -4,7 +4,7 @@ set -euo pipefail
 umask 077
 work="$1"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-export FORKOP_LIB="$root/forkop/files/usr/lib"
+export ANTICHEBURNET_LIB="$root/anticheburnet/files/usr/lib"
 test_dir="$(mktemp -d)"
 pids=()
 namespaces=()
@@ -15,7 +15,7 @@ cleanup() {
 }
 trap cleanup EXIT
 qemu-aarch64 "$work/test-socket-mark.arm64"
-printf 'forkop-arm64-runtime-ok\n' > "$test_dir/probe.txt"
+printf 'anticheburnet-arm64-runtime-ok\n' > "$test_dir/probe.txt"
 python3 -m http.server 18080 --bind 127.0.0.1 --directory "$test_dir" > "$test_dir/http.log" 2>&1 &
 pids+=("$!")
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=localhost \
@@ -29,13 +29,13 @@ JSON
 cat > "$test_dir/xray-native.json" <<'JSON'
 {"outbounds":[{"tag":"direct","protocol":"freedom"}],"routing":{"rules":[{"type":"field","domain":["geosite:cn"],"outboundTag":"direct"},{"type":"field","ip":["geoip:private"],"outboundTag":"direct"}]}}
 JSON
-ucode -L "$FORKOP_LIB" "$root/components/xray/files/usr/lib/forkop-components/xray.uc" prepare "$test_dir/xray-native.json" "$test_dir/xray.json"
-export FORKOP_XRAY_ASSET_SOURCE="$work/forkop-xray-root/usr/share/xray"
-export FORKOP_XRAY_ASSET_STATE="$test_dir/xray-cache"
-XRAY_LOCATION_ASSET=$(sh "$root/components/xray/files/usr/bin/forkop-xray-assets")
+ucode -L "$ANTICHEBURNET_LIB" "$root/components/xray/files/usr/lib/anticheburnet-components/xray.uc" prepare "$test_dir/xray-native.json" "$test_dir/xray.json"
+export ANTICHEBURNET_XRAY_ASSET_SOURCE="$work/anticheburnet-xray-root/usr/share/xray"
+export ANTICHEBURNET_XRAY_ASSET_STATE="$test_dir/xray-cache"
+XRAY_LOCATION_ASSET=$(sh "$root/components/xray/files/usr/bin/anticheburnet-xray-assets")
 export XRAY_LOCATION_ASSET
 # Exercise the converter on complete, real DAT files, including IPv4 and IPv6.
-ucode -L "$FORKOP_LIB" -e '
+ucode -L "$ANTICHEBURNET_LIB" -e '
 let g=require("routing.geodata"),fs=require("fs"),ip=require("core.ip");
 let networks=g.convert(fs.readfile(ARGV[0]),"geoip","ru").ip_cidr;
 if(length(networks)<100)die("Full GeoIP RU entry was not read\n");
@@ -46,7 +46,7 @@ if(count<100)die("Full GeoSite entry was not read\n");
 print("Full DAT GeoIP/GeoSite conversion passed\n");
 ' "$XRAY_LOCATION_ASSET/geoip.dat" "$XRAY_LOCATION_ASSET/geosite.dat"
 # A second invocation must reuse the verified RAM cache.
-[[ "$(sh "$root/components/xray/files/usr/bin/forkop-xray-assets")" == "$XRAY_LOCATION_ASSET" ]]
+[[ "$(sh "$root/components/xray/files/usr/bin/anticheburnet-xray-assets")" == "$XRAY_LOCATION_ASSET" ]]
 qemu-aarch64 "$work/xray/xray" run -test -config "$test_dir/xray.json"
 qemu-aarch64 "$work/xray/xray" run -config "$test_dir/xray.json" > "$test_dir/xray.log" 2>&1 &
 pids+=("$!")
@@ -129,16 +129,16 @@ CONF
 exec qemu-aarch64 "$work/awg-tools/src/wg" "\$@"
 SH
   chmod 755 "$test_dir/bin/awg"
-  FORKOP_COMPONENT_LIB="$root/components/awg/files/usr/lib" PATH="$test_dir/bin:$PATH" \
-    sh "$root/components/awg/files/usr/bin/forkop-awg-import" --output "$test_dir/imported$index.conf" \
+  ANTICHEBURNET_COMPONENT_LIB="$root/components/awg/files/usr/lib" PATH="$test_dir/bin:$PATH" \
+    sh "$root/components/awg/files/usr/bin/anticheburnet-awg-import" --output "$test_dir/imported$index.conf" \
     "http://127.0.0.1:18080/awg$index.conf"
   cmp "$test_dir/awg$index.conf" "$test_dir/imported$index.conf"
   # A non-AWG response must not replace the saved, working profile.
-  if FORKOP_COMPONENT_LIB="$root/components/awg/files/usr/lib" PATH="$test_dir/bin:$PATH" \
-    sh "$root/components/awg/files/usr/bin/forkop-awg-import" --output "$test_dir/imported$index.conf" \
+  if ANTICHEBURNET_COMPONENT_LIB="$root/components/awg/files/usr/lib" PATH="$test_dir/bin:$PATH" \
+    sh "$root/components/awg/files/usr/bin/anticheburnet-awg-import" --output "$test_dir/imported$index.conf" \
     http://127.0.0.1:18080/probe.txt; then exit 1; fi
   cmp "$test_dir/awg$index.conf" "$test_dir/imported$index.conf"
-  ucode -L "$FORKOP_LIB" "$root/components/awg/files/usr/lib/forkop-components/awg.uc" prepare \
+  ucode -L "$ANTICHEBURNET_LIB" "$root/components/awg/files/usr/lib/anticheburnet-components/awg.uc" prepare \
     "$test_dir/imported$index.conf" "$test_dir/device$index.conf" > "$test_dir/state$index.json"
   if ! ip netns exec "$ns" qemu-aarch64 "$work/awg-tools/src/wg" setconf "fawg$index" "$test_dir/device$index.conf"; then
     cat "$test_dir/awg$index.log"; exit 1

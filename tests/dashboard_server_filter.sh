@@ -2,9 +2,9 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FORKOP_LIB="$ROOT_DIR/forkop/files/usr/lib"
-GENERATOR_UC="$FORKOP_LIB/singbox/generator.uc"
-VALIDATOR_UC="$FORKOP_LIB/config/validator.uc"
+ANTICHEBURNET_LIB="$ROOT_DIR/anticheburnet/files/usr/lib"
+GENERATOR_UC="$ANTICHEBURNET_LIB/singbox/generator.uc"
+VALIDATOR_UC="$ANTICHEBURNET_LIB/config/validator.uc"
 WORK_DIR="$(mktemp -d)"
 
 cleanup() {
@@ -21,13 +21,13 @@ generate_config() {
   local fixture="$1"
   local output="$2"
   mkdir -p "${output}.section-cache"
-  ucode -L "$FORKOP_LIB" "$GENERATOR_UC" generate-config-fixture \
+  ucode -L "$ANTICHEBURNET_LIB" "$GENERATOR_UC" generate-config-fixture \
     "$fixture" "$output" "127.0.0.1"
 }
 
 validate_fixture() {
   local fixture="$1"
-  FORKOP_LIB="$FORKOP_LIB" ucode -L "$FORKOP_LIB" "$VALIDATOR_UC" \
+  ANTICHEBURNET_LIB="$ANTICHEBURNET_LIB" ucode -L "$ANTICHEBURNET_LIB" "$VALIDATOR_UC" \
     validate-runtime-fixture "$fixture" "{}"
 }
 

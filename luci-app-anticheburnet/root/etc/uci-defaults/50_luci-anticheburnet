@@ -1,0 +1,4 @@
+#!/bin/sh
+
+/usr/bin/anticheburnet luci_postinst >/dev/null 2>&1 || true
+exit 0

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-lib="$root/forkop/files/usr/lib"
+lib="$root/anticheburnet/files/usr/lib"
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 python3 - "$work" <<'PY'

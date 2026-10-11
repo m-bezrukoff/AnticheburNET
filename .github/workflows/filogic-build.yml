@@ -4,19 +4,27 @@ on:
     inputs:
       package_version:
         type: string
-        default: '1.0.1'
-        description: Forkop release version
+        default: '1.0.2'
+        description: AnticheburNET release version
+      publish:
+        type: boolean
+        default: true
+        description: Publish tested packages as the latest release
+      update_baseline:
+        type: boolean
+        default: true
+        description: Build version 1.0.1 for an update test
   push:
-    branches: [main, 'forkop-plus/**']
+    branches: [main, 'anticheburnet/**']
     paths: ['components/**', '.github/workflows/filogic-build.yml', 'build.sh']
 permissions:
-  contents: read
+  contents: write
 jobs:
   packages:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      PACKAGE_VERSION: ${{ inputs.package_version || '1.0.1' }}
+      PACKAGE_VERSION: ${{ inputs.package_version || '1.0.2' }}
     steps:
       - uses: actions/checkout@v5.0.0
       - uses: actions/setup-go@v5.0.0
@@ -34,13 +42,39 @@ jobs:
           sudo ldconfig
       - name: Build test emulator with Linux SO_MARK forwarding
         run: bash components/build-test-emulator.sh
-      - name: Build Forkop and LuCI
+      - name: Build AnticheburNET and LuCI
         run: bash build.sh "$PACKAGE_VERSION" "$PWD/dist/filogic"
       - name: Build ARM64 components
         run: bash components/build.sh "$PACKAGE_VERSION" "$PWD/dist/filogic"
+      - name: Build update test baseline
+        if: github.event_name == 'workflow_dispatch' && inputs.update_baseline
+        run: bash build.sh 1.0.1 "$PWD/dist/update-baseline"
+      - name: Upload update baseline
+        if: github.event_name == 'workflow_dispatch' && inputs.update_baseline
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: anticheburnet-update-baseline-1.0.1
+          path: dist/update-baseline/*
+          if-no-files-found: error
+      - name: Prepare release checksums
+        run: |
+          cp install.sh dist/filogic/install.sh
+          cd dist/filogic
+          sha256sum ./*.apk > SHA256SUMS
+          sha256sum ./*.ipk > SHA256SUMS-IPK
+      - name: Publish tested release
+        if: github.event_name == 'workflow_dispatch' && inputs.publish
+        uses: softprops/action-gh-release@v2.4.0
+        with:
+          tag_name: ${{ inputs.package_version }}
+          target_commitish: ${{ github.sha }}
+          name: AnticheburNET ${{ inputs.package_version }}
+          make_latest: true
+          files: dist/filogic/*
+          body_path: docs/RELEASE-1.0.2.md
       - uses: actions/upload-artifact@v4.6.2
         with:
-          name: forkop-plus-filogic-25.12
+          name: anticheburnet-filogic-25.12
           path: dist/filogic/*
           retention-days: 30
           if-no-files-found: error

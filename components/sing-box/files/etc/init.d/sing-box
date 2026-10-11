@@ -1,5 +1,5 @@
 #!/bin/sh /etc/rc.common
-# Forkop managed sing-box service for binary variants
+# AnticheburNET managed sing-box service for binary variants
 USE_PROCD=1
 START=99
 STOP=10

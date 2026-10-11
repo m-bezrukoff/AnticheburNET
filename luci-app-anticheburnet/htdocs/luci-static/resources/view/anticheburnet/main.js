@@ -2151,7 +2151,7 @@ function renderFailedState2() {
     "div",
     {
       id: "",
-      style: "height: 78px",
+      style: "min-height: 24px",
       class: "fkp_dashboard-page__widgets-section__item centered"
     },
     _("Currently unavailable")
@@ -2162,7 +2162,7 @@ function renderLoadingState2() {
     "div",
     {
       id: "",
-      style: "height: 78px",
+      style: "min-height: 24px",
       class: "fkp_dashboard-page__widgets-section__item skeleton"
     },
     ""
@@ -2229,36 +2229,6 @@ function render() {
       E("div", { class: "fkp_dashboard-page__content" }, [
         // Widgets section
         E("div", { class: "fkp_dashboard-page__widgets-section" }, [
-          E(
-            "div",
-            { id: "dashboard-widget-traffic" },
-            renderWidget({
-              loading: true,
-              failed: false,
-              title: "",
-              items: []
-            })
-          ),
-          E(
-            "div",
-            { id: "dashboard-widget-traffic-total" },
-            renderWidget({
-              loading: true,
-              failed: false,
-              title: "",
-              items: []
-            })
-          ),
-          E(
-            "div",
-            { id: "dashboard-widget-system-info" },
-            renderWidget({
-              loading: true,
-              failed: false,
-              title: "",
-              items: []
-            })
-          ),
           E(
             "div",
             { id: "dashboard-widget-service-info" },
@@ -7000,8 +6970,7 @@ var styles = `
 .fkp_dashboard-page__widgets-section {
     margin-top: 10px;
     display: grid;
-    grid-template-columns: repeat(var(--dashboard-grid-columns), minmax(var(--dashboard-grid-min-width), 1fr));
-    grid-gap: 10px;
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .fkp_dashboard-page__widgets-section__item {
@@ -7011,9 +6980,16 @@ var styles = `
     min-width: 0;
 }
 
-.fkp_dashboard-page__widgets-section__item__title {}
+#dashboard-widget-service-info .fkp_dashboard-page__widgets-section__item {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+}
 
-.fkp_dashboard-page__widgets-section__item__row {}
+.fkp_dashboard-page__widgets-section__item__row {
+    white-space: nowrap;
+}
 
 .fkp_dashboard-page__widgets-section__item__row--success .fkp_dashboard-page__widgets-section__item__row__value {
     color: var(--success-color-medium, green);

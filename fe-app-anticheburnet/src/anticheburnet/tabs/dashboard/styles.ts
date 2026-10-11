@@ -86,8 +86,7 @@ export const styles = `
 .fkp_dashboard-page__widgets-section {
     margin-top: 10px;
     display: grid;
-    grid-template-columns: repeat(var(--dashboard-grid-columns), minmax(var(--dashboard-grid-min-width), 1fr));
-    grid-gap: 10px;
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .fkp_dashboard-page__widgets-section__item {
@@ -97,9 +96,16 @@ export const styles = `
     min-width: 0;
 }
 
-.fkp_dashboard-page__widgets-section__item__title {}
+#dashboard-widget-service-info .fkp_dashboard-page__widgets-section__item {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+}
 
-.fkp_dashboard-page__widgets-section__item__row {}
+.fkp_dashboard-page__widgets-section__item__row {
+    white-space: nowrap;
+}
 
 .fkp_dashboard-page__widgets-section__item__row--success .fkp_dashboard-page__widgets-section__item__row__value {
     color: var(--success-color-medium, green);

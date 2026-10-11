@@ -50,7 +50,8 @@ until [ -S "/var/run/amneziawg/$iface.sock" ]; do
     kill -0 "$child" 2>/dev/null || exit 1
     attempt=$((attempt + 1))
     [ "$attempt" -le 50 ] || { echo 'AWG socket readiness timeout' >&2; exit 1; }
-    sleep 0.1
+    # BusyBox sleep may only accept integer seconds; ucode sleeps in milliseconds.
+    ucode -e 'sleep(100);'
 done
 awg setconf "$iface" "$work/device.conf"
 mtu=$(ucode -e 'let fs=require("fs"); print(json(fs.readfile(ARGV[0])).mtu);' "$work/state.json")

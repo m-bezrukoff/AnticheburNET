@@ -42,6 +42,7 @@ const CLOUDFLARE_OCTETS = getenv("CLOUDFLARE_OCTETS") || constants.CLOUDFLARE_OC
 const ZAPRET_LEGACY_DEFAULT_NFQWS_OPT = getenv("ZAPRET_LEGACY_DEFAULT_NFQWS_OPT") || constants.ZAPRET_LEGACY_DEFAULT_NFQWS_OPT || "";
 const DEFAULT_LATENCY_TEST_URL = getenv("DEFAULT_LATENCY_TEST_URL") || "https://www.gstatic.com/generate_204";
 const RUNTIME_STABLE_MIN_AGE = getenv("ANTICHEBURNET_RUNTIME_STABLE_MIN_AGE") || "2";
+const LATENCY_TEST_CONCURRENCY = 8;
 
 const STATUS_UC = LIB_DIR + "/diagnostics/status.uc";
 const HELPERS_UC = LIB_DIR + "/core/helpers.uc";
@@ -1631,6 +1632,42 @@ function latency_test_url() {
     return value == "" ? DEFAULT_LATENCY_TEST_URL : value;
 }
 
+function clash_latency_batch(proxy_tags, base_url, proxy_types, auth, test_url, timeout, progress_path, progress) {
+    let commands = [];
+    let max_time = int((int(timeout) + 999) / 1000) + 1;
+    let validate = command_from_args(module_args(STATUS_UC, [ "stdin-json" ]));
+    for (let proxy_tag in proxy_tags) {
+        let args = [ "curl", "-G", "-s", "--max-time", max_time, clash_latency_endpoint(base_url, proxy_tag, proxy_types[proxy_tag]) ];
+        for (let item in auth) push(args, item);
+        push(args, "--data-urlencode", "url=" + test_url, "--data-urlencode", "timeout=" + timeout);
+        // Each child emits one result; the parent owns progress updates.
+        push(commands, "(if response=$(" + command_from_args(args) + " 2>/dev/null) && printf '%s' \"$response\" | " + validate + " >/dev/null 2>&1; then printf '0\\n'; else printf '1\\n'; fi) &");
+    }
+    push(commands, "wait");
+
+    let pipe = fs.popen(join("\n", commands), "r");
+    let received = 0;
+    if (pipe) {
+        for (let line = pipe.read("line"); line != null && line != ""; line = pipe.read("line")) {
+            received++;
+            progress.completed++;
+            if (trim(line) != "0")
+                progress.failed++;
+            if (progress_path != "")
+                module_success(SERVICE_UI_UC, [ "latency-progress-state", progress_path, progress.completed, progress.total, progress.failed ]);
+        }
+        pipe.close();
+    }
+    // Account for children that could not be launched or exited without a result.
+    let missing = length(proxy_tags) - received;
+    if (missing > 0) {
+        progress.completed += missing;
+        progress.failed += missing;
+        if (progress_path != "")
+            module_success(SERVICE_UI_UC, [ "latency-progress-state", progress_path, progress.completed, progress.total, progress.failed ]);
+    }
+}
+
 function clash_api(action, arg1, arg2, arg3) {
     let base_url = clash_api_url();
     let test_url = latency_test_url();
@@ -1678,36 +1715,27 @@ function clash_api(action, arg1, arg2, arg3) {
                 push(proxy_tags, proxy_tag);
         }
 
-        let count = 0;
-        let failed = 0;
         let progress_path = as_string(arg3);
-        let total = length(proxy_tags);
+        let progress = { completed: 0, total: length(proxy_tags), failed: 0 };
         if (progress_path != "")
-            module_success(SERVICE_UI_UC, [ "latency-progress-state", progress_path, count, total, failed ]);
+            module_success(SERVICE_UI_UC, [ "latency-progress-state", progress_path, 0, progress.total, 0 ]);
 
         let proxy_types = clash_proxy_type_map(base_url, auth);
-        let ordered_proxy_tags = [];
+        let ordinary_tags = [];
+        let urltest_tags = [];
         for (let proxy_tag in proxy_tags)
             if (lc(as_string(proxy_types[proxy_tag])) != "urltest")
-                push(ordered_proxy_tags, proxy_tag);
-        for (let proxy_tag in proxy_tags)
-            if (lc(as_string(proxy_types[proxy_tag])) == "urltest")
-                push(ordered_proxy_tags, proxy_tag);
+                push(ordinary_tags, proxy_tag);
+            else
+                push(urltest_tags, proxy_tag);
 
-        for (let proxy_tag in ordered_proxy_tags) {
-            let args = [ "curl", "-G", "-s", clash_latency_endpoint(base_url, proxy_tag, proxy_types[proxy_tag]) ];
-            for (let item in auth) push(args, item);
-            push(args, "--data-urlencode");
-            push(args, "url=" + test_url);
-            push(args, "--data-urlencode");
-            push(args, "timeout=" + as_string(arg2 || "5000"));
-            if (status_capture([ "stdin-json" ], command_output(command_from_args(args))).status != 0)
-                failed++;
-            count++;
-            if (progress_path != "")
-                module_success(SERVICE_UI_UC, [ "latency-progress-state", progress_path, count, total, failed ]);
+        let timeout = as_string(arg2 || "5000");
+        // Finish ordinary probes before URLTest groups, which may probe the same members.
+        for (let phase in [ ordinary_tags, urltest_tags ]) {
+            for (let i = 0; i < length(phase); i += LATENCY_TEST_CONCURRENCY)
+                clash_latency_batch(slice(phase, i, i + LATENCY_TEST_CONCURRENCY), base_url, proxy_types, auth, test_url, timeout, progress_path, progress);
         }
-        let result = status_capture([ "clash-proxy-latencies-result", count, failed ], null);
+        let result = status_capture([ "clash-proxy-latencies-result", progress.completed, progress.failed ], null);
         if (result.output != "")
             print(result.output);
         return result.status;

@@ -186,11 +186,14 @@ expected_latency_paths=(
   '/group/urltest/delay'
   '/group/provider-urltest/delay'
 )
-for index in "${!expected_latency_paths[@]}"; do
-  sed -n "$((index + 2))p" "$WORK_DIR/fake-curl-latencies.log" |
-    grep -Fq "${expected_latency_paths[$index]}" ||
-    fail "bulk latency must test ordinary proxies before URLTest groups"
+for latency_path in "${expected_latency_paths[@]}"; do
+  grep -Fq "$latency_path" "$WORK_DIR/fake-curl-latencies.log" ||
+    fail "bulk latency must test every proxy and URLTest group"
 done
+sed -n '2,3p' "$WORK_DIR/fake-curl-latencies.log" | grep -Fq '/group/' &&
+  fail "bulk latency must finish ordinary proxies before URLTest groups"
+sed -n '4,5p' "$WORK_DIR/fake-curl-latencies.log" | grep -Fq '/proxies/' &&
+  fail "bulk latency must test URLTest groups in the final phase"
 
 firewall_rules="$(cat <<'EOF'
 firewall.@rule[0]=rule

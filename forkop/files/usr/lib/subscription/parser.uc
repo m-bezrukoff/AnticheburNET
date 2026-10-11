@@ -351,7 +351,7 @@ function runtime_outbounds_signature(path) {
     if (type(subscription) != "object" || type(subscription.outbounds) != "array")
         return null;
 
-    return canonical_runtime_value(subscription.outbounds);
+    return canonical_runtime_value({ outbounds: subscription.outbounds, happ_routing: subscription.happ_routing });
 }
 
 function runtime_outbounds_equal(left_path, right_path) {
@@ -961,6 +961,9 @@ function process_hysteria2(raw, url) {
     if ((url.query.alpn || "") != "")
         tls.alpn = split_csv(url.query.alpn);
 
+    if ((url.query.ech || "") != "")
+        tls.ech = { enabled: true, config: [ url.query.ech ] };
+
     let outbound = {
         type: "hysteria2",
         tag: url.fragment != "" ? url.fragment : (url.host + ":" + as_string(port_value)),
@@ -1213,7 +1216,9 @@ function empty_clash_record() {
         fields: {},
         keys: [],
         context: "",
-        context_indent: -1
+        context_indent: -1,
+        awg_key_block: false,
+        awg_key_indent: -1
     };
 }
 
@@ -1235,6 +1240,7 @@ function emit_clash_record(records, record) {
 }
 
 let clash_nested_keys = {
+    "amnezia-wg-option": true,
     "ws-opts": true,
     "grpc-opts": true,
     "reality-opts": true,
@@ -1247,6 +1253,13 @@ function parse_clash_block_line(record, line) {
     let text = trim(line);
     if (text == "")
         return;
+    if (record.awg_key_block) {
+        if (indent > record.awg_key_indent) {
+            record.fields["amnezia-wg-option.header-protection-key"] += text;
+            return;
+        }
+        record.awg_key_block = false;
+    }
 
     let colon = index(text, ":");
     if (colon < 0)
@@ -1274,6 +1287,12 @@ function parse_clash_block_line(record, line) {
     let full_key = key;
     if (record.context != "" && indent > record.context_indent)
         full_key = record.context + "." + key;
+    if (full_key == "amnezia-wg-option.header-protection-key" && (value == ">-" || value == "|" || value == ">" || value == "|-")) {
+        set_record_field(record, full_key, "");
+        record.awg_key_block = true;
+        record.awg_key_indent = indent;
+        return;
+    }
     set_record_field(record, full_key, value);
 }
 
@@ -1282,8 +1301,8 @@ function is_clash_proxies_header(line) {
     return text == "proxies:" || match(text, /^proxies:\s*#/);
 }
 
-function clash_yaml_records(input_file) {
-    let data = read_file(input_file);
+function clash_yaml_records(input_file, raw_data) {
+    let data = raw_data == null ? read_file(input_file) : raw_data;
     if (data == null)
         return [];
 
@@ -2933,6 +2952,8 @@ function parse_subscription_source_entry_tsv(entry) {
 
 function module_exports() {
     return {
+        base64_decode,
+        clash_yaml_records,
         parse_subscription_source_entry,
         validate_subscription,
         normalize_content_validated,

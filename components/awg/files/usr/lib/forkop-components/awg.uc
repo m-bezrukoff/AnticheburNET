@@ -3,8 +3,7 @@ let fs = require("fs");
 let ip = require("core.ip");
 let constants = require("singbox.constants");
 
-function prepare(path) {
-    let text = fs.readfile(path);
+function prepare_text(text) {
     if (text == null) die("AWG config is unreadable\n");
     let section = "";
     let addresses = [];
@@ -68,6 +67,9 @@ function prepare(path) {
             let allowed = section == "[Interface]" ? interface_keys : peer_keys;
             if (index(allowed, key) < 0) die("Unsupported AWG field (hooks are forbidden): " + key + "\n");
             if (value == "") die("Empty AWG field: " + key + "\n");
+            if (index([ "PrivateKey", "PublicKey", "PresharedKey", "HeaderProtectionKey" ], key) >= 0 &&
+                (!match(value, /^[A-Za-z0-9+\/]{43}=$/) || length(b64dec(value)) != 32))
+                die("Invalid 32-byte AWG key: " + key + "\n");
             if (key == "AllowedIPs") {
                 for (let prefix in split(value, ","))
                     if (!ip.valid_ip_cidr(trim(prefix))) die("Invalid AWG AllowedIPs\n");
@@ -80,6 +82,11 @@ function prepare(path) {
         die("AWG Address, peer PublicKey and AllowedIPs are required\n");
     return { device: join("\n", device) + "\n", addresses, mtu };
 }
+
+function prepare(path) { return prepare_text(fs.readfile(path)); }
+
+if (sourcepath(1) != null && sourcepath(1) != "")
+    return { prepare, prepare_text };
 
 if (ARGV[0] == "prepare") {
     let result = prepare(ARGV[1]);

@@ -10,6 +10,10 @@ let runtime_route = require("singbox.route");
 let runtime_rulesets = require("singbox.rulesets");
 let runtime_servers = require("singbox.servers");
 let runtime_subscription = require("singbox.subscription");
+let runtime_reality = require("singbox.reality");
+let runtime_happ = require("singbox.happ");
+let runtime_happ_profiles = {};
+let runtime_happ_policies = {};
 let runtime_url = require("core.url");
 let runtime_urltest = require("singbox.urltest");
 let source_rulesets = require("routing.rulesets");
@@ -754,6 +758,13 @@ function add_subscription_source_with_state(config, section, source_index, sourc
     let source_outbounds = runtime_subscription.read_source_outbounds(source_section);
     if (length(source_outbounds) == 0)
         return 0;
+
+    let routing = runtime_subscription.read_source_routing(source_section);
+    if (routing != null && routing.enabled) {
+        if (runtime_happ_profiles[section_name] != null && sprintf("%J", runtime_happ_profiles[section_name]) != sprintf("%J", routing))
+            runtime_generate_unsupported("conflicting Happ routing profiles require separate sections");
+        runtime_happ_profiles[section_name] = routing;
+    }
 
     let skipped = {};
     for (let outbound in source_outbounds) {
@@ -1554,6 +1565,8 @@ function add_mixed_proxy_for_section(config, section, service_address) {
         inbound.users = [{ username, password }];
     }
     push(config.inbounds, inbound);
+    if (runtime_happ_policies[section[".name"]] != null)
+        runtime_happ.append_routes(config, runtime_happ_policies[section[".name"]], { inbound: inbound.tag }, runtime_constants.outbound_tag(section[".name"]));
     push(config.route.rules, {
         action: "route",
         inbound: inbound.tag,
@@ -2162,8 +2175,23 @@ function add_interface_connection_outbound(config, state, section, interface_ind
 
 function add_connection_interfaces(config, state, section, taken, selector_tags, urltest_candidate_tags) {
     let items = connections.interfaces(section);
-    for (let i = 0; i < length(items); i++)
+    for (let i = 0; i < length(items); i++) {
+        if (as_string(items[i]) == "awg0") {
+            let path = as_string(uci_cursor().get("forkop_awg", "settings", "config_file") || "/etc/forkop/awg0.conf");
+            let text = fs.readfile(path) || "";
+            let metadata = match("\n" + text, /\n# Forkop-Happ-Routing = ([A-Za-z0-9+\/=]+)/);
+            if (metadata) {
+                let routing = json(b64dec(metadata[1]));
+                let name = section[".name"];
+                if (routing.enabled) {
+                    if (runtime_happ_profiles[name] != null && sprintf("%J", runtime_happ_profiles[name]) != sprintf("%J", routing))
+                        runtime_generate_unsupported("conflicting AWG and subscription routing profiles require separate sections");
+                    runtime_happ_profiles[name] = routing;
+                }
+            }
+        }
         add_interface_connection_outbound(config, state, section, i + 1, items[i], taken, selector_tags, urltest_candidate_tags);
+    }
 }
 
 function parse_outbound_json(value) {
@@ -2782,6 +2810,12 @@ function add_fully_routed_ips_rules(config, section) {
     if (target.outbound)
         route_rule.outbound = target.outbound;
     route_rule.source_ip_cidr = single_or_array(source_ip_cidr);
+    if (runtime_happ_policies[section[".name"]] != null) {
+        let scope = { inbound: tproxy_inbound_matcher(), source_ip_cidr: route_rule.source_ip_cidr };
+        runtime_happ.append_routes(config, runtime_happ_policies[section[".name"]], scope, outbound_tag(section[".name"]));
+        runtime_happ.append_dns(config, runtime_happ_policies[section[".name"]], { source_ip_cidr: route_rule.source_ip_cidr });
+        return;
+    }
     push(config.route.rules, route_rule);
 }
 
@@ -2850,6 +2884,15 @@ function add_combined_route_for_section(config, section) {
         route_rule.domain_keyword != null || route_rule.domain_regex != null ||
         route_rule.ip_cidr != null || route_rule.port != null || route_rule.port_range != null ||
         route_rule.rule_set != null;
+    if (runtime_happ_policies[section_name] != null) {
+        let scope = { ...route_rule };
+        delete scope.action;
+        delete scope.outbound;
+        runtime_happ.append_routes(config, runtime_happ_policies[section_name], scope, outbound_tag(section_name));
+        delete scope.inbound;
+        runtime_happ.append_dns(config, runtime_happ_policies[section_name], scope);
+        return;
+    }
     if (has_route_matchers) {
         let resolve = runtime_route.resolve_rule_for_section(section, route_rule);
         if (type(resolve) == "object" && resolve.warning)
@@ -3084,6 +3127,11 @@ function generate_config(output_path, service_address, mwan3_active, supports_xh
         runtime_servers.add_server(config, server);
     for (let section in sections)
         add_outbound_for_section(config, section, taken, sections);
+    for (let section in sections) {
+        let name = section[".name"];
+        if (runtime_happ_profiles[name] != null)
+            runtime_happ_policies[name] = runtime_happ.prepared(config, runtime_happ_profiles[name], outbound_tag(name), "/tmp/forkop-happ-" + name);
+    }
     add_service_route_rules(config, sections);
     for (let section in sections)
         add_route_for_section(config, section);
@@ -3093,6 +3141,7 @@ function generate_config(output_path, service_address, mwan3_active, supports_xh
     for (let section in sections)
         add_mixed_proxy_for_section(config, section, service_address);
 
+    runtime_reality.prepare_outbounds(config.outbounds, runtime_sing_box_version);
     assert_unique_outbound_tags(config);
     strip_internal_fields(config);
     if (!write_json_file(output_path, config)) {

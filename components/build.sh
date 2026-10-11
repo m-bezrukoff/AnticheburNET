@@ -133,7 +133,7 @@ install -m755 "$work/awg-tools/src/wg" "$work/forkop-amneziawg-root/usr/bin/awg"
 mkdir -p "$work/forkop-amneziawg-root/usr/share/licenses/forkop-amneziawg"
 install -m644 "$work/awg-go/LICENSE" "$work/forkop-amneziawg-root/usr/share/licenses/forkop-amneziawg/daemon-MIT"
 install -m644 "$work/awg-tools/COPYING" "$work/forkop-amneziawg-root/usr/share/licenses/forkop-amneziawg/tools-GPL-2.0"
-package_component forkop-amneziawg 3.1.20260828-r1 'Official AmneziaWG 3.1 userspace client for Forkop' \
+package_component forkop-amneziawg 3.1.20260828-r2 'Official AmneziaWG 3.1 userspace client with subscription import' \
   'forkop kmod-tun ip-full' 'MIT AND GPL-2.0' /etc/config/forkop_awg
 
 # Inspect the exact ARM binaries on the build host through qemu-user.

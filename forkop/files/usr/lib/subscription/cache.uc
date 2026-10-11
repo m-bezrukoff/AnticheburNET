@@ -1696,6 +1696,11 @@ function download_subscription_into_cache(section_name_value, subscription_url, 
             continue;
         }
 
+        if (!require("subscription.happ").attach(headers_tmpfile, raw_tmpfile, normalized_tmpfile)) {
+            log_message("Subscription routing is invalid; retaining the previous nodes and routing", "error");
+            continue;
+        }
+
         if (!subscription_share_link.populate_subscription_file(normalized_tmpfile))
             log_message("Failed to cache direct proxy links for subscription rule '" + section_name_value + "'", "warn");
 

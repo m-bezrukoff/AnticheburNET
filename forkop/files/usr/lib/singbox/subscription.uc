@@ -328,6 +328,10 @@ function read_source_outbounds(source_section) {
     return array_or_empty(subscription.outbounds);
 }
 
+function read_source_routing(source_section) {
+    return object_or_empty(read_json_file(source_json_path(source_section))).happ_routing;
+}
+
 function new_section_state(section_name) {
     return {
         version: FORKOP_RUNTIME_CACHE_FORMAT,
@@ -360,5 +364,6 @@ return {
     remember_priority_group,
     source_cache_is_current,
     read_source_outbounds,
+    read_source_routing,
     new_section_state
 };

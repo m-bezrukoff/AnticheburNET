@@ -1972,8 +1972,9 @@ install_full_suite() {
     fi
     backup_full_suite_configuration
     # Keep the helper available even when APK collects dependencies orphaned
-    # by legacy-package removal. Do not upgrade the existing runtime.
-    apk add --no-upgrade ucode ucode-mod-fs ucode-mod-uci </dev/null ||
+    # by legacy-package removal. A plain add retains the installed versions;
+    # --no-upgrade is not supported by OpenWrt's apk-tools 3.0.5.
+    apk add ucode ucode-mod-fs ucode-mod-uci </dev/null ||
         fail "Failed to retain the installer runtime"
     detect_legacy_installation
     FULL_REPLACEMENT_STARTED=1

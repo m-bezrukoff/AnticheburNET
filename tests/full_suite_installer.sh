@@ -48,7 +48,9 @@ case "$1" in
     ;;
   add)
     printf 'apk %s\n' "$*" >> "$TEST_LOG"
-    if [ "$2" = --no-upgrade ]; then exit "${TEST_RUNTIME_STATUS:-0}"; fi
+    if [ "$*" = 'add ucode ucode-mod-fs ucode-mod-uci' ]; then
+      exit "${TEST_RUNTIME_STATUS:-0}"
+    fi
     [ "$2" = --allow-untrusted ] && [ "$#" = 8 ] || exit 1
     shift 2
     for file do [ -s "$file" ] || exit 1; done
@@ -142,6 +144,8 @@ assert_no_replacement() {
 run_installer < /dev/null || { cat "$WORK_DIR/output"; fail 'complete installation failed'; }
 grep -Fq 'Forkop Plus 1.0.1:' "$WORK_DIR/output" || fail 'missing installation result'
 [[ "$(grep -c '^apk add --allow-untrusted ' "$TEST_LOG")" = 1 ]] || fail 'suite must use one apk transaction'
+grep -Fxq 'apk add ucode ucode-mod-fs ucode-mod-uci' "$TEST_LOG" ||
+  fail 'installer runtime must be retained with OpenWrt-compatible apk options'
 for name in "${names[@]}"; do
   grep -Fq "$name" "$TEST_LOG" || fail "missing installed package: $name"
 done
@@ -229,6 +233,12 @@ export TEST_BACKUP_STATUS=1
 if run_installer; then fail 'failed configuration backup was accepted'; fi
 assert_no_replacement
 unset TEST_BACKUP_STATUS
+export TEST_RUNTIME_STATUS=1
+if run_installer; then fail 'failed runtime retention was accepted'; fi
+if grep -Eq '^(cleanup|prepare|restore|apk add --allow-untrusted|post)' "$TEST_LOG"; then
+  fail 'services or packages were replaced after runtime retention failure'
+fi
+unset TEST_RUNTIME_STATUS
 export TEST_PREPARE_STATUS=1
 if run_installer; then fail 'failed component removal was accepted'; fi
 if grep -Eq '^(restore|flash|apk add --allow-untrusted|post)' "$TEST_LOG"; then

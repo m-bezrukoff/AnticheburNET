@@ -31,6 +31,7 @@ cp "$WORK_DIR/fixtures/SHA256SUMS" "$WORK_DIR/good-sums"
 cat > "$WORK_DIR/bin/apk" <<'SH'
 #!/bin/sh
 case "$1" in
+  --version) printf 'apk-tools 3.0.0\n' ;;
   info)
     if [ "$#" -eq 1 ]; then printf '%s\n' $TEST_INSTALLED; exit 0; fi
     if [ "$2" = -r ]; then printf '%s\n' "${TEST_RDEPENDENCIES:-}"; exit 0; fi

@@ -50,6 +50,43 @@ function createUiState(
 }
 
 describe('applyUiStateToStore', () => {
+  it('updates visible progress and retains it during a local RPC interruption', () => {
+    const progress = {
+      stage: 'downloading' as const,
+      detail: 'backend.apk',
+      version: '1.0.7',
+    };
+    applyUiStateToStore(
+      createUiState({
+        component: [
+          {
+            success: true,
+            running: true,
+            component: 'anticheburnet',
+            action: 'check_and_update',
+            message: '',
+            current_version: '',
+            latest_version: '',
+            changed: false,
+            progress,
+          },
+        ],
+      }),
+    );
+    expect(store.get().updatesActions.anticheburnetCheck.progress).toEqual(
+      progress,
+    );
+    setLocalComponentAction('anticheburnetCheck', true);
+    applyUiStateToStore(createUiState());
+    expect(store.get().updatesActions.anticheburnetCheck.progress).toEqual(
+      progress,
+    );
+    setLocalComponentAction('anticheburnetCheck', false);
+    applyUiStateToStore(createUiState());
+    expect(
+      store.get().updatesActions.anticheburnetCheck.progress,
+    ).toBeUndefined();
+  });
   beforeEach(() => {
     clearLocalActionOverlay();
     store.reset();

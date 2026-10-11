@@ -2551,13 +2551,19 @@ function parseSubscriptionUpdateJobState(response) {
   );
 }
 function parseUiActionStartResult(response) {
-  return parseJsonObjectOutput(response.stdout);
+  return parseJsonObjectOutput(
+    response.stdout
+  );
 }
 function parseServiceActionState(response) {
-  return parseJsonObjectOutput(response.stdout);
+  return parseJsonObjectOutput(
+    response.stdout
+  );
 }
 function parseLatencyActionState(response) {
-  return parseJsonObjectOutput(response.stdout);
+  return parseJsonObjectOutput(
+    response.stdout
+  );
 }
 function isComponentActionJobId(jobId) {
   return /^[A-Za-z0-9._-]+$/.test(jobId) && jobId !== "." && jobId !== "..";
@@ -2648,15 +2654,14 @@ var AnticheburNETShellMethods = {
   checkInboundsConfig: async () => callBaseMethod(
     AnticheburNET.AvailableMethods.CHECK_INBOUNDS_CONFIG
   ),
-  getStatus: async () => callBaseMethod(AnticheburNET.AvailableMethods.GET_STATUS),
+  getStatus: async () => callBaseMethod(
+    AnticheburNET.AvailableMethods.GET_STATUS
+  ),
   getOutboundMetadata: async (section) => callBaseMethod(
     AnticheburNET.AvailableMethods.GET_OUTBOUND_METADATA,
     [section]
   ),
-  getSubscriptionMetadata: async (section) => callBaseMethod(
-    AnticheburNET.AvailableMethods.GET_SUBSCRIPTION_METADATA,
-    [section]
-  ),
+  getSubscriptionMetadata: async (section) => callBaseMethod(AnticheburNET.AvailableMethods.GET_SUBSCRIPTION_METADATA, [section]),
   checkSingBox: async () => callBaseMethod(
     AnticheburNET.AvailableMethods.CHECK_SING_BOX
   ),
@@ -2722,9 +2727,10 @@ var AnticheburNETShellMethods = {
   globalCheck: async (masked = true) => callBaseMethod(AnticheburNET.AvailableMethods.GLOBAL_CHECK, [
     masked ? "masked" : "raw"
   ]),
-  showSingBoxConfig: async (masked = true) => callBaseMethod(AnticheburNET.AvailableMethods.SHOW_SING_BOX_CONFIG, [
-    masked ? "masked" : "raw"
-  ]),
+  showSingBoxConfig: async (masked = true) => callBaseMethod(
+    AnticheburNET.AvailableMethods.SHOW_SING_BOX_CONFIG,
+    [masked ? "masked" : "raw"]
+  ),
   checkLogs: async () => callBaseMethod(AnticheburNET.AvailableMethods.CHECK_LOGS),
   checkSingBoxLogs: async () => callBaseMethod(AnticheburNET.AvailableMethods.CHECK_SING_BOX_LOGS),
   getSystemInfo: async () => callBaseMethod(
@@ -2883,7 +2889,11 @@ var AnticheburNETShellMethods = {
   componentActionStart: async (component, action) => {
     const response = await executeShellCommand({
       command: "/usr/bin/anticheburnet",
-      args: [AnticheburNET.AvailableMethods.COMPONENT_ACTION_ASYNC, component, action],
+      args: [
+        AnticheburNET.AvailableMethods.COMPONENT_ACTION_ASYNC,
+        component,
+        action
+      ],
       timeout: COMPONENT_ACTION_RPC_TIMEOUT_MS
     });
     const parsedResponse = parseComponentActionStartResult(response);
@@ -2916,6 +2926,7 @@ var AnticheburNETShellMethods = {
   waitComponentActionJob: async (jobId, component, action, expectedLatestVersion) => {
     let selfUpdateVersionMatchedAt = 0;
     let lastStatusRefreshAt = 0;
+    let selfUpdateRecoveryStartedAt = 0;
     const transientRpc = createTransientRpcGraceTracker(
       COMPONENT_ACTION_TRANSIENT_RPC_GRACE_MS
     );
@@ -2923,6 +2934,8 @@ var AnticheburNETShellMethods = {
       await sleep(COMPONENT_ACTION_POLL_INTERVAL_MS);
       const stateResponse = await readComponentActionState(jobId);
       if (stateResponse) {
+        selfUpdateRecoveryStartedAt = 0;
+        expectedLatestVersion || (expectedLatestVersion = stateResponse.progress?.version || stateResponse.latest_version || void 0);
         if (!stateResponse.running) {
           transientRpc.reset();
           return {
@@ -2975,12 +2988,24 @@ var AnticheburNETShellMethods = {
                 }
               };
             }
+            continue;
           }
-          continue;
+          selfUpdateRecoveryStartedAt || (selfUpdateRecoveryStartedAt = Date.now());
+          if (Date.now() - selfUpdateRecoveryStartedAt < COMPONENT_ACTION_SELF_UPDATE_SETTLE_MS) {
+            continue;
+          }
+          return {
+            success: false,
+            error: translate(
+              "Unable to confirm the update. Refresh the page and check the installed version and update logs."
+            )
+          };
         }
         return failure;
       }
       transientRpc.reset();
+      selfUpdateRecoveryStartedAt = 0;
+      expectedLatestVersion || (expectedLatestVersion = parsedResponse.progress?.version || parsedResponse.latest_version || void 0);
       if (parsedResponse.running) {
         continue;
       }
@@ -4678,6 +4703,7 @@ var LogNotificationDeduper = class {
 // src/anticheburnet/helpers/getComponentActionKey.ts
 var componentActionKeyMap = {
   "anticheburnet:check_update": "anticheburnetCheck",
+  "anticheburnet:check_and_update": "anticheburnetCheck",
   "anticheburnet:install": "anticheburnetInstall",
   "sing_box:check_update": "singBoxCheck",
   "sing_box:install": "singBoxInstall",
@@ -4885,7 +4911,10 @@ function applyActionState(actions = {}) {
     }
     const key = getComponentActionKey(state.component, state.action);
     if (key) {
-      updatesActions[key] = { loading: true };
+      updatesActions[key] = {
+        loading: true,
+        ...state.progress ? { progress: state.progress } : {}
+      };
     }
   }
   for (const state of actions.service || []) {
@@ -4910,7 +4939,12 @@ function applyActionState(actions = {}) {
     }
   }
   for (const key of localOverlay.componentActions) {
-    updatesActions[key] = { loading: true };
+    if (!updatesActions[key].loading) {
+      updatesActions[key] = {
+        loading: true,
+        ...current.updatesActions[key].progress ? { progress: current.updatesActions[key].progress } : {}
+      };
+    }
   }
   for (const action of localOverlay.serviceActions) {
     diagnosticsActions[action] = { loading: true };
@@ -12820,6 +12854,28 @@ function shouldApplyCompletedComponentActionResult(result, notify) {
   return result.action !== "check_update" || notify;
 }
 
+// src/anticheburnet/tabs/updates/updateProgress.ts
+function getUpdateProgressView(progress) {
+  const steps = [
+    ["checking", "Checking for updates"],
+    ["resolving", "Preparing update"],
+    ["downloading", "Downloading packages"],
+    ["verifying", "Verifying packages"],
+    ["backup", "Backing up settings"],
+    ["installing", "Installing update"],
+    ["restarting", "Restarting service"],
+    ["waiting", "Waiting for service"]
+  ];
+  const index = steps.findIndex(([stage]) => stage === progress?.stage);
+  return {
+    label: steps[Math.max(0, index)][1],
+    completed: index > 0 ? index : void 0,
+    total: steps.length,
+    detail: progress?.detail || "",
+    version: progress?.version || ""
+  };
+}
+
 // src/anticheburnet/tabs/updates/checkResultLifecycle.ts
 function shouldPreserveCompletedCheckResultOnNextMount({
   action,
@@ -12917,7 +12973,10 @@ function setActionLoading(action, loading2, local = false) {
   store.set({
     updatesActions: {
       ...updatesActions,
-      [action]: { loading: loading2 }
+      [action]: {
+        loading: loading2,
+        ...loading2 && updatesActions[action].progress ? { progress: updatesActions[action].progress } : {}
+      }
     }
   });
 }
@@ -12985,7 +13044,10 @@ function getErrorMessage(error, fallback) {
 }
 async function ackComponentActionJob(jobId) {
   try {
-    const response = await AnticheburNETShellMethods.uiActionAck("component", jobId);
+    const response = await AnticheburNETShellMethods.uiActionAck(
+      "component",
+      jobId
+    );
     if (!response.success) {
       logger.debug("[UPDATES]", "component action ack failed", response.error);
     }
@@ -13700,6 +13762,35 @@ function renderComponentCard(card) {
     actionElements
   );
   const cardChildren = [header];
+  const activeUpdate = card.component === "anticheburnet" ? [
+    updatesActions.anticheburnetCheck,
+    updatesActions.anticheburnetInstall
+  ].find((action) => action.loading) : void 0;
+  if (activeUpdate) {
+    const progress = getUpdateProgressView(activeUpdate.progress);
+    const label = _(progress.label);
+    const progressElement = E("div", { class: "fkp_updates-page__progress" }, [
+      E(
+        "div",
+        { class: "fkp_updates-page__progress-label" },
+        `${label}${progress.version ? ` \xB7 ${progress.version}` : ""}`
+      ),
+      E("progress", {
+        max: progress.total,
+        ...progress.completed === void 0 ? {} : { value: progress.completed },
+        "aria-label": label
+      }),
+      ...progress.detail ? [
+        E(
+          "div",
+          { class: "fkp_updates-page__progress-detail" },
+          progress.detail
+        )
+      ] : []
+    ]);
+    progressElement.setAttribute("aria-live", "polite");
+    cardChildren.push(progressElement);
+  }
   if (detailsContainer) {
     cardChildren.push(detailsContainer);
   }
@@ -13974,6 +14065,25 @@ var styles6 = `
     display: flex;
     flex-wrap: nowrap;
     gap: 6px;
+}
+
+.fkp_updates-page__progress {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 380px;
+    min-width: 240px;
+}
+.fkp_updates-page__progress progress {
+    width: 100%;
+    height: 10px;
+    accent-color: var(--link-color, #3498db);
+}
+.fkp_updates-page__progress-label { color: var(--text-color-high); }
+.fkp_updates-page__progress-detail {
+    color: var(--text-color-medium, #888);
+    font-size: 12px;
+    overflow-wrap: anywhere;
 }
 `;
 

@@ -3344,3 +3344,30 @@ msgstr ""
 #: ../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/settings.js:238
 msgid "Number of consecutive successful checks required before returning to a higher-priority DNS server."
 msgstr ""
+
+msgid "Checking for updates"
+msgstr ""
+
+msgid "Preparing update"
+msgstr ""
+
+msgid "Downloading packages"
+msgstr ""
+
+msgid "Verifying packages"
+msgstr ""
+
+msgid "Backing up settings"
+msgstr ""
+
+msgid "Installing update"
+msgstr ""
+
+msgid "Restarting service"
+msgstr ""
+
+msgid "Waiting for service"
+msgstr ""
+
+msgid "Unable to confirm the update. Refresh the page and check the installed version and update logs."
+msgstr ""

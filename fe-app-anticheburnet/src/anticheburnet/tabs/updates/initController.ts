@@ -23,6 +23,7 @@ import {
   isServiceTransitionStatus,
 } from '../diagnostic/serviceTransition';
 import { shouldApplyCompletedComponentActionResult } from './componentActionCompletion';
+import { getUpdateProgressView } from './updateProgress';
 import {
   shouldPreserveCompletedCheckResultOnNextMount,
   shouldExposeCheckResults,
@@ -46,7 +47,8 @@ import {
 } from '../../services/runtimeUiState.service';
 import { AnticheburNET } from '../../types';
 
-type UpdateStatus = StoreType['updatesChecks'][AnticheburNET.ComponentName]['status'];
+type UpdateStatus =
+  StoreType['updatesChecks'][AnticheburNET.ComponentName]['status'];
 
 interface ComponentActionButton {
   key: UpdatesActionKey;
@@ -171,7 +173,12 @@ function setActionLoading(
   store.set({
     updatesActions: {
       ...updatesActions,
-      [action]: { loading },
+      [action]: {
+        loading,
+        ...(loading && updatesActions[action].progress
+          ? { progress: updatesActions[action].progress }
+          : {}),
+      },
     },
   });
 }
@@ -209,7 +216,9 @@ function resetCheckResult(component: AnticheburNET.ComponentName) {
   setCheckResult(component, null, '');
 }
 
-function applyCachedCheckResults(results: AnticheburNET.ComponentActionResult[]) {
+function applyCachedCheckResults(
+  results: AnticheburNET.ComponentActionResult[],
+) {
   results.forEach((result) => {
     const status = result.status || null;
 
@@ -262,7 +271,10 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 async function ackComponentActionJob(jobId: string) {
   try {
-    const response = await AnticheburNETShellMethods.uiActionAck('component', jobId);
+    const response = await AnticheburNETShellMethods.uiActionAck(
+      'component',
+      jobId,
+    );
 
     if (!response.success) {
       logger.debug('[UPDATES]', 'component action ack failed', response.error);
@@ -325,7 +337,9 @@ function reloadPageAfterAnticheburNETUpdate() {
   }, 1200);
 }
 
-function patchSystemInfoAfterMutation(result: AnticheburNET.ComponentActionResult) {
+function patchSystemInfoAfterMutation(
+  result: AnticheburNET.ComponentActionResult,
+) {
   const systemInfo = store.get().diagnosticsSystemInfo;
   const nextSystemInfo = { ...systemInfo, loading: false, loaded: true };
   const version =
@@ -535,7 +549,9 @@ async function completeComponentActionJob(
   });
 }
 
-async function followComponentActionState(state: AnticheburNET.ComponentActionResult) {
+async function followComponentActionState(
+  state: AnticheburNET.ComponentActionResult,
+) {
   const jobId = state.job_id;
   const key = getComponentActionKey(state.component, state.action);
 
@@ -1186,6 +1202,42 @@ function renderComponentCard(card: ComponentCard) {
   );
 
   const cardChildren: Node[] = [header];
+  const activeUpdate =
+    card.component === 'anticheburnet'
+      ? [
+          updatesActions.anticheburnetCheck,
+          updatesActions.anticheburnetInstall,
+        ].find((action) => action.loading)
+      : undefined;
+  if (activeUpdate) {
+    const progress = getUpdateProgressView(activeUpdate.progress);
+    const label = _(progress.label);
+    const progressElement = E('div', { class: 'fkp_updates-page__progress' }, [
+      E(
+        'div',
+        { class: 'fkp_updates-page__progress-label' },
+        `${label}${progress.version ? ` · ${progress.version}` : ''}`,
+      ),
+      E('progress', {
+        max: progress.total,
+        ...(progress.completed === undefined
+          ? {}
+          : { value: progress.completed }),
+        'aria-label': label,
+      }),
+      ...(progress.detail
+        ? [
+            E(
+              'div',
+              { class: 'fkp_updates-page__progress-detail' },
+              progress.detail,
+            ),
+          ]
+        : []),
+    ]);
+    progressElement.setAttribute('aria-live', 'polite');
+    cardChildren.push(progressElement);
+  }
   if (detailsContainer) {
     cardChildren.push(detailsContainer);
   }

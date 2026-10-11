@@ -573,6 +573,21 @@ export namespace AnticheburNET {
     | 'install_tiny'
     | 'install_stable';
 
+  export interface ComponentUpdateProgress {
+    stage:
+      | 'checking'
+      | 'resolving'
+      | 'downloading'
+      | 'verifying'
+      | 'backup'
+      | 'installing'
+      | 'restarting'
+      | 'waiting';
+    detail?: string;
+    version?: string;
+    updated_at?: number;
+  }
+
   export interface ComponentActionResult {
     success: boolean;
     running?: boolean;
@@ -590,6 +605,7 @@ export namespace AnticheburNET {
     started_at?: number;
     updated_at?: number | null;
     exit_code?: number | null;
+    progress?: ComponentUpdateProgress;
   }
 
   export interface ComponentUpdateCheckCache {

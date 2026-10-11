@@ -12,6 +12,28 @@ vi.mock('../../../../helpers', () => ({
 import { AnticheburNETShellMethods } from '../index';
 
 describe('AnticheburNETShellMethods.componentAction', () => {
+  it.each([undefined, '1.0.7'])(
+    'ends missing self-update state recovery for expected version %s',
+    async (version) => {
+      mocks.fsRead.mockRejectedValue(new Error('State was not found'));
+      mocks.executeShellCommand.mockResolvedValue({
+        stdout: '',
+        stderr: 'Component action job was not found',
+        code: 1,
+      });
+      const response = AnticheburNETShellMethods.waitComponentActionJob(
+        'missing-job',
+        'anticheburnet',
+        'check_and_update',
+        version,
+      );
+      await vi.advanceTimersByTimeAsync(90000);
+      await expect(response).resolves.toMatchObject({
+        success: false,
+        error: expect.stringContaining('Unable to confirm the update'),
+      });
+    },
+  );
   beforeEach(() => {
     vi.useFakeTimers();
     mocks.executeShellCommand.mockReset();
@@ -26,55 +48,58 @@ describe('AnticheburNETShellMethods.componentAction', () => {
     vi.unstubAllGlobals();
   });
 
-  it.each(['install', 'check_and_update'] as const)('recovers %s after package replacement interrupts polling', async (action) => {
-    mocks.fsRead.mockRejectedValue(new Error('Access denied'));
-    mocks.executeShellCommand.mockImplementation(({ args }) => {
-      if (args[0] === 'component_action_status') {
+  it.each(['install', 'check_and_update'] as const)(
+    'recovers %s after package replacement interrupts polling',
+    async (action) => {
+      mocks.fsRead.mockRejectedValue(new Error('Access denied'));
+      mocks.executeShellCommand.mockImplementation(({ args }) => {
+        if (args[0] === 'component_action_status') {
+          return Promise.resolve({
+            stdout: '',
+            stderr: 'Unknown command',
+            code: 1,
+          });
+        }
+
+        if (args[0] === 'show_version') {
+          return Promise.resolve({
+            stdout: '0.7.17.11\n',
+            stderr: '',
+            code: 0,
+          });
+        }
+
         return Promise.resolve({
           stdout: '',
-          stderr: 'Unknown command',
+          stderr: 'Unexpected command',
           code: 1,
         });
-      }
-
-      if (args[0] === 'show_version') {
-        return Promise.resolve({
-          stdout: '0.7.17.11\n',
-          stderr: '',
-          code: 0,
-        });
-      }
-
-      return Promise.resolve({
-        stdout: '',
-        stderr: 'Unexpected command',
-        code: 1,
       });
-    });
 
-    const responsePromise = AnticheburNETShellMethods.waitComponentActionJob(
-      'job-1',
-      'anticheburnet',
-      action,
-      '0.7.17.11',
-    );
+      const responsePromise = AnticheburNETShellMethods.waitComponentActionJob(
+        'job-1',
+        'anticheburnet',
+        action,
+        '0.7.17.11',
+      );
 
-    await vi.advanceTimersByTimeAsync(33000);
+      await vi.advanceTimersByTimeAsync(33000);
 
-    await expect(responsePromise).resolves.toEqual({
-      success: true,
-      data: {
+      await expect(responsePromise).resolves.toEqual({
         success: true,
-        component: 'anticheburnet',
-        action: 'install',
-        message: 'AnticheburNET has been installed',
-        current_version: '0.7.17.11',
-        latest_version: '0.7.17.11',
-        changed: true,
-        status: 'latest',
-      },
-    });
-  });
+        data: {
+          success: true,
+          component: 'anticheburnet',
+          action: 'install',
+          message: 'AnticheburNET has been installed',
+          current_version: '0.7.17.11',
+          latest_version: '0.7.17.11',
+          changed: true,
+          status: 'latest',
+        },
+      });
+    },
+  );
 
   it('returns the backend component action start error message', async () => {
     mocks.executeShellCommand.mockResolvedValue({

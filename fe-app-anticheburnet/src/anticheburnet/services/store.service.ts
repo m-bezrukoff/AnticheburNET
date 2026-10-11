@@ -168,7 +168,10 @@ export interface StoreType {
     failed: boolean;
     data: AnticheburNET.OutboundGroup[];
     latencyFetchingSections: Record<string, boolean>;
-    latencyProgressSections: Record<string, AnticheburNET.LatencyActionProgress>;
+    latencyProgressSections: Record<
+      string,
+      AnticheburNET.LatencyActionProgress
+    >;
     selectorSwitchingSections: Record<string, string>;
     subscriptionUpdatingSections: Record<string, boolean>;
   };
@@ -209,23 +212,74 @@ export interface StoreType {
     device_model: string;
   };
   updatesActions: {
-    anticheburnetCheck: { loading: boolean };
-    anticheburnetInstall: { loading: boolean };
-    singBoxCheck: { loading: boolean };
-    singBoxInstall: { loading: boolean };
-    singBoxInstallExtended: { loading: boolean };
-    singBoxInstallExtendedCompressed: { loading: boolean };
-    singBoxInstallTiny: { loading: boolean };
-    singBoxInstallStable: { loading: boolean };
-    zapretCheck: { loading: boolean };
-    zapretInstall: { loading: boolean };
-    zapretRemove: { loading: boolean };
-    zapret2Check: { loading: boolean };
-    zapret2Install: { loading: boolean };
-    zapret2Remove: { loading: boolean };
-    byedpiCheck: { loading: boolean };
-    byedpiInstall: { loading: boolean };
-    byedpiRemove: { loading: boolean };
+    anticheburnetCheck: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    anticheburnetInstall: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    singBoxCheck: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    singBoxInstall: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    singBoxInstallExtended: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    singBoxInstallExtendedCompressed: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    singBoxInstallTiny: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    singBoxInstallStable: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    zapretCheck: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    zapretInstall: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    zapretRemove: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    zapret2Check: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    zapret2Install: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    zapret2Remove: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    byedpiCheck: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    byedpiInstall: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
+    byedpiRemove: {
+      loading: boolean;
+      progress?: AnticheburNET.ComponentUpdateProgress;
+    };
   };
   updatesChecks: Record<
     AnticheburNET.ComponentName,

@@ -90,19 +90,25 @@ function parseSubscriptionUpdateJobState(
 function parseUiActionStartResult(
   response: Awaited<ReturnType<typeof executeShellCommand>>,
 ) {
-  return parseJsonObjectOutput<AnticheburNET.UiActionStartResult>(response.stdout);
+  return parseJsonObjectOutput<AnticheburNET.UiActionStartResult>(
+    response.stdout,
+  );
 }
 
 function parseServiceActionState(
   response: Awaited<ReturnType<typeof executeShellCommand>>,
 ) {
-  return parseJsonObjectOutput<AnticheburNET.ServiceActionState>(response.stdout);
+  return parseJsonObjectOutput<AnticheburNET.ServiceActionState>(
+    response.stdout,
+  );
 }
 
 function parseLatencyActionState(
   response: Awaited<ReturnType<typeof executeShellCommand>>,
 ) {
-  return parseJsonObjectOutput<AnticheburNET.LatencyActionState>(response.stdout);
+  return parseJsonObjectOutput<AnticheburNET.LatencyActionState>(
+    response.stdout,
+  );
 }
 
 function isComponentActionJobId(jobId: string) {
@@ -234,17 +240,18 @@ export const AnticheburNETShellMethods = {
       AnticheburNET.AvailableMethods.CHECK_INBOUNDS_CONFIG,
     ),
   getStatus: async () =>
-    callBaseMethod<AnticheburNET.GetStatus>(AnticheburNET.AvailableMethods.GET_STATUS),
+    callBaseMethod<AnticheburNET.GetStatus>(
+      AnticheburNET.AvailableMethods.GET_STATUS,
+    ),
   getOutboundMetadata: async (section: string) =>
     callBaseMethod<AnticheburNET.GetOutboundMetadata>(
       AnticheburNET.AvailableMethods.GET_OUTBOUND_METADATA,
       [section],
     ),
   getSubscriptionMetadata: async (section: string) =>
-    callBaseMethod<AnticheburNET.SubscriptionMetadata | AnticheburNET.SubscriptionMetadata[]>(
-      AnticheburNET.AvailableMethods.GET_SUBSCRIPTION_METADATA,
-      [section],
-    ),
+    callBaseMethod<
+      AnticheburNET.SubscriptionMetadata | AnticheburNET.SubscriptionMetadata[]
+    >(AnticheburNET.AvailableMethods.GET_SUBSCRIPTION_METADATA, [section]),
   checkSingBox: async () =>
     callBaseMethod<AnticheburNET.SingBoxCheckResult>(
       AnticheburNET.AvailableMethods.CHECK_SING_BOX,
@@ -328,9 +335,10 @@ export const AnticheburNETShellMethods = {
       masked ? 'masked' : 'raw',
     ]),
   showSingBoxConfig: async (masked = true) =>
-    callBaseMethod<unknown>(AnticheburNET.AvailableMethods.SHOW_SING_BOX_CONFIG, [
-      masked ? 'masked' : 'raw',
-    ]),
+    callBaseMethod<unknown>(
+      AnticheburNET.AvailableMethods.SHOW_SING_BOX_CONFIG,
+      [masked ? 'masked' : 'raw'],
+    ),
   checkLogs: async () =>
     callBaseMethod<unknown>(AnticheburNET.AvailableMethods.CHECK_LOGS),
   checkSingBoxLogs: async () =>
@@ -404,7 +412,8 @@ export const AnticheburNETShellMethods = {
     while (Date.now() - startedAt < SERVICE_ACTION_TIMEOUT_MS) {
       await sleep(SERVICE_ACTION_POLL_INTERVAL_MS);
 
-      const response = await AnticheburNETShellMethods.serviceActionStatus(jobId);
+      const response =
+        await AnticheburNETShellMethods.serviceActionStatus(jobId);
 
       if (!response.success) {
         return response;
@@ -536,7 +545,11 @@ export const AnticheburNETShellMethods = {
   ) => {
     const response = await executeShellCommand({
       command: '/usr/bin/anticheburnet',
-      args: [AnticheburNET.AvailableMethods.COMPONENT_ACTION_ASYNC, component, action],
+      args: [
+        AnticheburNET.AvailableMethods.COMPONENT_ACTION_ASYNC,
+        component,
+        action,
+      ],
       timeout: COMPONENT_ACTION_RPC_TIMEOUT_MS,
     });
     const parsedResponse = parseComponentActionStartResult(response);
@@ -583,6 +596,7 @@ export const AnticheburNETShellMethods = {
   ) => {
     let selfUpdateVersionMatchedAt = 0;
     let lastStatusRefreshAt = 0;
+    let selfUpdateRecoveryStartedAt = 0;
     const transientRpc = createTransientRpcGraceTracker(
       COMPONENT_ACTION_TRANSIENT_RPC_GRACE_MS,
     );
@@ -593,6 +607,11 @@ export const AnticheburNETShellMethods = {
       const stateResponse = await readComponentActionState(jobId);
 
       if (stateResponse) {
+        selfUpdateRecoveryStartedAt = 0;
+        expectedLatestVersion ||=
+          stateResponse.progress?.version ||
+          stateResponse.latest_version ||
+          undefined;
         if (!stateResponse.running) {
           transientRpc.reset();
           return {
@@ -634,8 +653,10 @@ export const AnticheburNETShellMethods = {
           continue;
         }
 
-        if (component === 'anticheburnet' &&
-          (action === 'install' || action === 'check_and_update')) {
+        if (
+          component === 'anticheburnet' &&
+          (action === 'install' || action === 'check_and_update')
+        ) {
           const installedVersion = expectedLatestVersion
             ? await readAnticheburNETVersion()
             : '';
@@ -666,15 +687,32 @@ export const AnticheburNETShellMethods = {
                 },
               } as AnticheburNET.MethodSuccessResponse<AnticheburNET.ComponentActionResult>;
             }
+            continue;
           }
-
-          continue;
+          selfUpdateRecoveryStartedAt ||= Date.now();
+          if (
+            Date.now() - selfUpdateRecoveryStartedAt <
+            COMPONENT_ACTION_SELF_UPDATE_SETTLE_MS
+          ) {
+            continue;
+          }
+          return {
+            success: false,
+            error: translate(
+              'Unable to confirm the update. Refresh the page and check the installed version and update logs.',
+            ),
+          } as AnticheburNET.MethodFailureResponse;
         }
 
         return failure;
       }
 
       transientRpc.reset();
+      selfUpdateRecoveryStartedAt = 0;
+      expectedLatestVersion ||=
+        parsedResponse.progress?.version ||
+        parsedResponse.latest_version ||
+        undefined;
       if (parsedResponse.running) {
         continue;
       }
@@ -745,7 +783,8 @@ export const AnticheburNETShellMethods = {
     while (true) {
       await sleep(SUBSCRIPTION_UPDATE_POLL_INTERVAL_MS);
 
-      const response = await AnticheburNETShellMethods.subscriptionUpdateStatus(jobId);
+      const response =
+        await AnticheburNETShellMethods.subscriptionUpdateStatus(jobId);
 
       if (!response.success) {
         if (transientRpc.shouldContinue(response.error)) {

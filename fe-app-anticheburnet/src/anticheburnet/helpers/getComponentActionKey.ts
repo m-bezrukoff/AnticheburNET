@@ -5,6 +5,7 @@ export type UpdatesActionKey = keyof StoreType['updatesActions'];
 
 const componentActionKeyMap: Record<string, UpdatesActionKey> = {
   'anticheburnet:check_update': 'anticheburnetCheck',
+  'anticheburnet:check_and_update': 'anticheburnetCheck',
   'anticheburnet:install': 'anticheburnetInstall',
   'sing_box:check_update': 'singBoxCheck',
   'sing_box:install': 'singBoxInstall',

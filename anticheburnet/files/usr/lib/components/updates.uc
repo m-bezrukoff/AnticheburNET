@@ -1515,6 +1515,8 @@ function remove_component_job_state(path) {
     remove_file(path);
     remove_file(output_path);
     remove_file(output_path + ".json");
+    remove_file(path + ".progress");
+    remove_file(path + ".progress.tmp");
 }
 
 function component_job_running_is(path, expected) {
@@ -1741,7 +1743,9 @@ function launch_component_worker(args) {
 
 function component_action_worker(state_file, output_file, component, action) {
     component = normalize_component_name(component);
-    let command = command_env(component_worker_env()) + " " +
+    let worker_env = component_worker_env();
+    worker_env.ANTICHEBURNET_COMPONENT_PROGRESS_FILE = state_file + ".progress";
+    let command = command_env(worker_env) + " " +
         command_from_args([
             "ucode",
             "-L", LIB_DIR,
@@ -1807,7 +1811,10 @@ function component_action_status(job_id) {
         component_action_status_error_exit("Component action job was not found");
 
     refresh_component_running_job_state(state_file);
-    print(as_string(fs.readfile(state_file)));
+    let value = read_json_file(state_file);
+    let progress = read_json_file(state_file + ".progress");
+    if (type(progress) == "object") value.progress = progress;
+    write_json(value);
 }
 
 function automatic_component_check_names() {

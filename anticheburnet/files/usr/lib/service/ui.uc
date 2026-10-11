@@ -195,6 +195,8 @@ function remove_state_file(path) {
     remove_file(path);
     remove_file(base + ".out");
     remove_file(base + ".out.json");
+    remove_file(path + ".progress");
+    remove_file(path + ".progress.tmp");
 }
 
 function arg_bool(value) {
@@ -792,6 +794,10 @@ function action_state_from_dir(dir) {
             continue;
 
         value.job_id = job_id_from_path(path);
+        if (value.kind == "component") {
+            let progress = read_json_file(path + ".progress");
+            if (type(progress) == "object") value.progress = progress;
+        }
         push(result, value);
     }
 

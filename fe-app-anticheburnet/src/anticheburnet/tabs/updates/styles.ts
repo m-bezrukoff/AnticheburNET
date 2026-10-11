@@ -159,4 +159,23 @@ export const styles = `
     flex-wrap: nowrap;
     gap: 6px;
 }
+
+.fkp_updates-page__progress {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 380px;
+    min-width: 240px;
+}
+.fkp_updates-page__progress progress {
+    width: 100%;
+    height: 10px;
+    accent-color: var(--link-color, #3498db);
+}
+.fkp_updates-page__progress-label { color: var(--text-color-high); }
+.fkp_updates-page__progress-detail {
+    color: var(--text-color-medium, #888);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
 `;

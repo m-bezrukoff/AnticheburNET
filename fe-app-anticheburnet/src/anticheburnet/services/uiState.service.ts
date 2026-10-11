@@ -104,8 +104,10 @@ function applyActionState(actions: UiActionMap = {}) {
     current.sectionsWidget.latencyProgressSections;
   const subscriptionUpdatingSections: Record<string, boolean> = {};
   const latencyFetchingSections: Record<string, boolean> = {};
-  const latencyProgressSections: Record<string, AnticheburNET.LatencyActionProgress> =
-    {};
+  const latencyProgressSections: Record<
+    string,
+    AnticheburNET.LatencyActionProgress
+  > = {};
   const updatesActions = getEmptyUpdatesActions();
   const diagnosticsActions = getEmptyDiagnosticsActions();
 
@@ -135,7 +137,10 @@ function applyActionState(actions: UiActionMap = {}) {
 
     const key = getComponentActionKey(state.component, state.action);
     if (key) {
-      updatesActions[key] = { loading: true };
+      updatesActions[key] = {
+        loading: true,
+        ...(state.progress ? { progress: state.progress } : {}),
+      };
     }
   }
 
@@ -169,7 +174,14 @@ function applyActionState(actions: UiActionMap = {}) {
   }
 
   for (const key of localOverlay.componentActions) {
-    updatesActions[key] = { loading: true };
+    if (!updatesActions[key].loading) {
+      updatesActions[key] = {
+        loading: true,
+        ...(current.updatesActions[key].progress
+          ? { progress: current.updatesActions[key].progress }
+          : {}),
+      };
+    }
   }
 
   for (const action of localOverlay.serviceActions) {

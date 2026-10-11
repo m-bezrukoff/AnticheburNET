@@ -21,6 +21,16 @@ let tmp_dir = "";
 let lock_held = false;
 let anticheburnet_was_running = false;
 let anticheburnet_stopped_for_sing_box_change = false;
+let update_version = "";
+
+function report_update_progress(stage, detail) {
+    let path = getenv("ANTICHEBURNET_COMPONENT_PROGRESS_FILE");
+    if (!path) return false;
+    let value = { stage, detail: substr(detail || "", 0, 240), version: update_version, updated_at: time() };
+    if (fs.writefile(path + ".tmp", sprintf("%J\n", value)) == null) return false;
+    if (!fs.rename(path + ".tmp", path)) { fs.unlink(path + ".tmp"); return false; }
+    return true;
+}
 
 function as_string(value) {
     return value == null ? "" : "" + value;
@@ -640,6 +650,7 @@ function download_file_once(url, output_path) {
 
 function download_with_retry(url, output_path, label) {
     for (let attempt = 1; attempt <= 3; attempt++) {
+        if (update_version != "") report_update_progress("downloading", label + " (" + attempt + "/3)");
         updates_log("Downloading " + as_string(label) + " (" + attempt + "/3)");
         if (download_file_once(url, output_path) && file_nonempty(output_path))
             return true;
@@ -1888,6 +1899,9 @@ function install_anticheburnet(requested_version) {
     if (latest_version == "unknown")
         action_fail("anticheburnet", "install", "Failed to resolve AnticheburNET release", ANTICHEBURNET_VERSION, latest_version);
 
+    update_version = latest_version;
+    report_update_progress("resolving", "");
+
     write_anticheburnet_latest_version_cache(latest_version, now_seconds());
     init_tmp_dir() || action_fail("anticheburnet", "install", "Failed to create temporary directory", ANTICHEBURNET_VERSION, latest_version);
     updates_log("Resolving AnticheburNET release " + latest_version + " packages");
@@ -1905,13 +1919,16 @@ function install_anticheburnet(requested_version) {
 
     let manifest_file = tmp_dir + "/SHA256SUMS";
     let manifest_url = substr(release.backend_url, 0, length(release.backend_url) - length(release.backend_name)) + (is_apk() ? "SHA256SUMS" : "SHA256SUMS-IPK");
-    if (!download_with_retry(manifest_url, manifest_file, "SHA256SUMS") ||
-        !verify_release_package(backend_file, release.backend_name, read_file(manifest_file)) ||
+    if (!download_with_retry(manifest_url, manifest_file, "SHA256SUMS"))
+        action_fail("anticheburnet", "install", "Failed to download release checksums", ANTICHEBURNET_VERSION, latest_version);
+    report_update_progress("verifying", "");
+    if (!verify_release_package(backend_file, release.backend_name, read_file(manifest_file)) ||
         !verify_release_package(app_file, release.app_name, read_file(manifest_file)) ||
         (i18n_file != "" && !verify_release_package(i18n_file, release.i18n_name, read_file(manifest_file))))
         action_fail("anticheburnet", "install", "Release package checksum verification failed", ANTICHEBURNET_VERSION, latest_version);
 
     let config_path = constants.ANTICHEBURNET_CONFIG || "/etc/config/anticheburnet";
+    report_update_progress("backup", "");
     let original_config = file_exists(config_path) ? read_file(config_path) : null;
     let backup_dir = "/root/anticheburnet-backups/update-" + now_seconds() + "-" + owner_pid();
     if (!ensure_dir(backup_dir) || !command_success_from_args([ "chmod", "700", backup_dir ]) ||
@@ -1923,6 +1940,7 @@ function install_anticheburnet(requested_version) {
     let packages = [ backend_file, app_file ];
     if (i18n_file != "")
         push(packages, i18n_file);
+    report_update_progress("installing", "");
     let installed = run_logged("Installing AnticheburNET release packages",
         command_env({ ANTICHEBURNET_DEFER_PACKAGE_RESTART: "1" }) + " " + pkg_install_files_command(packages));
     // Keep user settings even when package scripts replace the configuration.
@@ -1939,11 +1957,13 @@ function install_anticheburnet(requested_version) {
         command_success_from_args([ "/etc/init.d/rpcd", "restart" ]);
     command_success_from_args([ "killall", "-HUP", "rpcd" ]);
 
+    report_update_progress("restarting", "");
     restart_anticheburnet_after_successful_change();
     clear_version_caches();
     let new_version = installed_package_version("anticheburnet");
     if (new_version == "")
         new_version = latest_version;
+    report_update_progress("waiting", "");
     if (!wait_anticheburnet_running_after_sing_box_change())
         action_fail("anticheburnet", "install", "Update installed, but service did not start; configuration backup: " + backup_dir, new_version, latest_version);
     updates_log("AnticheburNET updated to " + new_version);
@@ -1951,6 +1971,7 @@ function install_anticheburnet(requested_version) {
 }
 
 function check_and_update_anticheburnet() {
+    report_update_progress("checking", "");
     let latest_version = latest_anticheburnet_version();
     if (helper_success("anticheburnet-release-version-valid", [ ANTICHEBURNET_VERSION ]) &&
         trim(helper_output("anticheburnet-release-version-compare", [ ANTICHEBURNET_VERSION, latest_version ])) == "-1")

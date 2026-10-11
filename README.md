@@ -5,7 +5,8 @@
 
 - **sing-box extended 1.14.1 / extended 2.7.2**: собственная ARM64-сборка с Hysteria 2, XHTTP, uTLS, WireGuard и Clash API.
 - **Xray 26.10.10**: официальное полное ядро, подключённое к секциям Forkop через локальный SOCKS. Нативные outbound-настройки Xray сохраняются.
-- **AmneziaWG 3.1**: официальные userspace daemon и awg-tools, отдельный сервис и выбор интерфейса в Forkop; поддержаны новые поля 3.1.
+- **Подписки Happ**: импорт VLESS/Hysteria 2 с ECH и правил block/proxy/direct, DNS, GeoIP/GeoSite; обновление маршрутизации вместе с подпиской.
+- **AmneziaWG 3.1**: официальные userspace daemon и awg-tools, отдельный сервис и выбор интерфейса в Forkop; поддержаны новые поля 3.1 и импорт профиля из HTTP(S)-подписки.
 
 [Релизы и пакеты](https://github.com/m-bezrukoff/forkop-plus/releases) · [Установка и настройка](docs/REDMI-AX6000.md) · [Аудит всех PR](docs/PR-AUDIT.md) · [Закреплённые исходники компонентов](components/versions.env)
 

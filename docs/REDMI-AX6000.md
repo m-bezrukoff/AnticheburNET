@@ -15,12 +15,12 @@ ubus call system board
 df -h /overlay /tmp
 ```
 
-Скачайте [релиз 1.0.0](https://github.com/m-bezrukoff/forkop-plus/releases/tag/1.0.0) на роутер. Архив содержит шесть APK, `SHA256SUMS` и версии исходников. Для установки всех компонентов потребуется место под sing-box, Xray и его geodata; проверяйте фактический размер APK и свободный overlay. Хранить приватные конфигурации нужно с правами `600`.
+Скачайте [релиз 1.0.1](https://github.com/m-bezrukoff/forkop-plus/releases/tag/1.0.1) на роутер. Архив содержит шесть APK, `SHA256SUMS` и версии исходников. Для установки всех компонентов потребуется место под sing-box, Xray и его geodata; проверяйте фактический размер APK и свободный overlay. Хранить приватные конфигурации нужно с правами `600`.
 
 ```sh
 mkdir -p /tmp/forkop-plus
 cd /tmp/forkop-plus
-wget -O packages.tar.gz https://github.com/m-bezrukoff/forkop-plus/releases/download/1.0.0/forkop-plus-filogic-25.12.tar.gz
+wget -O packages.tar.gz https://github.com/m-bezrukoff/forkop-plus/releases/download/1.0.1/forkop-plus-filogic-25.12.tar.gz
 tar -xzf packages.tar.gz
 sha256sum -c SHA256SUMS
 apk update
@@ -32,10 +32,10 @@ apk update
 /etc/init.d/forkop stop 2>/dev/null || true
 /etc/init.d/sing-box stop 2>/dev/null || true
 # Только если пакет установлен: apk del sing-box (или sing-box-tiny).
-apk add --allow-untrusted ./forkop_1.0.0.apk ./luci-app-forkop_1.0.0.apk ./luci-i18n-forkop-ru_1.0.0.apk \
+apk add --allow-untrusted ./forkop_1.0.1.apk ./luci-app-forkop_1.0.1.apk ./luci-i18n-forkop-ru_1.0.1.apk \
   ./sing-box-extended_1.14.1-extended-2.7.2-forkop.1_openwrt_aarch64_cortex-a53.apk \
   ./forkop-xray_26.10.10-r1_aarch64_cortex-a53.apk \
-  ./forkop-amneziawg_3.1.20260828-r1_aarch64_cortex-a53.apk
+  ./forkop-amneziawg_3.1.20260828-r2_aarch64_cortex-a53.apk
 /etc/init.d/forkop enable
 /etc/init.d/forkop restart
 ```
@@ -92,9 +92,7 @@ uci commit forkop_xray
 
 При routing через FakeIP оставьте разрешение доменов в Forkop. Для сложной собственной DNS-конфигурации Xray проверьте, что её запросы направляются через маркированный outbound и не возвращаются в TPROXY. Нативное ядро предоставляет все свои протоколы; importer управляет локальным входом и не публикует серверные входы в WAN. CI проверяет SOCKS-передачу данных, но не все возможные серверные комбинации Xray.
 
-## AmneziaWG 3.1
-
-### Подписки Happ и маршрутизация
+## Подписки Happ и маршрутизация
 
 Обычную HTTP(S)-ссылку подписки Happ добавляйте в секцию Forkop. При необходимости задайте
 User-Agent `Happ`. Узлы VLESS/Hysteria 2 импортируются из обычного или base64-кодированного
@@ -116,12 +114,18 @@ User-Agent `Happ`. Узлы VLESS/Hysteria 2 импортируются из о�
 с активным профилем Happ использует глобальную политику провайдера. Более ранние секции
 Forkop сохраняют приоритет. Разные активные профили требуют отдельных секций.
 Изменение только маршрутизации вызывает перегенерацию конфигурации.
+DNS сохраняет соответствие реального IP доменному имени (`reverse_mapping`), чтобы
+правила по доменам действовали и для IP-соединений клиентов; sniffing включён для IPv4/IPv6.
+Если клиент обходит DNS роутера, домен доступен только при успешном sniffing протокола.
 Android-списки `Per-App-Proxy` не применимы к маршрутизатору: для отдельных устройств
 задавайте исходные IP/подсети в Forkop.
 
+## AmneziaWG 3.1
+
 Для AWG подписка может содержать `.conf`, JSON endpoint/outbound sing-box extended или
-Mihomo WireGuard с `amnezia-wg-option` (JSON/YAML). Обычный WireGuard без параметров AWG
-не переименовывается в AmneziaWG. Если профилей несколько, выберите точное имя:
+Mihomo WireGuard с `amnezia-wg-option` (JSON/YAML). JSON/YAML WireGuard без параметров AWG
+не переименовывается в AmneziaWG. Для явно импортируемого `.conf` применяются проверки
+полей и ключей официального AWG 3.1. Если профилей несколько, выберите точное имя:
 
 ```sh
 forkop-awg-import --list 'https://provider.example/subscription'
@@ -134,7 +138,9 @@ uci commit forkop_awg
 Ссылка обновляется при старте/перезапуске `forkop-awg`. При ошибке загрузки сохраняется
 последняя конфигурация; неоднозначный профиль, неверный ключ и shell hooks отклоняются.
 Конфигурация записывается атомарно с правами `0600`. Переданные правила Happ сохраняются
-в комментарии конфигурации и применяются секцией Forkop, использующей интерфейс `awg0`.
+в комментарии конфигурации и применяются секцией Forkop, использующей управляемый
+интерфейс (по умолчанию `awg0`). После обновления AWG и выбора его интерфейса примените
+настройки Forkop или выполните `/etc/init.d/forkop restart`, чтобы обновить маршрутизацию.
 Доступная проверенная подписка пока содержит только VLESS/Hysteria 2; формат реального
 AWG-профиля провайдера следует подтвердить после его появления.
 

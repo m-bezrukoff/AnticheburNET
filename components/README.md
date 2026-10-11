@@ -6,8 +6,8 @@ The component build and services are separate from the architecture-independent 
 Build on Linux with Go 1.26.8 and the Filogic SDK pinned in `versions.env`:
 
 ```sh
-bash build.sh 1.0.0 dist/filogic
-bash components/build.sh 1.0.0 dist/filogic
+bash build.sh 1.0.1 dist/filogic
+bash components/build.sh 1.0.1 dist/filogic
 ```
 
 The second command needs `qemu-user`, `iproute2`, `iputils-ping`, `openssl`, Python 3 and sudo

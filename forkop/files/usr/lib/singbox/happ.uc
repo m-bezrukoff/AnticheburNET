@@ -134,6 +134,10 @@ function append_routes(config, policy, scope, tag) {
             if (length(keys(policy.groups[kind].ips)))
                 push(config.route.rules, scoped(scope, policy.groups[kind].ips, route_action(kind, tag)));
     }
+    // AsIs skips DNS while selecting an exit, but dialing the selected exit
+    // still needs this profile's resolver, including its DnsHosts overrides.
+    if (profile.strategy == "AsIs")
+        push(config.route.rules, scoped(scope, {}, { action: "resolve" }));
     push(config.route.rules, scoped(scope, {}, route_action(profile.global_proxy ? "proxy" : "direct", tag)));
 }
 

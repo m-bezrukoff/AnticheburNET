@@ -82,3 +82,19 @@ assert servers[remote['domain_resolver']]['predefined']['dns.example']==['192.0.
 assert 'fakeip-server' not in json.dumps(c['dns']['rules'][3:])
 PY
 echo 'Happ routing header/body, policy reload, DAT conversion, DNS and generated routes passed'
+ucode -L "$lib" -e '
+let h=require("singbox.happ");
+for(let order in ["block-proxy-direct","block-direct-proxy","proxy-block-direct","proxy-direct-block","direct-block-proxy","direct-proxy-block"]){
+ for(let strategy in ["AsIs","IPIfNonMatch","IPOnDemand"]){
+  let c={route:{rules:[]}}, groups={};
+  for(let kind in ["block","proxy","direct"])groups[kind]={sites:{domain:[kind+".test"]},ips:{ip_cidr:["192.0.2.0/24"]}};
+  h.append_routes(c,{profile:{order,strategy,global_proxy:true},groups},{inbound:["test"]},"proxy-test");
+  let terminal=[];
+  for(let rule in c.route.rules)if(rule.action=="route"||rule.action=="reject")push(terminal,rule.action=="reject"?"block":rule.outbound=="direct-out"?"direct":"proxy");
+  if(join("-",slice(terminal,0,3))!=order)die("RouteOrder changed\n");
+  if(strategy=="IPOnDemand"&&c.route.rules[0].action!="resolve")die("IPOnDemand must resolve before matching\n");
+  if(strategy=="AsIs"&&c.route.rules[length(c.route.rules)-2].action!="resolve")die("AsIs must resolve after selecting the default exit\n");
+  for(let rule in c.route.rules)if(rule.action=="resolve"&&rule.server!=null)die("Profile DNS must decide the resolver\n");
+ }
+}
+' 

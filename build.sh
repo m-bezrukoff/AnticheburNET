@@ -171,6 +171,7 @@ build_backend_root() {
   make_dir "$output_root/usr/lib/anticheburnet"
 
   install -m 0755 "$ROOT_DIR/anticheburnet/files/etc/init.d/anticheburnet" "$output_root/etc/init.d/anticheburnet"
+  install -m 0755 "$ROOT_DIR/anticheburnet/files/etc/init.d/anticheburnet-awg-subscriptions" "$output_root/etc/init.d/anticheburnet-awg-subscriptions"
   install -m 0644 "$ROOT_DIR/anticheburnet/files/etc/config/anticheburnet" "$output_root/etc/config/anticheburnet"
   install -m 0755 "$ROOT_DIR/anticheburnet/files/usr/bin/anticheburnet" "$output_root/usr/bin/anticheburnet"
   cp -a "$ROOT_DIR/anticheburnet/files/usr/lib/." "$output_root/usr/lib/anticheburnet/"
@@ -179,7 +180,7 @@ build_backend_root() {
     "$output_root/usr/lib/anticheburnet/core/constants.uc"
 
   normalize_package_root_modes "$output_root"
-  chmod 0755 "$output_root/etc/init.d/anticheburnet" "$output_root/usr/bin/anticheburnet"
+  chmod 0755 "$output_root/etc/init.d/"* "$output_root/usr/bin/anticheburnet"
 }
 
 build_app_root() {

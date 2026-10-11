@@ -12,7 +12,7 @@ start_service() {
     while IFS="$(printf '\t')" read -r iface table index; do
         [ -n "$iface" ] || continue
         procd_open_instance "$iface"
-        procd_set_param command /usr/bin/anticheburnet-awg-run "$iface" "$manifest" "$table" "$index"
+        procd_set_param command /bin/sh /usr/lib/anticheburnet/singbox/awg-run.sh "$iface" "$manifest" "$table" "$index"
         procd_set_param file "$manifest"
         procd_set_param respawn 3600 5 5
         procd_set_param term_timeout 10

@@ -4,7 +4,7 @@ on:
     inputs:
       package_version:
         type: string
-        default: '1.0.5'
+        default: '1.0.6'
         description: AnticheburNET release version
       components_from:
         type: string
@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      PACKAGE_VERSION: ${{ inputs.package_version || '1.0.5' }}
+      PACKAGE_VERSION: ${{ inputs.package_version || '1.0.6' }}
     steps:
       - uses: actions/checkout@v5.0.0
       - uses: actions/setup-go@v5.0.0

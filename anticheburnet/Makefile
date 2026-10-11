@@ -64,6 +64,7 @@ endef
 define Package/anticheburnet/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/etc/init.d/anticheburnet $(1)/etc/init.d/anticheburnet
+	$(INSTALL_BIN) ./files/etc/init.d/anticheburnet-awg-subscriptions $(1)/etc/init.d/anticheburnet-awg-subscriptions
 
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/etc/config/anticheburnet $(1)/etc/config/anticheburnet

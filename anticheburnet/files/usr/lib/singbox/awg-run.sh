@@ -1,0 +1,82 @@
+#!/bin/sh
+set -eu
+umask 077
+iface=${1:-awg0}
+config_file=${2:-/etc/anticheburnet/awg0.conf}
+table=${3:-311}
+profile_index=${4:-}
+case "$table" in ''|*[!0-9]*) exit 2 ;; esac
+[ "$table" -ge 311 ] && [ "$table" -le 343 ] || exit 2
+case "$iface" in ''|*[!a-zA-Z0-9_-]*) exit 2 ;; esac
+[ "${#iface}" -le 15 ] || exit 2
+if ip link show dev "$iface" >/dev/null 2>&1; then
+    echo "Interface $iface already exists; refusing to replace it" >&2
+    exit 1
+fi
+# Reserved table for SO_BINDTODEVICE traffic only; the WAN default stays in main.
+if [ -n "$(ip -4 route show table "$table" 2>/dev/null)$(ip -6 route show table "$table" 2>/dev/null)" ]; then
+    echo "Routing table $table is occupied" >&2
+    exit 1
+fi
+work=$(mktemp -d /var/run/anticheburnet-awg.XXXXXX)
+child=''
+rule4=0
+rule6=0
+has4=0
+has6=0
+ready=''
+cleanup() {
+    [ -z "$ready" ] || rm -f "$ready"
+    [ "$rule4" = 0 ] || ip -4 rule del priority 10400 oif "$iface" table "$table" 2>/dev/null || true
+    [ "$rule6" = 0 ] || ip -6 rule del priority 10400 oif "$iface" table "$table" 2>/dev/null || true
+    if [ -n "$child" ]; then
+        kill "$child" 2>/dev/null || true
+        wait "$child" 2>/dev/null || true
+    fi
+    rm -rf "$work"
+}
+trap cleanup EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
+if [ -n "$profile_index" ]; then
+    ucode -L /usr/lib/anticheburnet /usr/lib/anticheburnet/singbox/awg.uc extract "$config_file" "$profile_index" "$work/profile.conf"
+    config_file="$work/profile.conf"
+fi
+ucode -L /usr/lib/anticheburnet /usr/lib/anticheburnet/core/awg.uc prepare "$config_file" "$work/device.conf" > "$work/state.json"
+amneziawg-go -f "$iface" &
+child=$!
+attempt=0
+until [ -S "/var/run/amneziawg/$iface.sock" ]; do
+    kill -0 "$child" 2>/dev/null || exit 1
+    attempt=$((attempt + 1))
+    [ "$attempt" -le 50 ] || { echo 'AWG socket readiness timeout' >&2; exit 1; }
+    sleep 0.1
+done
+awg setconf "$iface" "$work/device.conf"
+mtu=$(ucode -e 'let fs=require("fs"); print(json(fs.readfile(ARGV[0])).mtu);' "$work/state.json")
+ip link set dev "$iface" mtu "$mtu" up
+ucode -e 'let fs=require("fs"); for(let a in json(fs.readfile(ARGV[0])).addresses) print(a,"\n");' "$work/state.json" > "$work/addresses"
+while IFS= read -r address; do
+    ip address add "$address" dev "$iface"
+    case "$address" in
+        *:*) has6=1 ;;
+        *) has4=1 ;;
+    esac
+done < "$work/addresses"
+if [ "$has4" = 1 ]; then
+    ip -4 route add default dev "$iface" table "$table"
+    ip -4 rule add priority 10400 oif "$iface" table "$table"
+    rule4=1
+fi
+if [ "$has6" = 1 ]; then
+    ip -6 route add default dev "$iface" table "$table"
+    ip -6 rule add priority 10400 oif "$iface" table "$table"
+    rule6=1
+fi
+rm -f "$work/device.conf"
+if [ -n "$profile_index" ]; then
+    mkdir -p /var/run/anticheburnet
+    ready="/var/run/anticheburnet/awg-$iface.ready"
+    : > "$ready"
+fi
+wait "$child"

@@ -58,11 +58,15 @@ ucode -L "$lib" -e 'if(!require("subscription.happ").attach(ARGV[0],ARGV[1],ARGV
 printf '%s' http://127.0.0.1:18081/subscription > "$test_dir/subscriptions/happ_runtime-subscription-1.url"
 printf '%s' Happ > "$test_dir/subscriptions/happ_runtime-subscription-1.user_agent"
 TMP_SUBSCRIPTION_FOLDER="$test_dir/subscriptions" ucode -L "$lib" "$lib/singbox/generator.uc" generate-config-fixture "$test_dir/fixture" "$test_dir/client.json" 127.0.0.1 0 true '' 1.14.1
+qemu-aarch64 "$work/sing-box.arm64" check -c "$test_dir/client.json"
 # Bind the direct exit differently from the encrypted proxy's exit: the HTTP
 # fixture reports its real peer address, proving which route carried the request.
+# QEMU user mode lacks IP_TRANSPARENT. Keep the full generated config check,
+# then exercise the same policy through its mixed proxy and actual DNS inbounds.
 python3 - "$test_dir/client.json" <<'PY'
 import json,sys
 p=sys.argv[1];v=json.load(open(p));next(o for o in v['outbounds'] if o['tag']=='direct-out')['inet4_bind_address']='127.0.0.1'
+v['inbounds']=[i for i in v['inbounds'] if i['type']!='tproxy']
 open(p,'w').write(json.dumps(v))
 PY
 for role in server client; do

@@ -253,6 +253,14 @@ function postinst_restore() {
     if (!ensure_tproxy_firewall_include())
         return false;
 
+    // The component worker restarts after APK releases its database lock.
+    // The tracked flag also supports already installed one-click updaters.
+    if (env("ANTICHEBURNET_DEFER_PACKAGE_RESTART", "") == "1" ||
+        env("ANTICHEBURNET_UI_COMPONENT_ACTION_TRACKED", "") == "1") {
+        unlink_if_exists(PACKAGE_UPGRADE_STATE);
+        return true;
+    }
+
     if (!path_exists(PACKAGE_UPGRADE_STATE))
         return true;
 

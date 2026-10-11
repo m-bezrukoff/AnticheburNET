@@ -1923,7 +1923,8 @@ function install_anticheburnet(requested_version) {
     let packages = [ backend_file, app_file ];
     if (i18n_file != "")
         push(packages, i18n_file);
-    let installed = run_logged("Installing AnticheburNET release packages", pkg_install_files_command(packages));
+    let installed = run_logged("Installing AnticheburNET release packages",
+        command_env({ ANTICHEBURNET_DEFER_PACKAGE_RESTART: "1" }) + " " + pkg_install_files_command(packages));
     // Keep user settings even when package scripts replace the configuration.
     if (original_config != null && read_file(config_path) != original_config &&
         !command_success_from_args([ "cp", "-p", backup_dir + "/anticheburnet.uci", config_path ]))

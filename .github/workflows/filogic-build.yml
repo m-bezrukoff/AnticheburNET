@@ -4,8 +4,12 @@ on:
     inputs:
       package_version:
         type: string
-        default: '1.0.2'
+        default: '1.0.3'
         description: AnticheburNET release version
+      components_from:
+        type: string
+        default: ''
+        description: Reuse unchanged ARM64 cores from a previously tested release
       publish:
         type: boolean
         default: true
@@ -24,10 +28,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      PACKAGE_VERSION: ${{ inputs.package_version || '1.0.2' }}
+      PACKAGE_VERSION: ${{ inputs.package_version || '1.0.3' }}
     steps:
       - uses: actions/checkout@v5.0.0
       - uses: actions/setup-go@v5.0.0
+        if: inputs.components_from == ''
         with:
           go-version: '1.26.8'
           cache: false
@@ -41,11 +46,26 @@ jobs:
           sudo cmake --install /tmp/ucode/build
           sudo ldconfig
       - name: Build test emulator with Linux SO_MARK forwarding
+        if: inputs.components_from == ''
         run: bash components/build-test-emulator.sh
       - name: Build AnticheburNET and LuCI
         run: bash build.sh "$PACKAGE_VERSION" "$PWD/dist/filogic"
       - name: Build ARM64 components
+        if: inputs.components_from == ''
         run: bash components/build.sh "$PACKAGE_VERSION" "$PWD/dist/filogic"
+      - name: Reuse previously tested ARM64 components
+        if: inputs.components_from != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMPONENTS_TAG: ${{ inputs.components_from }}
+        run: |
+          mkdir -p .build/reused-components
+          gh release download "$COMPONENTS_TAG" --repo "$GITHUB_REPOSITORY" --dir .build/reused-components --pattern '*_aarch64_cortex-a53.apk' --pattern SHA256SUMS
+          cd .build/reused-components
+          awk '/aarch64_cortex-a53[.]apk$/ {print}' SHA256SUMS > ARM64SUMS
+          test "$(wc -l < ARM64SUMS)" -eq 3
+          sha256sum -c ARM64SUMS
+          cp ./*.apk ../../dist/filogic/
       - name: Build update test baseline
         if: github.event_name == 'workflow_dispatch' && inputs.update_baseline
         run: bash build.sh 1.0.1 "$PWD/dist/update-baseline"
@@ -71,7 +91,7 @@ jobs:
           name: AnticheburNET ${{ inputs.package_version }}
           make_latest: true
           files: dist/filogic/*
-          body_path: docs/RELEASE-1.0.2.md
+          body_path: docs/RELEASE-${{ inputs.package_version }}.md
       - uses: actions/upload-artifact@v4.6.2
         with:
           name: anticheburnet-filogic-25.12

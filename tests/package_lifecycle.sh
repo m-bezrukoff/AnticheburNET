@@ -192,4 +192,18 @@ ANTICHEBURNET_RT_TABLES="$WORK_DIR/rt_tables_upgrade" \
 [ ! -e "$ANTICHEBURNET_PACKAGE_UPGRADE_STATE" ] ||
   fail "package pre-upgrade must not mark an already stopped service"
 
+# A self-update must not query the locked APK database from post-upgrade.
+for defer_flag in ANTICHEBURNET_DEFER_PACKAGE_RESTART ANTICHEBURNET_UI_COMPONENT_ACTION_TRACKED; do
+  printf '1\n' > "$ANTICHEBURNET_PACKAGE_UPGRADE_STATE"
+  : > "$WORK_DIR/upgrade-start.log"
+  env "$defer_flag=1" \
+    ANTICHEBURNET_PACKAGE_TEST_MODE=1 \
+    ANTICHEBURNET_UCI_STATE_FILE="$WORK_DIR/postinst-firewall.state" \
+    ANTICHEBURNET_FIREWALL_INCLUDE_FILE="$WORK_DIR/tproxy-input.nft" \
+    ANTICHEBURNET_INIT="$WORK_DIR/upgrade-init" \
+    ucode -L "$ANTICHEBURNET_LIB" "$PACKAGE_UC" postinst
+  [ ! -s "$WORK_DIR/upgrade-start.log" ] || fail "self-update restarted inside the package transaction"
+  [ ! -e "$ANTICHEBURNET_PACKAGE_UPGRADE_STATE" ] || fail "deferred restart left a stale upgrade marker"
+done
+
 printf 'package lifecycle checks passed\n'

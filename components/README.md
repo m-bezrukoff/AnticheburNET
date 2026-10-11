@@ -1,10 +1,10 @@
 # AnticheburNET components
 
-Target: OpenWrt 25.12, mediatek/filogic, aarch64_cortex-a53 (Redmi AX6000).
+AnticheburNET is intended for all devices running OpenWrt 25.12. Supported protocols include VLESS, Hysteria 2, XHTTP and AmneziaWG 3.1, with support for the full Xray 26.10.10 core. Current prebuilt component target: mediatek/filogic, aarch64_cortex-a53.
 The component build and services are separate from the architecture-independent AnticheburNET backend.
 
 For installation on the router, run the single SSH command in
-[the AX6000 guide](../docs/REDMI-AX6000.md#установка). It downloads all six release APKs
+[the OpenWrt 25.12 guide](../docs/OPENWRT-25.12.md#установка). It downloads all six release APKs
 from GitHub, verifies their SHA-256 checksums and installs the complete suite.
 The commands below are for building packages on a Linux development host.
 
@@ -23,7 +23,7 @@ base OpenWrt can expand it without extra decoder packages or kernel modules. The
 keeps the expanded files in `/var/run` (RAM), leaving only the archive on flash.
 Go inputs use `go.sum`; the SDK and official Xray archive are checked against SHA256.
 UPX 5.2.1 is pinned and verified too. It packs the three Go executables to fit the
-AX6000 NAND budget; `upx -t` and all QEMU protocol tests run on the packed executables.
+component size budget; `upx -t` and all QEMU protocol tests run on the packed executables.
 sing-box and AWG are built from the exact commits below. The sing-box build applies
 the reviewed source patch `patches/utls-modern-browser-presets.patch` to a private
 copy of metacubex/uTLS 1.8.7; the Go module cache remains unchanged. Firefox 148,
@@ -50,10 +50,9 @@ response to a local origin; AWG 3.1 performs a handshake and ICMP traffic betwee
 namespaces with header protection, padding ranges, random trailers and disabled cookies.
 These prove controlled protocol operation, not router throughput or every server option.
 
-All six packages must use at most 35,000,000 file/allocated bytes in the build, leaving
-5 MB within the requested 40 MB flash limit for metadata and generated configuration.
+All six packages must use at most 35,000,000 file/allocated bytes in the build.
 AmneziaWG is retained when the complete set fits this budget. `AdvancedSecurity=on` is
 normalized by the importer: tools' legacy flag has no corresponding official Go 3.1
 UAPI field, and that daemon always runs AWG. `off` is rejected explicitly.
 
-Services and user configuration are documented in [the AX6000 guide](../docs/REDMI-AX6000.md).
+Services and user configuration are documented in [the OpenWrt 25.12 guide](../docs/OPENWRT-25.12.md).

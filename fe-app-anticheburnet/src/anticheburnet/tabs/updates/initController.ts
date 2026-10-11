@@ -832,16 +832,6 @@ function getComponentCards(): ComponentCard[] {
   const zapret2Installed = Boolean(systemInfo.zapret2_installed);
   const byedpiInstalled = Boolean(systemInfo.byedpi_installed);
   const singBoxInstalled = !isNotInstalled(systemInfo.sing_box_version);
-  const singBoxStable =
-    singBoxInstalled &&
-    !systemInfo.sing_box_extended &&
-    !systemInfo.sing_box_tiny;
-  const singBoxExtended =
-    Boolean(systemInfo.sing_box_extended) && !systemInfo.sing_box_compressed;
-  const singBoxExtendedCompressed =
-    Boolean(systemInfo.sing_box_extended) &&
-    Boolean(systemInfo.sing_box_compressed);
-  const singBoxTiny = Boolean(systemInfo.sing_box_tiny);
 
   const anticheburnetActions = getInstalledUpdateActions(
     'anticheburnet',
@@ -854,44 +844,6 @@ function getComponentCards(): ComponentCard[] {
     'singBoxInstall',
     singBoxInstalled,
   );
-
-  // Add Sing-box variant actions (only show names, no 'Install' prefix)
-  if (!singBoxStable) {
-    singBoxActions.push({
-      key: 'singBoxInstallStable',
-      text: 'Stable',
-      icon: renderDownloadIcon24,
-      component: 'sing_box',
-      action: 'install_stable',
-    });
-  }
-  if (!singBoxTiny) {
-    singBoxActions.push({
-      key: 'singBoxInstallTiny',
-      text: 'Tiny',
-      icon: renderDownloadIcon24,
-      component: 'sing_box',
-      action: 'install_tiny',
-    });
-  }
-  if (!singBoxExtended) {
-    singBoxActions.push({
-      key: 'singBoxInstallExtended',
-      text: 'Extended',
-      icon: renderDownloadIcon24,
-      component: 'sing_box',
-      action: 'install_extended',
-    });
-  }
-  if (!singBoxExtendedCompressed) {
-    singBoxActions.push({
-      key: 'singBoxInstallExtendedCompressed',
-      text: 'Extended compressed',
-      icon: renderDownloadIcon24,
-      component: 'sing_box',
-      action: 'install_extended_compressed',
-    });
-  }
 
   const zapretActions = getOptionalComponentActions({
     component: 'zapret',
@@ -982,6 +934,13 @@ function getComponentCards(): ComponentCard[] {
 
 function renderComponentCard(card: ComponentCard) {
   const updatesActions = store.get().updatesActions;
+  const activeUpdate =
+    card.component === 'anticheburnet'
+      ? [
+          updatesActions.anticheburnetCheck,
+          updatesActions.anticheburnetInstall,
+        ].find((action) => action.loading)
+      : undefined;
   const anyActionLoading = isAnyActionLoading();
   const serviceRuntimeActionLoading = isServiceRuntimeActionLoading();
   const systemInfoLoading = isSystemInfoLoading();
@@ -1005,7 +964,11 @@ function renderComponentCard(card: ComponentCard) {
   const detailsChildren: Node[] = [];
   const checkResult = getVisibleCheckResult(card.component);
 
-  if (checkResult && checkResult.status) {
+  if (
+    checkResult &&
+    checkResult.status &&
+    !(activeUpdate && checkResult.status === 'latest')
+  ) {
     let labelText = '';
     const latestValueNodes: Node[] = [];
 
@@ -1097,13 +1060,10 @@ function renderComponentCard(card: ComponentCard) {
   // 3. Actions classification
   const primaryActions: ComponentActionButton[] = [];
   const dangerActions: ComponentActionButton[] = [];
-  const variantActions: ComponentActionButton[] = [];
 
   card.actions.forEach((action) => {
     if (action.action === 'remove') {
       dangerActions.push(action);
-    } else if (action.action.startsWith('install_')) {
-      variantActions.push(action);
     } else {
       primaryActions.push(action);
     }
@@ -1154,38 +1114,6 @@ function renderComponentCard(card: ComponentCard) {
     );
   }
 
-  // Render variant buttons if any
-  if (variantActions.length > 0) {
-    const variantButtons = variantActions.map((action) => {
-      const loading = updatesActions[action.key].loading;
-      return renderButton({
-        text: action.text,
-        icon: action.icon,
-        loading,
-        disabled:
-          systemInfoLoading ||
-          serviceRuntimeActionLoading ||
-          (anyActionLoading && !loading),
-        onClick: () => void handleComponentAction(action),
-      });
-    });
-
-    actionElements.push(
-      E('div', { class: 'fkp_updates-page__component__variants' }, [
-        E(
-          'div',
-          { class: 'fkp_updates-page__component__variants-title' },
-          _('Install another build:'),
-        ),
-        E(
-          'div',
-          { class: 'fkp_updates-page__component__variants-buttons' },
-          variantButtons,
-        ),
-      ]),
-    );
-  }
-
   const actionsContainer = E(
     'div',
     {
@@ -1202,13 +1130,6 @@ function renderComponentCard(card: ComponentCard) {
   );
 
   const cardChildren: Node[] = [header];
-  const activeUpdate =
-    card.component === 'anticheburnet'
-      ? [
-          updatesActions.anticheburnetCheck,
-          updatesActions.anticheburnetInstall,
-        ].find((action) => action.loading)
-      : undefined;
   if (activeUpdate) {
     const progress = getUpdateProgressView(activeUpdate.progress);
     const label = _(progress.label);

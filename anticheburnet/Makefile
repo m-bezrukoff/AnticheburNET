@@ -71,6 +71,7 @@ define Package/anticheburnet/install
 
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) ./files/usr/bin/anticheburnet $(1)/usr/bin/anticheburnet
+	$(INSTALL_BIN) ./files/usr/bin/anticheburnet-awg-subscription-run $(1)/usr/bin/anticheburnet-awg-subscription-run
 
 	$(INSTALL_DIR) $(1)/usr/lib/anticheburnet
 	$(CP) ./files/usr/lib/. $(1)/usr/lib/anticheburnet/

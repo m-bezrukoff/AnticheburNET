@@ -31,7 +31,7 @@ jobs:
       - run: |
           printf '%s\0' tests/*.sh | xargs -0 -n1 -P4 bash
       - run: |
-          mapfile -d '' scripts < <(find . -not -path './.git/*' -not -path './.build/*' -type f \( -name '*.sh' -o -path '*/etc/init.d/*' -o -path '*/usr/bin/anticheburnet-awg-run' -o -path '*/usr/bin/anticheburnet-xray-*' \) -print0)
+          mapfile -d '' scripts < <(find . -not -path './.git/*' -not -path './.build/*' -type f \( -name '*.sh' -o -path '*/etc/init.d/*' -o -path '*/usr/bin/anticheburnet-awg-run' -o -path '*/usr/bin/anticheburnet-awg-subscription-run' -o -path '*/usr/bin/anticheburnet-xray-*' \) -print0)
           shellcheck --severity=error "${scripts[@]}"
   frontend:
     runs-on: ubuntu-24.04

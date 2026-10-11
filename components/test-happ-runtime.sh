@@ -33,7 +33,8 @@ link='hy2://local-test@127.0.0.1:18445?'+urllib.parse.urlencode({'sni':'localhos
 (p/'fixture').write_text(json.dumps({'settings':{'.name':'settings','.type':'settings','dns_server':'1.1.1.1','dns_type':'udp'},
  'section':[{'.name':'happ_runtime','.type':'section','enabled':'1','action':'proxy','subscription_urls':['http://127.0.0.1:18081/subscription'],
  'subscription_user_agent':'Happ','mixed_proxy_enabled':'1','mixed_proxy_port':'10823'}]}))
-(p/'server.json').write_text(json.dumps({'inbounds':[{'type':'hysteria2','listen':'127.0.0.1','listen_port':18445,'users':[{'password':'local-test'}],
+(p/'server.json').write_text(json.dumps({'dns':{'servers':[{'type':'hosts','tag':'fixture-dns','predefined':{name:'127.0.0.1' for name in ['www.direct.test','proxy.direct.test','other.test','hosts.test']}}],'final':'fixture-dns'},
+ 'route':{'default_domain_resolver':'fixture-dns'},'inbounds':[{'type':'hysteria2','listen':'127.0.0.1','listen_port':18445,'users':[{'password':'local-test'}],
  'tls':{'enabled':True,'certificate_path':str(p/'cert.pem'),'key_path':str(p/'key.pem'),'ech':{'enabled':True,'key':[key]}}}],
  'outbounds':[{'type':'direct','inet4_bind_address':'127.0.0.2'}]}))
 def field(n,v):
@@ -68,7 +69,12 @@ for role in server client; do
   qemu-aarch64 "$work/sing-box.arm64" run -c "$test_dir/$role.json" > "$test_dir/$role.log" 2>&1 &
   pids+=("$!")
 done
-sleep 1
+ready=0
+for attempt in {1..30}; do
+  if [[ "$(curl --noproxy '' -fsS --max-time 3 --socks5-hostname 127.0.0.1:10823 http://www.direct.test:18081/source 2>/dev/null || true)" == 127.0.0.1 ]]; then ready=1; break; fi
+  sleep 1
+done
+[[ "$ready" == 1 ]] || { cat "$test_dir/"*.log; exit 1; }
 for pair in 'www.direct.test 127.0.0.1' 'proxy.direct.test 127.0.0.2' 'other.test 127.0.0.2' 'geo.test 127.0.0.1' 'hosts.test 127.0.0.2'; do
   read -r domain expected <<< "$pair"
   actual=$(curl --noproxy '' -fsS --max-time 15 --socks5-hostname 127.0.0.1:10823 "http://$domain:18081/source") || { cat "$test_dir/"*.log; exit 1; }
@@ -77,4 +83,15 @@ done
 if curl --noproxy '' -fsS --max-time 4 --socks5-hostname 127.0.0.1:10823 http://blocked.direct.test:18081/source; then
   echo 'Blocked Happ domain was reachable' >&2; exit 1
 fi
+# Real-address DNS must retain its domain for subsequent IP-only router traffic.
+python3 - <<'PY'
+import socket,struct
+s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM);s.settimeout(5)
+for name in ['hosts.test','www.direct.test']:
+ labels=b''.join(bytes([len(label)])+label.encode() for label in name.split('.'))+b'\x00'
+ query=struct.pack('!HHHHHH',0x1234,0x100,1,0,0,0)+labels+struct.pack('!HH',1,1)
+ s.sendto(query,('127.0.0.42',53));response=s.recv(4096)
+ assert response[:2]==b'\x12\x34' and response[3]&15==0 and response[-4:]==bytes([127,0,0,1])
+PY
+[[ "$(curl --noproxy '' -fsS --max-time 10 --socks5-hostname 127.0.0.1:10823 http://127.0.0.1:18081/source)" == 127.0.0.1 ]]
 echo 'ARM64 Happ header, DNS, ECH Hysteria2, block/proxy/direct priority and GeoIP after resolution passed'

@@ -2177,9 +2177,12 @@ function add_interface_connection_outbound(config, state, section, interface_ind
 
 function add_connection_interfaces(config, state, section, taken, selector_tags, urltest_candidate_tags) {
     let items = connections.interfaces(section);
+    if (!length(items)) return;
+    let awg_settings = object_or_empty(uci_core.get_all("forkop_awg", "settings"));
+    let managed_awg = as_string(awg_settings.interface || "awg0");
     for (let i = 0; i < length(items); i++) {
-        if (as_string(items[i]) == "awg0") {
-            let path = as_string(uci_cursor().get("forkop_awg", "settings", "config_file") || "/etc/forkop/awg0.conf");
+        if (as_string(items[i]) == managed_awg) {
+            let path = as_string(awg_settings.config_file || "/etc/forkop/awg0.conf");
             let text = fs.readfile(path) || "";
             let metadata = match("\n" + text, /\n# Forkop-Happ-Routing = ([A-Za-z0-9+\/=]+)/);
             if (metadata) {

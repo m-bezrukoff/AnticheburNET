@@ -63,6 +63,8 @@ TMP_SUBSCRIPTION_FOLDER="$work/subscriptions" ucode -L "$lib" "$lib/singbox/gene
 python3 - "$work/config" <<'PY'
 import json,sys
 c=json.load(open(sys.argv[1]))
+assert c['dns']['reverse_mapping'] is True
+assert 'tproxy6-in' in c['route']['rules'][0]['inbound']
 hy=next(o for o in c['outbounds'] if o['type']=='hysteria2')
 assert hy['tls']['ech']=={'enabled':True,'config':['-----BEGIN ECH CONFIGS-----','QUJDRA==','-----END ECH CONFIGS-----']}
 rules=c['route']['rules']; text=json.dumps(rules)

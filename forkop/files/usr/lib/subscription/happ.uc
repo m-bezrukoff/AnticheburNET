@@ -25,13 +25,14 @@ function normalize(profile) {
         last_updated: profile.LastUpdated || "",
         geoip_url: profile.Geoipurl || "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat",
         geosite_url: profile.Geositeurl || "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat",
-        hosts: profile.DnsHosts || {}, rules: {} };
+        hosts: profile.DnsHosts || { "cloudflare-dns.com": "1.1.1.1", "dns.google": "8.8.8.8" }, rules: {} };
     if (!match(result.order, /^(block-proxy-direct|block-direct-proxy|proxy-block-direct|proxy-direct-block|direct-block-proxy|direct-proxy-block)$/))
         die("Unsupported Happ RouteOrder\n");
     if (index([ "AsIs", "IPIfNonMatch", "IPOnDemand" ], result.strategy) < 0)
         die("Unsupported Happ DomainStrategy\n");
     for (let kind in [ "Direct", "Proxy", "Block" ]) {
-        let group = { sites: profile[kind + "Sites"] || [], ips: profile[kind + "Ip"] || [] };
+        let default_ips = kind == "Direct" ? [ "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "224.0.0.0/4", "255.255.255.255" ] : [];
+        let group = { sites: profile[kind + "Sites"] || [], ips: profile[kind + "Ip"] || default_ips };
         for (let key in [ "sites", "ips" ]) {
             if (type(group[key]) != "array") die("Invalid Happ rule list\n");
             for (let item in group[key])

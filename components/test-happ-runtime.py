@@ -48,7 +48,7 @@ def dns_server():
         question = data[12:cursor + 4]
         name = '.'.join(labels)
         address = '192.0.2.1' if name == 'geo.test' else '127.0.0.1'
-        # Only the imported DnsHosts mapping can make this host reachable.
+        # The client DNS response must use the imported DnsHosts mapping.
         if name == 'hosts.test': address = '203.0.113.1'
         answer = b''
         if qtype == 1:

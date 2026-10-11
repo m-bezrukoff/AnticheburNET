@@ -32,7 +32,7 @@ function fields(data, callback) {
             if (reader.pos > length(data)) die("Truncated geodata field\n");
         }
         else die("Unsupported geodata wire type\n");
-        callback(field, wire, value);
+        if (callback(field, wire, value) === true) return;
     }
 }
 
@@ -80,19 +80,19 @@ function convert(data, kind, code) {
         if (field != 1 || wire != 2) return;
         let name = "", inverse = false;
         fields(entry, function(number, format, value) {
-            if (number == 1 && format == 2) name = lc(value);
-            if (kind == "geoip" && number == 3 && format == 0) inverse = value != 0;
+            if (number == 1 && format == 2) { name = lc(value); return true; }
         });
         if (name != wanted) return;
-        if (inverse) die("Inverse geoip entries are not supported\n");
         found = true;
         fields(entry, function(number, format, value) {
+            if (kind == "geoip" && number == 3 && format == 0) inverse = value != 0;
             if (number != 2 || format != 2) return;
             let item = kind == "geoip" ? { key: "ip_cidr", value: cidr(value) } : domain(value, attribute);
             if (item == null) return;
             if (result[item.key] == null) result[item.key] = [];
             push(result[item.key], item.value);
         });
+        if (inverse) die("Inverse geoip entries are not supported\n");
     });
     if (!found || !length(keys(result))) die("Requested geodata entry is missing or empty\n");
     return result;

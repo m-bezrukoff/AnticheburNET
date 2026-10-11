@@ -63,6 +63,9 @@ function matchers(config, group, profile, directory, data, tag) {
 
 function prepared(config, profile, tag, directory) {
     if (profile.fake_dns) die("Happ FakeDNS profiles currently require FakeDNS=false\n");
+    // Transparent router traffic arrives as IP packets. Keep the domain learned
+    // by our DNS so domain rules also work when FakeDNS is disabled.
+    config.dns.reverse_mapping = true;
     let groups = {}, data = {};
     for (let kind in [ "block", "proxy", "direct" ]) groups[kind] = matchers(config, profile.rules[kind], profile, directory, data, tag);
     let predefined = {}, hosts = tag + "-happ-hosts", host_names = [];
@@ -118,6 +121,11 @@ function append_routes(config, policy, scope, tag) {
         if (length(keys(group.ips))) push(matches, group.ips);
         if (!length(matches)) continue;
         let match = length(matches) == 1 ? matches[0] : { type: "logical", mode: "or", rules: matches };
+        // Once a domain rule has selected its exit, resolve using that profile's
+        // DNS rules before dialing. The global outbound resolver must not replace
+        // DomesticDNS/RemoteDNS or bypass DnsHosts for this subscription.
+        if (kind != "block" && profile.strategy != "IPOnDemand")
+            push(config.route.rules, scoped(scope, match, { action: "resolve" }));
         push(config.route.rules, scoped(scope, match, route_action(kind, tag)));
     }
     if (profile.strategy == "IPIfNonMatch") {

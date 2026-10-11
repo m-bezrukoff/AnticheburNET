@@ -94,6 +94,8 @@ read_openwrt_release_value() {
 }
 fetch_github_latest_release_json() { printf '{}'; }
 install_json_ucode() {
+  # Match the real JSON helper's input consumption so pipefail sees no SIGPIPE.
+  case "$1" in release-tag|release-asset-url) cat >/dev/null ;; esac
   case "$1" in
     release-tag) printf '1.0.1\n' ;;
     release-asset-url)

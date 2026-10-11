@@ -1,6 +1,11 @@
 #!/usr/bin/env ucode
 
 let fs = require("fs");
+// rc.common retains the procd lock in its parent process. Drop our inherited
+// descriptor so background workers cannot keep that lock after rc.common exits.
+let inherited_procd_lock = fs.fdopen(1000, "w");
+if (inherited_procd_lock)
+    inherited_procd_lock.close();
 let constants = require("core.constants");
 let uci_core = require("core.uci");
 
@@ -275,7 +280,7 @@ function schedule_start_retry(path, delay_seconds) {
     let worker = command_from_args([ "sleep", delay_seconds ]) +
         "; " + command_from_args([ "rm", "-f", path ]) +
         "; exec " + command_from_args([ SERVICE_INIT, "retry_start_on_wan_up" ]);
-    let result = command_capture(command_from_args([ "sh", "-c", worker ]) + " </dev/null >/dev/null 2>&1 1000>&- & echo $!");
+    let result = command_capture(command_from_args([ "sh", "-c", worker ]) + " </dev/null >/dev/null 2>&1 & echo $!");
     let pid = trim(result.output);
     if (result.status != 0 || !numeric_text(pid))
         return false;
@@ -300,7 +305,7 @@ function run_pending_reload_if_requested(path, init_script) {
         return;
 
     command_success_from_args([ "logger", "-t", SERVICE_NAME, "[info] Applying pending AnticheburNET reload" ]);
-    system(shell_quote(init_script) + " reload pending >/dev/null 2>&1 1000>&- &");
+    system(shell_quote(init_script) + " reload pending >/dev/null 2>&1 &");
 }
 
 function uci_settings() {

@@ -5,6 +5,10 @@ REPO_OWNER="m-bezrukoff"
 REPO_NAME="forkop-plus"
 INSTALL_MODE="full"
 FULL_COMPONENT_FILES=""
+FULL_REMOVE_PACKAGES=""
+FULL_BACKUP_DIR=""
+FULL_REPLACEMENT_STARTED=0
+FULL_INSTALL_COMPLETE=0
 
 REQUIRED_SPACE_KB=15360
 CONNECT_TIMEOUT_SECONDS=15
@@ -55,7 +59,7 @@ fail() {
 
 usage() {
     cat <<EOF
-Usage: $0 [--generic]
+Usage: $0 [--generic | --uninstall]
 
 By default installs the complete Forkop Plus suite from one GitHub release:
   forkop, LuCI, Russian translation, sing-box extended, Xray and AmneziaWG.
@@ -64,6 +68,8 @@ Downloads and verifies SHA256SUMS before replacing installed packages.
 No interactive choices are required; configure your connections in LuCI afterwards.
 
 --generic retains the older, interactive installation for other OpenWrt targets.
+--uninstall removes the Forkop Plus suite on OpenWrt with apk, without package downloads.
+  Backs up settings, restores DNS and keeps engines used by other applications.
 
 Installs or updates Forkop packages:
   - forkop
@@ -80,7 +86,12 @@ parse_args() {
     while [ "$#" -gt 0 ]; do
         case "$1" in
             --generic)
+                [ "$INSTALL_MODE" != "uninstall" ] || fail "--generic and --uninstall cannot be combined"
                 INSTALL_MODE="generic"
+                ;;
+            --uninstall)
+                [ "$INSTALL_MODE" != "generic" ] || fail "--generic and --uninstall cannot be combined"
+                INSTALL_MODE="uninstall"
                 ;;
             -h|--help)
                 usage
@@ -95,7 +106,18 @@ parse_args() {
 }
 
 cleanup() {
+    if [ "$FULL_REPLACEMENT_STARTED" -eq 1 ] && [ "$FULL_INSTALL_COMPLETE" -ne 1 ]; then
+        if [ "$INSTALL_MODE" = "uninstall" ]; then
+            warn "Uninstallation interrupted. Configuration backup: $FULL_BACKUP_DIR"
+            warn "Temporary files retained for recovery: $TMP_DIR"
+        else
+            warn "Installation interrupted. Configuration backup: $FULL_BACKUP_DIR"
+            warn "Verified packages retained for recovery: $TMP_DIR"
+        fi
+        return 0
+    fi
     [ -n "$TMP_DIR" ] && rm -rf "$TMP_DIR"
+    return 0
 }
 
 read_openwrt_release_value() {
@@ -1058,7 +1080,8 @@ function installer_cleanup_legacy() {
     if (path_executable(active_init)) {
         if (!installer_service_action(active_init, "stop"))
             return false;
-        installer_restore_dnsmasq(active_bin, legacy_installed);
+        if (!installer_restore_dnsmasq(active_bin, legacy_installed))
+            return false;
         if (!installer_service_action(active_init, "disable"))
             return false;
     }
@@ -1235,17 +1258,200 @@ function installer_post_install() {
     return true;
 }
 
+function installer_remove_selected_packages() {
+    let names = words(env("FORKOP_INSTALLER_REMOVE_PACKAGES", ""));
+    if (length(names) == 0)
+        return true;
+    let args = [ "apk", "del" ];
+    for (let name in names) {
+        if (match(name, /^[A-Za-z0-9][A-Za-z0-9+_.-]*$/) == null)
+            return false;
+        if (installer_package_installed(name))
+            push(args, name);
+    }
+    if (length(args) > 2 && !run_args(args))
+        return false;
+    for (let name in names) {
+        if (installer_package_installed(name)) {
+            warn("Package still required by another application: " + name + "\n");
+            return false;
+        }
+    }
+    return true;
+}
+
 function installer_prepare_full_suite() {
-    let init_script = env("FORKOP_INSTALLER_SING_BOX_INIT", "/etc/init.d/sing-box");
-    if (path_executable(init_script)) {
-        let result = installer_command_result([ init_script, "stop" ], INSTALLER_SERVICE_ACTION_TIMEOUT);
+    // Stop every managed engine before removing its executable. APK will keep
+    // shared dependencies; never use --rdepends or --force-broken-world here.
+    for (let init_script in [
+        env("FORKOP_INSTALLER_SING_BOX_INIT", "/etc/init.d/sing-box"),
+        env("FORKOP_INSTALLER_XRAY_INIT", "/etc/init.d/forkop-xray"),
+        env("FORKOP_INSTALLER_AWG_INIT", "/etc/init.d/forkop-awg"),
+        "/etc/init.d/xray", "/etc/init.d/nextdns",
+        "/etc/init.d/passwall", "/etc/init.d/passwall2"
+    ]) {
+        if (path_executable(init_script)) {
+            let result = installer_command_result([ init_script, "stop" ], INSTALLER_SERVICE_ACTION_TIMEOUT);
+            if (!result.complete || result.status != 0)
+                return false;
+        }
+    }
+
+    return installer_remove_selected_packages();
+}
+
+function installer_full_suite_plan(uninstall) {
+    let installed = installer_installed_package_names();
+    let roots = [
+        "forkop", "luci-app-forkop", "forkop-xray", "forkop-amneziawg",
+        "sing-box", "sing-box-tiny", "sing-box-extended", "xray-core",
+        "nextdns", "luci-app-nextdns", "https-dns-proxy", "luci-app-https-dns-proxy",
+        "luci-app-passwall", "luci-app-passwall2",
+        LEGACY_BRAND, LEGACY_BACKEND_PACKAGE,
+        "luci-app-" + LEGACY_BRAND, "luci-app-" + LEGACY_BACKEND_PACKAGE
+    ];
+    let prefixes = [
+        "luci-i18n-forkop-", "luci-i18n-nextdns-", "luci-i18n-https-dns-proxy-",
+        "luci-i18n-passwall-", "luci-i18n-passwall2-",
+        "luci-i18n-" + LEGACY_BRAND + "-",
+        "luci-i18n-" + LEGACY_BACKEND_PACKAGE + "-"
+    ];
+    if (uninstall) {
+        // Uninstall Forkop itself, not the unrelated VPNs that conflict with
+        // installing it. Only associate sing-box with an installed backend.
+        roots = [ "forkop", "luci-app-forkop", "forkop-xray", "forkop-amneziawg" ];
+        prefixes = [ "luci-i18n-forkop-" ];
+        for (let name in installed) {
+            if (name == "forkop" || name == "forkop-xray" || name == "forkop-amneziawg") {
+                for (let engine in [ "sing-box", "sing-box-tiny", "sing-box-extended" ])
+                    push(roots, engine);
+                break;
+            }
+        }
+    }
+    let names = [];
+    for (let name in installed) {
+        let selected = false;
+        for (let root in roots)
+            if (name == root)
+                selected = true;
+        for (let prefix in prefixes)
+            if (starts_with(name, prefix))
+                selected = true;
+        if (selected)
+            push(names, name);
+    }
+
+    // Refuse to remove an engine still used by an application outside this
+    // replacement. Read reverse dependencies before stopping any service.
+    let kept = [];
+    for (let name in names) {
+        let result = installer_command_result([ "apk", "info", "-r", name ], INSTALLER_SERVICE_PROBE_TIMEOUT);
         if (!result.complete || result.status != 0)
             return false;
+        for (let line in split(result.output, "\n")) {
+            line = trim(line);
+            if (line == "" || match(line, /[ \t:]/) != null)
+                continue;
+            for (let candidate in installed) {
+                if (line != candidate && !starts_with(line, candidate + "-"))
+                    continue;
+                // A longer package name must not be mistaken for its prefix.
+                let suffix = substr(line, length(candidate) + 1);
+                if (line != candidate && match(suffix, /^[0-9]/) == null)
+                    continue;
+                let selected = false;
+                for (let target in names)
+                    if (target == candidate)
+                        selected = true;
+                if (!selected) {
+                    if (uninstall && (name == "sing-box" || name == "sing-box-tiny" || name == "sing-box-extended")) {
+                        push(kept, name);
+                        warn("Keeping " + name + ": required by " + candidate + ".\n");
+                        continue;
+                    }
+                    warn("Cannot replace " + name + ": required by " + candidate + ".\n");
+                    return false;
+                }
+            }
+        }
     }
-    // These packages conflict with the extended APK. Keep user configuration.
-    for (let name in [ "sing-box", "sing-box-tiny" ])
-        if (!installer_remove_package(name))
+    if (length(kept) > 0) {
+        let removable = [];
+        for (let name in names) {
+            let keep = false;
+            for (let engine in kept)
+                if (engine == name)
+                    keep = true;
+            if (!keep)
+                push(removable, name);
+        }
+        names = removable;
+    }
+    if (length(names) > 0) {
+        let args = [ "apk", "del", "--simulate" ];
+        for (let name in names)
+            push(args, name);
+        if (!run_args(args))
             return false;
+    }
+    for (let name in names)
+        print(name, "\n");
+    return true;
+}
+
+function installer_uninstall_suite() {
+    let names = words(env("FORKOP_INSTALLER_REMOVE_PACKAGES", ""));
+    installer_recover_interrupted_cleanup([ INSTALLER_FORKOP_INIT ]);
+    if (path_executable(INSTALLER_FORKOP_INIT)) {
+        let stop = installer_command_result([ INSTALLER_FORKOP_INIT, "stop" ], INSTALLER_SERVICE_ACTION_TIMEOUT);
+        if (!stop.complete || stop.status != 0)
+            return false;
+    }
+    if (!installer_restore_dnsmasq(INSTALLER_FORKOP_BIN, false))
+        return false;
+    if (path_executable(INSTALLER_FORKOP_INIT)) {
+        let disable = installer_command_result([ INSTALLER_FORKOP_INIT, "disable" ], INSTALLER_SERVICE_ACTION_TIMEOUT);
+        if (!disable.complete || disable.status != 0)
+            return false;
+    }
+
+    let engines = [
+        [ "forkop-xray", env("FORKOP_INSTALLER_XRAY_INIT", "/etc/init.d/forkop-xray") ],
+        [ "forkop-amneziawg", env("FORKOP_INSTALLER_AWG_INIT", "/etc/init.d/forkop-awg") ],
+        [ "sing-box", env("FORKOP_INSTALLER_SING_BOX_INIT", "/etc/init.d/sing-box") ],
+        [ "sing-box-tiny", env("FORKOP_INSTALLER_SING_BOX_INIT", "/etc/init.d/sing-box") ],
+        [ "sing-box-extended", env("FORKOP_INSTALLER_SING_BOX_INIT", "/etc/init.d/sing-box") ]
+    ];
+    for (let engine in engines) {
+        let selected = false;
+        for (let name in names)
+            if (name == engine[0])
+                selected = true;
+        if (!selected || !path_executable(engine[1]))
+            continue;
+        for (let action in [ "stop", "disable" ]) {
+            let result = installer_command_result([ engine[1], action ], INSTALLER_SERVICE_ACTION_TIMEOUT);
+            if (!result.complete || result.status != 0)
+                return false;
+        }
+    }
+    if (!installer_remove_selected_packages())
+        return false;
+
+    // The backup lives in /root. Remove only Forkop-owned settings and caches;
+    // preserve standalone sing-box settings when another application uses it.
+    for (let path in [
+        "/etc/config/forkop", "/etc/config/forkop_xray", "/etc/config/forkop_awg",
+        INSTALLER_FORKOP_PERSISTENT_DIR, "/var/run/forkop", "/var/run/forkop-xray",
+        "/var/run/forkop-awg", "/tmp/forkop", "/tmp/forkop.latest-version.cache"
+    ])
+        if (!remove_path(path))
+            return false;
+    if (!remove_globs("/tmp/forkop-happ-* /tmp/luci-indexcache* /var/luci-indexcache*"))
+        return false;
+    if (path_executable(INSTALLER_RPCD_INIT) && !run_args([ INSTALLER_RPCD_INIT, "reload" ]))
+        return false;
     return true;
 }
 
@@ -1455,6 +1661,12 @@ else if (mode == "installer-post-install")
     exit(installer_post_install() ? 0 : 1);
 else if (mode == "installer-prepare-full-suite")
     exit(installer_prepare_full_suite() ? 0 : 1);
+else if (mode == "installer-full-suite-plan")
+    exit(installer_full_suite_plan() ? 0 : 1);
+else if (mode == "installer-uninstall-plan")
+    exit(installer_full_suite_plan(true) ? 0 : 1);
+else if (mode == "installer-uninstall-suite")
+    exit(installer_uninstall_suite() ? 0 : 1);
 else
     exit(1);
 EOF
@@ -1632,6 +1844,15 @@ check_system() {
         fail "Forkop requires OpenWrt 24.10 or newer"
     fi
 
+    if [ "$INSTALL_MODE" = "full" ]; then
+        # Downloads use RAM. Check flash after verified replacement packages
+        # have freed the old engines, not before (stock sing-box is ~20 MiB).
+        return 0
+    fi
+    check_flash_space
+}
+
+check_flash_space() {
     available_space="$(df -Pk /overlay 2>/dev/null | awk 'NR==2 {print $4}')"
     [ -n "$available_space" ] || available_space="$(df -Pk / 2>/dev/null | awk 'NR==2 {print $4}')"
 
@@ -1698,27 +1919,97 @@ verify_full_suite() {
 
 install_full_suite() {
     command_exists sha256sum || fail "sha256sum is required to verify the complete suite"
-    # Abort known unsupported conflicts before stopping services or removing packages.
-    for suite_conflict in nextdns luci-app-passwall luci-app-passwall2 xray-core; do
-        pkg_is_installed "$suite_conflict" && fail "Conflicting package installed: $suite_conflict. Remove it before installing the complete suite."
-    done
     pkg_list_update || fail "Failed to update package lists"
     ensure_bootstrap_ucode_runtime
     FORKOP_I18N_REQUESTED=1
     resolve_forkop_release
     download_full_suite
+    FULL_REMOVE_PACKAGES="$(install_json_ucode installer-full-suite-plan)" ||
+        fail "Failed to plan component replacement; installed services were not stopped"
+    if [ -z "$FULL_REMOVE_PACKAGES" ]; then
+        check_flash_space
+    fi
+    backup_full_suite_configuration
+    # Keep the helper available even when APK collects dependencies orphaned
+    # by legacy-package removal. Do not upgrade the existing runtime.
+    apk add --no-upgrade ucode ucode-mod-fs ucode-mod-uci </dev/null ||
+        fail "Failed to retain the installer runtime"
     detect_legacy_installation
+    FULL_REPLACEMENT_STARTED=1
     cleanup_legacy_installation </dev/null
-    install_json_ucode installer-prepare-full-suite || fail "Failed to prepare sing-box for the complete suite"
+    FORKOP_INSTALLER_REMOVE_PACKAGES="$FULL_REMOVE_PACKAGES" \
+        install_json_ucode installer-prepare-full-suite || fail "Failed to remove replaced components; backup: $FULL_BACKUP_DIR"
+    restore_full_suite_configuration
+    sync || fail "Failed to synchronize flash before the space check; backup: $FULL_BACKUP_DIR"
+    check_flash_space
     # Package names are validated above and TMP_DIR is created by mktemp.
     # shellcheck disable=SC2086
     pkg_install_files "$FORKOP_BACKEND_FILE" "$FORKOP_APP_FILE" "$FORKOP_I18N_FILE" $FULL_COMPONENT_FILES ||
         fail "Complete suite installation failed"
     migrate_legacy_configuration
     post_install
+    FULL_INSTALL_COMPLETE=1
     msg "Forkop Plus $FORKOP_PACKAGE_VERSION: Forkop, LuCI (RU), sing-box extended, Xray and AmneziaWG installed"
     msg "Source release: ${REPO_OWNER}/${REPO_NAME}@${FORKOP_RELEASE_TAG}"
     warn "Open LuCI, add your connections and apply routing settings before enabling Forkop"
+}
+
+backup_full_suite_configuration() {
+    FULL_BACKUP_DIR="/root/forkop-backups/$(date +%Y%m%d-%H%M%S)-$$"
+    mkdir -p "$FULL_BACKUP_DIR" || fail "Failed to create the configuration backup directory"
+    chmod 700 "$FULL_BACKUP_DIR" || fail "Failed to protect the configuration backup directory"
+    (
+        umask 077
+        apk info > "$FULL_BACKUP_DIR/packages.txt" || exit 1
+        [ ! -f /etc/apk/world ] || cp /etc/apk/world "$FULL_BACKUP_DIR/world" || exit 1
+        set --
+        for backup_path in etc/config etc/forkop etc/sing-box \
+            "etc/$LEGACY_BACKEND_PACKAGE" "etc/$LEGACY_BRAND"; do
+            [ ! -e "/$backup_path" ] || set -- "$@" "$backup_path"
+        done
+        [ "$#" -eq 0 ] || tar -czf "$FULL_BACKUP_DIR/config.tar.gz" -C / "$@" || exit 1
+        # Preserve managed UCI configs even when APK removes an unmodified
+        # conffile. Restore before the new package's migration/postinst runs.
+        mkdir "$TMP_DIR/suite-configs" || exit 1
+        for config_name in forkop forkop_xray forkop_awg; do
+            [ ! -f "/etc/config/$config_name" ] ||
+                cp -p "/etc/config/$config_name" "$TMP_DIR/suite-configs/$config_name" || exit 1
+        done
+    ) || fail "Failed to back up configuration; packages were not removed"
+    msg "Configuration backup: $FULL_BACKUP_DIR"
+    [ -z "$FULL_REMOVE_PACKAGES" ] || msg "Replacing packages: $FULL_REMOVE_PACKAGES"
+}
+
+restore_full_suite_configuration() {
+    for config_name in forkop forkop_xray forkop_awg; do
+        [ ! -f "$TMP_DIR/suite-configs/$config_name" ] ||
+            cp -p "$TMP_DIR/suite-configs/$config_name" "/etc/config/$config_name" ||
+            fail "Failed to restore $config_name; backup: $FULL_BACKUP_DIR"
+    done
+}
+
+check_uninstall_system() {
+    [ -f /etc/openwrt_release ] || fail "This uninstaller supports OpenWrt only"
+    [ "$PKG_IS_APK" -eq 1 ] || fail "Suite uninstallation requires the OpenWrt apk package manager"
+    command_exists ucode || fail "ucode is required to restore DNS before uninstalling"
+    ucode -e 'require("fs"); require("uci");' >/dev/null 2>&1 ||
+        fail "ucode-mod-fs and ucode-mod-uci are required to restore DNS before uninstalling"
+}
+
+uninstall_full_suite() {
+    check_uninstall_system
+    FULL_REMOVE_PACKAGES="$(install_json_ucode installer-uninstall-plan)" ||
+        fail "Failed to plan uninstallation; installed services were not stopped"
+    if [ -z "$FULL_REMOVE_PACKAGES" ]; then
+        msg "Forkop Plus packages are already absent"
+        return 0
+    fi
+    backup_full_suite_configuration
+    FULL_REPLACEMENT_STARTED=1
+    FORKOP_INSTALLER_REMOVE_PACKAGES="$FULL_REMOVE_PACKAGES" \
+        install_json_ucode installer-uninstall-suite || fail "Failed to uninstall Forkop Plus; backup: $FULL_BACKUP_DIR"
+    FULL_INSTALL_COMPLETE=1
+    msg "Forkop Plus uninstalled. Configuration backup: $FULL_BACKUP_DIR"
 }
 
 installer_is_ru() {
@@ -2092,6 +2383,10 @@ main() {
     parse_args "$@"
     check_root
     init_tmp_dir
+    if [ "$INSTALL_MODE" = "uninstall" ]; then
+        uninstall_full_suite
+        return
+    fi
     detect_fetcher
     sync_time
     check_system

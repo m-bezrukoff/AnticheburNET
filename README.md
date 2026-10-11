@@ -56,7 +56,7 @@ VPN, прокси и управление маршрутизацией для Op
 
 ## Проверки и ограничения
 
-Релиз прошёл 81 backend-проверку, 510 frontend-тестов и испытания упакованных ARM64-бинарников под QEMU: Xray, шифрованное соединение Hysteria 2 с ECH, туннель AmneziaWG, правила Happ и DNS. [Журнал сборки и испытаний](https://github.com/m-bezrukoff/AnticheburNET/actions/runs/38126196363).
+Backend-проверки и frontend-тесты проходят в [GitHub CI](https://github.com/m-bezrukoff/AnticheburNET/actions/runs/38143131505). Упакованные ARM64-ядра проверены под QEMU: Xray, шифрованное соединение Hysteria 2 с ECH, туннель AmneziaWG, правила HAPP и DNS. [Сборка и испытания ядер](https://github.com/m-bezrukoff/AnticheburNET/actions/runs/38138218728).
 
 Физический AX6000, fw4/TPROXY и производительность на роутере пока не испытаны. Импорт AmneziaWG проверен на контролируемых профилях; в проверенной пользовательской подписке AWG пока отсутствует. Профили с `FakeDNS=true` отклоняются; для `happ://crypt...` нужна исходная HTTP(S)-ссылка провайдера. Если устройство обходит DNS роутера, применение доменных правил зависит от распознавания протокола.
 

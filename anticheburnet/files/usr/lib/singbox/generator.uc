@@ -11,6 +11,7 @@ let runtime_rulesets = require("singbox.rulesets");
 let runtime_servers = require("singbox.servers");
 let runtime_subscription = require("singbox.subscription");
 let runtime_reality = require("singbox.reality");
+let runtime_awg = require("singbox.awg");
 let runtime_happ = require("singbox.happ");
 let runtime_happ_profiles = {};
 let runtime_happ_policies = {};
@@ -516,6 +517,7 @@ function supported_subscription_outbound(outbound) {
     if (type(outbound) != "object")
         return false;
     let t = as_string(outbound.type);
+    if (t == "direct" && type(outbound.__awg_config) == "string") return true;
     if (subscription_group_outbound(outbound))
         return true;
     if (t == "direct" || t == "selector" || t == "urltest" || t == "dns" || t == "block")
@@ -3153,12 +3155,15 @@ function generate_config(output_path, service_address, mwan3_active, supports_xh
         add_mixed_proxy_for_section(config, section, service_address);
 
     runtime_reality.prepare_outbounds(config.outbounds, runtime_sing_box_version);
+    let awg_profiles = runtime_awg.prepare_outbounds(config.outbounds);
     assert_unique_outbound_tags(config);
     strip_internal_fields(config);
     if (!write_json_file(output_path, config)) {
         warn("failed to write ", output_path, "\n");
         exit(1);
     }
+    if (!runtime_awg.write_private(output_path + ".awg.json", sprintf("%J\n", awg_profiles)))
+        die("Unable to write private AWG subscription profiles\n");
 }
 
 function generate_config_fixture(fixture_path, output_path, service_address, mwan3_active, supports_xhttp, deferred_sections, sing_box_version) {

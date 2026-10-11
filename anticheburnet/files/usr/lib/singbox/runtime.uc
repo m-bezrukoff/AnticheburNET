@@ -4,6 +4,7 @@ let fs = require("fs");
 let uci_core = require("core.uci");
 let common = require("core.common");
 let runtime_dns = require("singbox.dns");
+let runtime_awg = require("singbox.awg");
 
 const CONFIG_NAME = getenv("ANTICHEBURNET_CONFIG_NAME") || "anticheburnet";
 const LIB_DIR = getenv("ANTICHEBURNET_LIB") || "/usr/lib/anticheburnet";
@@ -794,7 +795,7 @@ function init_config(populate_nft, caches_prepared, no_refresh, prepared_deferre
     let temp_config = temp_path();
     let runtime_log = temp_path();
     if (temp_config == "" || runtime_log == "") {
-        remove_files([ temp_config, runtime_log ]);
+        remove_files([ temp_config, temp_config + ".awg.json", runtime_log ]);
         exit(1);
     }
 
@@ -813,7 +814,7 @@ function init_config(populate_nft, caches_prepared, no_refresh, prepared_deferre
     if (generate_status != 0) {
         let reason = generator_failure_reason(runtime_log, generate_status);
         log_message("Failed to generate sing-box configuration: " + reason, "fatal");
-        remove_files([ temp_config, runtime_log ]);
+        remove_files([ temp_config, temp_config + ".awg.json", runtime_log ]);
         exit(1);
     }
     log_file_lines(runtime_log, "warn", "sing-box config generator: ");
@@ -821,7 +822,7 @@ function init_config(populate_nft, caches_prepared, no_refresh, prepared_deferre
     let check_result = sing_box_check(temp_config, runtime_log);
     if (check_result.status != 0) {
         log_message("Generated sing-box configuration is invalid: " + check_result.reason + ". Aborted.", "fatal");
-        remove_files([ temp_config, runtime_log ]);
+        remove_files([ temp_config, temp_config + ".awg.json", runtime_log ]);
         exit(1);
     }
 
@@ -842,12 +843,25 @@ function init_config(populate_nft, caches_prepared, no_refresh, prepared_deferre
         NFT_LOCALV6_SET_NAME
     ])) {
         log_message("Failed to update nftables runtime sets from the generated sing-box configuration. Aborted.", "fatal");
-        remove_files([ temp_config, runtime_log ]);
+        remove_files([ temp_config, temp_config + ".awg.json", runtime_log ]);
         exit(1);
     }
 
     if (!save_config_file(temp_config, config_path)) {
+        remove_file(temp_config + ".awg.json");
         remove_file(runtime_log);
+        exit(1);
+    }
+    if (!save_config_file(temp_config + ".awg.json", config_path + ".awg.json")) {
+        remove_file(runtime_log);
+        log_message("Failed to save native AWG subscription profiles. Aborted.", "fatal");
+        exit(1);
+    }
+    // Subscription updates rebuild directly through this owner, bypassing the
+    // main lifecycle reload path. Apply native profiles here in every case.
+    if (!runtime_awg.sync(config_path + ".awg.json")) {
+        remove_file(runtime_log);
+        log_message("Native AWG subscription interfaces are not ready. Aborted.", "fatal");
         exit(1);
     }
     remove_file(runtime_log);

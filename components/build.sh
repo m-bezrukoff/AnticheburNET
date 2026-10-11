@@ -88,6 +88,7 @@ SH
 [ "${IPKG_NO_SCRIPT:-}" != 1 ] || exit 0
 [ -z "${IPKG_INSTROOT:-}" ] || exit 0
 "/etc/init.d/$service" stop || true
+[ "$service" != anticheburnet-awg ] || /etc/init.d/anticheburnet-awg-subscriptions stop || true
 SH
   chmod 755 "$scripts/"*.sh
   local asset_name="${name}_${package_version}_aarch64_cortex-a53.apk"

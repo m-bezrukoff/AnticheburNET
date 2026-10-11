@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isCopyableProxyLink } from '../isCopyableProxyLink';
 
 const copyableLinks = [
+  'vpn://base64-ini-profile',
   'vless://uuid@example.com:443',
   'vmess://encoded',
   'trojan://password@example.com:443',

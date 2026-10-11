@@ -462,6 +462,7 @@ export namespace AnticheburNET {
   export interface GetOutboundMetadata {
     names?: Record<string, string>;
     countries?: Record<string, string>;
+    protocols?: Record<string, string>;
   }
 
   export interface GetSingBoxStatus {

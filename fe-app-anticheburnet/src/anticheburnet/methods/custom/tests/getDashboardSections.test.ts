@@ -836,6 +836,34 @@ describe('getDashboardSections', () => {
     expect(subscriptionOutbound?.canCopyLink).toBe(true);
   });
 
+  it('shows native AWG as AmneziaWG in the subscription selector and latency list', async () => {
+    mocks.getConfigSections.mockResolvedValue([
+      proxySection({
+        subscription_urls: ['https://subscription.example/list'],
+      }),
+    ]);
+    mocks.fsRead.mockResolvedValue(
+      JSON.stringify({
+        outboundMetadata: {
+          names: { 'main-2-out': 'AWG 3.1' },
+          protocols: { 'main-2-out': 'amneziawg' },
+        },
+        links: { 'main-2-out': 'vpn://synthetic-profile' },
+      }),
+    );
+    const result = await getDashboardSections();
+    const [section] = result.data;
+    expect(
+      section.outbounds.find((item) => item.code === 'main-2-out'),
+    ).toMatchObject({
+      displayName: 'AWG 3.1',
+      type: 'AmneziaWG',
+      canCopyLink: true,
+      link: 'vpn://synthetic-profile',
+    });
+    expect(section.latencyTestCodes).toContain('main-2-out');
+  });
+
   it('does not expose countries when URLTest filtering is set to all servers', async () => {
     mocks.getConfigSections.mockResolvedValue([
       proxySection({

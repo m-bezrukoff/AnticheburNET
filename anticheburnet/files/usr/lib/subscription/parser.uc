@@ -1,6 +1,9 @@
 #!/usr/bin/env ucode
 
 let fs = require("fs");
+// The parser is also called directly without -L by the subscription CLI.
+push(REQUIRE_SEARCH_PATH, fs.dirname(sourcepath()) + "/../*.uc");
+let awg = require("core.awg");
 
 function as_string(value) {
     return value == null ? "" : "" + value;
@@ -45,7 +48,7 @@ function starts_with(value, prefix) {
 }
 
 function is_supported_share_link(line) {
-    return starts_with(line, "ss://") ||
+    return starts_with(line, "vpn://") || starts_with(line, "ss://") ||
         starts_with(line, "vmess://") ||
         starts_with(line, "vless://") ||
         starts_with(line, "trojan://") ||
@@ -1082,6 +1085,15 @@ function process_vmess(raw) {
 }
 
 function parse_share_link(line) {
+    if (starts_with(line, "vpn://")) {
+        try {
+            let profile = awg.parse_link(line);
+            if (profile) return { type: "direct", tag: profile.name, remark: profile.name,
+                share_link: line, __awg_config: profile.config };
+        }
+        catch (error) { return null; }
+        return null;
+    }
     if (starts_with(line, "vmess://"))
         return process_vmess(line);
     if (starts_with(line, "ss://"))

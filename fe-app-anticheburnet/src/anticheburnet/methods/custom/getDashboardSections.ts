@@ -655,7 +655,9 @@ function getUrlTestDisplayName(
   );
 }
 
-function getUrlTestConfigs(section: AnticheburNET.ConfigSection): UrlTestConfig[] {
+function getUrlTestConfigs(
+  section: AnticheburNET.ConfigSection,
+): UrlTestConfig[] {
   const settingsMap = itemSettingsMap(section.urltest_settings);
   const sectionName = section['.name'];
 
@@ -737,7 +739,9 @@ function getPriorityGroupIds(section: AnticheburNET.ConfigSection) {
   return getListValues(section.priority_groups);
 }
 
-function getPriorityConfigs(section: AnticheburNET.ConfigSection): PriorityConfig[] {
+function getPriorityConfigs(
+  section: AnticheburNET.ConfigSection,
+): PriorityConfig[] {
   const settingsMap = itemSettingsMap(section.priority_group_settings);
   const sectionName = section['.name'];
 
@@ -834,6 +838,16 @@ function getPriorityGroups(dashboardCache?: DashboardSectionCache) {
   return groups;
 }
 
+function getOutboundType(
+  code: string,
+  entry?: ClashProxyEntry,
+  metadata?: AnticheburNET.GetOutboundMetadata,
+) {
+  return metadata?.protocols?.[code] === 'amneziawg'
+    ? 'AmneziaWG'
+    : entry?.value?.type || '';
+}
+
 function getOutboundDisplayName(
   code: string,
   entry: ClashProxyEntry | undefined,
@@ -898,7 +912,7 @@ function buildUrlTestInfo({
             cachedProxyLinks.has(childCode),
           ),
           latency: childEntry?.value?.history?.[0]?.delay || 0,
-          type: childEntry?.value?.type || '',
+          type: getOutboundType(childCode, childEntry, outboundMetadata),
           selected: selectedCode === childCode,
           link,
           canCopyLink,
@@ -1011,7 +1025,7 @@ function buildPriorityInfo({
           cachedProxyLinks.has(childCode),
         ),
         latency: childEntry?.value?.history?.[0]?.delay || 0,
-        type: childEntry?.value?.type || '',
+        type: getOutboundType(childCode, childEntry, outboundMetadata),
         selected: selectedCode === childCode,
         link,
         canCopyLink,
@@ -1143,7 +1157,9 @@ function buildProxyGroupOutbounds(
         code,
         displayName,
         latency: item?.value.history?.[0]?.delay || 0,
-        type: priorityConfig ? 'Priority' : item?.value.type || 'URLTest',
+        type: priorityConfig
+          ? 'Priority'
+          : getOutboundType(code, item, outboundMetadata) || 'URLTest',
         selected: selector?.value?.now === code,
         link,
         canCopyLink,
@@ -1350,6 +1366,7 @@ function getOutboundMetadata(dashboardCache?: DashboardSectionCache) {
   }
 
   return {
+    protocols: objectMap(metadata.protocols),
     names: objectMap(metadata.names),
     countries: objectMap(metadata.countries),
   };

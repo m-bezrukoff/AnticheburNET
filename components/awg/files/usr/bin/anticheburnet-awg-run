@@ -3,6 +3,10 @@ set -eu
 umask 077
 iface=${1:-awg0}
 config_file=${2:-/etc/anticheburnet/awg0.conf}
+table=${3:-311}
+profile_index=${4:-}
+case "$table" in ''|*[!0-9]*) exit 2 ;; esac
+[ "$table" -ge 311 ] && [ "$table" -le 343 ] || exit 2
 case "$iface" in ''|*[!a-zA-Z0-9_-]*) exit 2 ;; esac
 [ "${#iface}" -le 15 ] || exit 2
 if ip link show dev "$iface" >/dev/null 2>&1; then
@@ -10,8 +14,8 @@ if ip link show dev "$iface" >/dev/null 2>&1; then
     exit 1
 fi
 # Reserved table for SO_BINDTODEVICE traffic only; the WAN default stays in main.
-if [ -n "$(ip -4 route show table 311 2>/dev/null)$(ip -6 route show table 311 2>/dev/null)" ]; then
-    echo 'Routing table 311 is occupied' >&2
+if [ -n "$(ip -4 route show table "$table" 2>/dev/null)$(ip -6 route show table "$table" 2>/dev/null)" ]; then
+    echo "Routing table $table is occupied" >&2
     exit 1
 fi
 work=$(mktemp -d /var/run/anticheburnet-awg.XXXXXX)
@@ -20,9 +24,11 @@ rule4=0
 rule6=0
 has4=0
 has6=0
+ready=''
 cleanup() {
-    [ "$rule4" = 0 ] || ip -4 rule del priority 10400 oif "$iface" table 311 2>/dev/null || true
-    [ "$rule6" = 0 ] || ip -6 rule del priority 10400 oif "$iface" table 311 2>/dev/null || true
+    [ -z "$ready" ] || rm -f "$ready"
+    [ "$rule4" = 0 ] || ip -4 rule del priority 10400 oif "$iface" table "$table" 2>/dev/null || true
+    [ "$rule6" = 0 ] || ip -6 rule del priority 10400 oif "$iface" table "$table" 2>/dev/null || true
     if [ -n "$child" ]; then
         kill "$child" 2>/dev/null || true
         wait "$child" 2>/dev/null || true
@@ -32,6 +38,10 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 143' TERM
 trap 'exit 130' INT
+if [ -n "$profile_index" ]; then
+    ucode -L /usr/lib/anticheburnet /usr/lib/anticheburnet/singbox/awg.uc extract "$config_file" "$profile_index" "$work/profile.conf"
+    config_file="$work/profile.conf"
+fi
 ucode -L /usr/lib/anticheburnet /usr/lib/anticheburnet-components/awg.uc prepare "$config_file" "$work/device.conf" > "$work/state.json"
 amneziawg-go -f "$iface" &
 child=$!
@@ -54,14 +64,19 @@ while IFS= read -r address; do
     esac
 done < "$work/addresses"
 if [ "$has4" = 1 ]; then
-    ip -4 route add default dev "$iface" table 311
-    ip -4 rule add priority 10400 oif "$iface" table 311
+    ip -4 route add default dev "$iface" table "$table"
+    ip -4 rule add priority 10400 oif "$iface" table "$table"
     rule4=1
 fi
 if [ "$has6" = 1 ]; then
-    ip -6 route add default dev "$iface" table 311
-    ip -6 rule add priority 10400 oif "$iface" table 311
+    ip -6 route add default dev "$iface" table "$table"
+    ip -6 rule add priority 10400 oif "$iface" table "$table"
     rule6=1
 fi
 rm -f "$work/device.conf"
+if [ -n "$profile_index" ]; then
+    mkdir -p /var/run/anticheburnet
+    ready="/var/run/anticheburnet/awg-$iface.ready"
+    : > "$ready"
+fi
 wait "$child"

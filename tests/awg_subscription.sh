@@ -59,6 +59,18 @@ for format in native base64 mihomo yaml; do
   [[ $(stat -c '%a' "$work/$format.conf") == 600 ]]
 done
 uc extract "$work/native.conf" "$work/ini.conf" AmneziaWG
+python3 - "$work" <<'PY'
+import base64,pathlib,sys
+p=pathlib.Path(sys.argv[1]);config=(p/'native.conf').read_text()+'# AWG #1\n'
+link='vpn://'+base64.b64encode(config.encode()).decode()
+(p/'vpn').write_text(link)
+(p/'mixed-vpn').write_text(base64.b64encode(('hy2://pw@example.com:443#Hysteria\n'+link+'\n').encode()).decode())
+PY
+for format in vpn mixed-vpn; do
+  uc list "$work/$format" | grep -Fq 'AWG #1'
+  uc extract "$work/$format" "$work/$format.conf" 'AWG #1'
+  grep -Fqx 'HeaderProtectionKey = AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=' "$work/$format.conf"
+done
 uc extract "$work/multiple" "$work/selected.conf" 'AWG #2'
 for input in absent multiple bad-option bad-key bad-injection; do
   if uc extract "$work/$input" "$work/rejected.conf" 2>/dev/null; then

@@ -131,6 +131,11 @@ function profiles(path) {
     }
     if (substr(data, 0, 11) == "[Interface]") return [{ name: "AmneziaWG", config: data + "\n" }];
     let result = [];
+    for (let line in split(data, "\n")) {
+        let profile = awg.parse_link(trim(line));
+        if (profile) push(result, profile);
+    }
+    if (length(result)) return result;
     let value;
     try { value = json(data); } catch (error) { value = null; }
     if (value != null) {

@@ -1936,14 +1936,18 @@ function service_proxy_address(settings, purpose) {
 }
 
 function download_to_file(url, filepath, proxy_address) {
+    // OpenWrt's wget (uclient-fetch) cannot tunnel HTTPS using HTTP CONNECT.
+    // curl is a package dependency and supports the sing-box mixed inbound.
+    let args = [
+        "curl", "-q", "-fL", "-sS",
+        "--connect-timeout", "10", "--max-time", "60",
+        "--noproxy", "", "--proxy",
+        as_string(proxy_address) != "" ? "http://" + as_string(proxy_address) : "",
+        "-o", filepath, "--", url
+    ];
     let attempt = 1;
     while (attempt <= 3) {
-        let command = command_from_args([ "wget", "-O", filepath, url ]);
-        if (as_string(proxy_address) != "")
-            command = "http_proxy=" + shell_quote("http://" + as_string(proxy_address)) +
-                " https_proxy=" + shell_quote("http://" + as_string(proxy_address)) + " " + command;
-
-        if (command_success(command))
+        if (command_success_from_args(args))
             return true;
 
         log_message("Attempt " + attempt + "/3 to download " + as_string(url) + " failed", "warn");
@@ -2133,7 +2137,7 @@ function import_builtin_subnets_from_rule(section, settings) {
             }
 
             if (!download_to_file(url, tmpfile, service_proxy_address(settings, "lists")) || !file_nonempty(tmpfile)) {
-                log_message("Failed to download built-in " + as_string(service) + " subnet list; skipping it until the next successful update", "error");
+                log_message("Failed to download built-in " + as_string(service) + " subnet list (" + as_string(url) + "); skipping it until the next successful update", "error");
                 ok = false;
                 remove_file(tmpfile);
                 continue;

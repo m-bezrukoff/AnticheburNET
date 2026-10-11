@@ -1335,6 +1335,7 @@ function installer_prepare_full_suite() {
         env("ANTICHEBURNET_INSTALLER_SING_BOX_INIT", "/etc/init.d/sing-box"),
         env("ANTICHEBURNET_INSTALLER_XRAY_INIT", "/etc/init.d/anticheburnet-xray"),
         env("ANTICHEBURNET_INSTALLER_AWG_INIT", "/etc/init.d/anticheburnet-awg"),
+        "/etc/init.d/anticheburnet-awg-subscriptions",
         "/etc/init.d/xray", "/etc/init.d/nextdns",
         "/etc/init.d/passwall", "/etc/init.d/passwall2"
     ]) {

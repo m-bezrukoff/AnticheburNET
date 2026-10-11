@@ -832,6 +832,7 @@ function stop_main() {
     let sing_box_status = command_status_from_args([ "/etc/init.d/sing-box", "stop" ]);
     if (sing_box_status != 0)
         status = sing_box_status;
+    if (!module_success(LIB_DIR + "/singbox/awg.uc", [ "stop" ])) status = 1;
 
     return status;
 }

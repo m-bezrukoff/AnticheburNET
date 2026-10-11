@@ -1111,7 +1111,7 @@ function insertIf(condition, elements) {
 }
 
 // src/helpers/isCopyableProxyLink.ts
-var COPYABLE_PROXY_URI_RE = /^(vless|vmess|trojan|ss|ssr|hysteria2|hy2|tuic|socks4|socks4a|socks5):\/\//i;
+var COPYABLE_PROXY_URI_RE = /^(vpn|vless|vmess|trojan|ss|ssr|hysteria2|hy2|tuic|socks4|socks4a|socks5):\/\//i;
 function isCopyableProxyLink(link) {
   return COPYABLE_PROXY_URI_RE.test((link || "").trim());
 }
@@ -3571,6 +3571,9 @@ function getPriorityGroups(dashboardCache) {
   }
   return groups;
 }
+function getOutboundType(code, entry, metadata) {
+  return metadata?.protocols?.[code] === "amneziawg" ? "AmneziaWG" : entry?.value?.type || "";
+}
 function getOutboundDisplayName(code, entry, link, outboundMetadata, preferMetadata = false) {
   const metadataName = outboundMetadata?.names?.[code];
   return (preferMetadata ? metadataName : getProxyUrlName(link)) || (preferMetadata ? getProxyUrlName(link) : metadataName) || entry?.value?.name || code;
@@ -3606,7 +3609,7 @@ function buildUrlTestInfo({
             cachedProxyLinks.has(childCode)
           ),
           latency: childEntry?.value?.history?.[0]?.delay || 0,
-          type: childEntry?.value?.type || "",
+          type: getOutboundType(childCode, childEntry, outboundMetadata),
           selected: selectedCode === childCode,
           link,
           canCopyLink,
@@ -3683,7 +3686,7 @@ function buildPriorityInfo({
           cachedProxyLinks.has(childCode)
         ),
         latency: childEntry?.value?.history?.[0]?.delay || 0,
-        type: childEntry?.value?.type || "",
+        type: getOutboundType(childCode, childEntry, outboundMetadata),
         selected: selectedCode === childCode,
         link,
         canCopyLink,
@@ -3778,7 +3781,7 @@ function buildProxyGroupOutbounds(section, proxies, outboundMetadata, urltestGro
         code,
         displayName,
         latency: item?.value.history?.[0]?.delay || 0,
-        type: priorityConfig ? "Priority" : item?.value.type || "URLTest",
+        type: priorityConfig ? "Priority" : getOutboundType(code, item, outboundMetadata) || "URLTest",
         selected: selector?.value?.now === code,
         link,
         canCopyLink,
@@ -3903,6 +3906,7 @@ function getOutboundMetadata(dashboardCache) {
     return void 0;
   }
   return {
+    protocols: objectMap(metadata.protocols),
     names: objectMap(metadata.names),
     countries: objectMap(metadata.countries)
   };

@@ -200,11 +200,11 @@ function remember_outbound_metadata(state, tag_name, display_name, outbound) {
     if (type(state) != "object")
         return;
     state.outboundMetadata.names[tag_name] = display_name;
-    let protocol = lc(as_string(outbound.type || ""));
+    let protocol = outbound.__awg_config != null ? "amneziawg" : lc(as_string(outbound.type || ""));
     if (protocol != "")
         state.outboundMetadata.protocols[tag_name] = protocol;
 
-    let transport = lc(as_string(object_or_empty(outbound.transport).type || ""));
+    let transport = outbound.__awg_config != null ? "udp" : lc(as_string(object_or_empty(outbound.transport).type || ""));
     if (transport == "" || transport == "raw")
         transport = "tcp";
     else if (transport == "h2")

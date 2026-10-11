@@ -330,7 +330,7 @@ function serialize_outbound_link(outbound) {
 function is_copyable_link(value) {
     value = lc(as_string(value));
     let prefixes = [
-        "vless://", "vmess://", "trojan://", "ss://", "ssr://",
+        "vpn://", "vless://", "vmess://", "trojan://", "ss://", "ssr://",
         "hysteria2://", "hy2://", "tuic://",
         "socks4://", "socks4a://", "socks5://"
     ];

@@ -3031,16 +3031,17 @@ var AnticheburNETShellMethods = {
       UI_ACTION_TRANSIENT_RPC_GRACE_MS
     );
     while (true) {
-      await sleep(SUBSCRIPTION_UPDATE_POLL_INTERVAL_MS);
       const response = await AnticheburNETShellMethods.subscriptionUpdateStatus(jobId);
       if (!response.success) {
         if (transientRpc.shouldContinue(response.error)) {
+          await sleep(SUBSCRIPTION_UPDATE_POLL_INTERVAL_MS);
           continue;
         }
         return response;
       }
       transientRpc.reset();
       if (response.data.running) {
+        await sleep(SUBSCRIPTION_UPDATE_POLL_INTERVAL_MS);
         continue;
       }
       return response;
@@ -5493,6 +5494,84 @@ function getServiceAvailability({
   return running ? "running" : "stopped";
 }
 
+// src/anticheburnet/tabs/dashboard/subscriptionLatency.ts
+function preserveMember(next, previous) {
+  if (next.latency || !previous?.latency || next.type !== previous.type || !next.link || next.link !== previous.link) {
+    return next;
+  }
+  return { ...next, latency: previous.latency };
+}
+function preserveSubscriptionLatency(next, previous) {
+  if (!previous) {
+    return next;
+  }
+  return {
+    ...next,
+    outbounds: next.outbounds.map((outbound) => {
+      if (outbound.runtimeAvailable === false) {
+        return outbound;
+      }
+      const old = previous.outbounds.find(
+        (item) => item.code === outbound.code
+      );
+      const result = preserveMember(outbound, old);
+      const preserved = {
+        ...result,
+        ...outbound.urlTestInfo ? {
+          urlTestInfo: {
+            ...outbound.urlTestInfo,
+            outbounds: outbound.urlTestInfo.outbounds.map(
+              (member) => preserveMember(
+                member,
+                old?.urlTestInfo?.outbounds.find(
+                  (item) => item.code === member.code
+                )
+              )
+            )
+          }
+        } : {},
+        ...outbound.priorityInfo ? {
+          priorityInfo: {
+            ...outbound.priorityInfo,
+            outbounds: outbound.priorityInfo.outbounds.map(
+              (member) => preserveMember(
+                member,
+                old?.priorityInfo?.outbounds.find(
+                  (item) => item.code === member.code
+                )
+              )
+            )
+          }
+        } : {}
+      };
+      const group = preserved.urlTestInfo || preserved.priorityInfo;
+      if (!preserved.latency && group?.selectedCode) {
+        preserved.latency = group.outbounds.find((member) => member.code === group.selectedCode)?.latency || 0;
+      }
+      return preserved;
+    })
+  };
+}
+function getSubscriptionLatencyTest(section) {
+  if (!section.outbounds.some((outbound) => outbound.runtimeAvailable !== false)) {
+    return null;
+  }
+  if (section.withTagSelect) {
+    return section.latencyTestCodes?.length ? {
+      type: "proxy_list",
+      tag: JSON.stringify(section.latencyTestCodes)
+    } : {
+      type: "group",
+      tag: section.latencyTestCode || section.code
+    };
+  }
+  return {
+    type: "proxy",
+    tag: section.outbounds[0].code,
+    timeout: section.latencyTestTimeout
+  };
+}
+
 // src/anticheburnet/tabs/dashboard/initController.ts
 var SECTIONS_REFRESH_INTERVAL_MS = 1e4;
 var LATENCY_TEST_BUTTON_CLASS = "dashboard-sections-grid-item-test-latency";
@@ -5510,6 +5589,60 @@ var followedSubscriptionJobs = /* @__PURE__ */ new Set();
 var followedLatencyJobs = /* @__PURE__ */ new Set();
 var handledSubscriptionJobs = /* @__PURE__ */ new Set();
 var handledLatencyJobs = /* @__PURE__ */ new Set();
+var subscriptionLatencySnapshot = /* @__PURE__ */ new Map();
+var pendingSubscriptionLatency = /* @__PURE__ */ new Set();
+var subscriptionLatencyRefreshPending = false;
+var subscriptionLatencyRevision = 0;
+var subscriptionRuntimeSettlingUntil = 0;
+function captureSubscriptionLatency() {
+  subscriptionLatencyRevision += 1;
+  for (const section of store.get().sectionsWidget.data) {
+    if (!subscriptionLatencySnapshot.has(section.sectionName)) {
+      subscriptionLatencySnapshot.set(section.sectionName, section);
+    }
+  }
+}
+function refreshSubscriptionLatency(data) {
+  const widget = store.get().sectionsWidget;
+  if (Object.keys(widget.subscriptionUpdatingSections).length) {
+    return;
+  }
+  if (subscriptionLatencyRefreshPending) {
+    subscriptionLatencyRefreshPending = false;
+    for (const section of data) {
+      pendingSubscriptionLatency.add(section.sectionName);
+    }
+    const sectionNames = new Set(data.map((section) => section.sectionName));
+    for (const sectionName of subscriptionLatencySnapshot.keys()) {
+      if (!sectionNames.has(sectionName)) {
+        subscriptionLatencySnapshot.delete(sectionName);
+        pendingSubscriptionLatency.delete(sectionName);
+      }
+    }
+  }
+  for (const section of data) {
+    if (!pendingSubscriptionLatency.has(section.sectionName) || widget.latencyFetchingSections[section.sectionName]) {
+      continue;
+    }
+    const test = getSubscriptionLatencyTest(section);
+    if (!test) {
+      continue;
+    }
+    pendingSubscriptionLatency.delete(section.sectionName);
+    const revision = subscriptionLatencyRevision;
+    void handleTestLatency(
+      test.type,
+      section.sectionName,
+      test.tag,
+      test.timeout
+    ).finally(() => {
+      if (revision === subscriptionLatencyRevision) {
+        subscriptionLatencySnapshot.delete(section.sectionName);
+        void fetchDashboardSections({ force: true });
+      }
+    });
+  }
+}
 if (typeof window !== "undefined") {
   window.addEventListener("pagehide", () => {
     pageUnloading = true;
@@ -5524,6 +5657,7 @@ async function fetchDashboardSectionsOnce(mountId) {
   }
   const prev = store.get().sectionsWidget;
   const hasRenderedData = prev.data.length > 0;
+  const refreshPendingAtStart = subscriptionLatencyRefreshPending;
   store.set({
     sectionsWidget: {
       ...prev,
@@ -5545,9 +5679,17 @@ async function fetchDashboardSectionsOnce(mountId) {
         ...current,
         loading: false,
         failed: false,
-        data
+        data: data.map(
+          (section) => preserveSubscriptionLatency(
+            section,
+            subscriptionLatencySnapshot.get(section.sectionName)
+          )
+        )
       }
     });
+    if (!subscriptionLatencyRefreshPending || refreshPendingAtStart) {
+      refreshSubscriptionLatency(data);
+    }
     return true;
   } catch (error) {
     logger.error("[DASHBOARD]", "fetchDashboardSections: failed", error);
@@ -5675,11 +5817,21 @@ async function completeSubscriptionUpdateJob(jobId, sectionName, response) {
   if (jobId) {
     handledSubscriptionJobs.add(jobId);
   }
+  if (!failed2) {
+    if (!subscriptionLatencySnapshot.size) {
+      captureSubscriptionLatency();
+    }
+    subscriptionLatencyRefreshPending = true;
+    subscriptionRuntimeSettlingUntil = Date.now() + 15e3;
+  }
   setSubscriptionUpdating(sectionName, false);
   if (jobId && response.success) {
     void AnticheburNETShellMethods.uiActionAck("subscription", jobId);
   }
   if (failed2) {
+    subscriptionLatencySnapshot.clear();
+    pendingSubscriptionLatency.clear();
+    subscriptionLatencyRefreshPending = false;
     if (shouldNotify) {
       showToast(_("Failed to update subscriptions"), "error");
     }
@@ -5702,6 +5854,7 @@ async function followSubscriptionUpdateState(state) {
   }
   followedSubscriptionJobs.add(jobId);
   if (shouldShowLoadingForRestoredAction(state)) {
+    captureSubscriptionLatency();
     setSubscriptionUpdating(sectionName, true);
   }
   try {
@@ -5895,6 +6048,10 @@ async function connectToClashSockets(dataUpdatesId) {
 }
 function getDashboardServiceAvailability() {
   const service = store.get().servicesInfoWidget;
+  const sections = store.get().sectionsWidget;
+  if (sections.data.length && (Object.keys(sections.subscriptionUpdatingSections).length || subscriptionLatencyRefreshPending && Date.now() < subscriptionRuntimeSettlingUntil)) {
+    return "running";
+  }
   return getServiceAvailability({
     loading: service.loading,
     failed: service.failed,
@@ -6466,6 +6623,7 @@ async function handleUpdateSubscription(section) {
   if (store.get().sectionsWidget.subscriptionUpdatingSections[section.sectionName]) {
     return;
   }
+  captureSubscriptionLatency();
   setSubscriptionUpdating(section.sectionName, true, true);
   let jobId = "";
   let ownsJobFollow = false;
@@ -6490,6 +6648,7 @@ async function handleUpdateSubscription(section) {
     if (!pageUnloading) {
       const message = error instanceof Error ? error.message : _("Failed to update subscriptions");
       setSubscriptionUpdating(section.sectionName, false);
+      subscriptionLatencySnapshot.clear();
       if (!isTransientRpcError(message)) {
         showToast(_("Failed to update subscriptions"), "error");
       }

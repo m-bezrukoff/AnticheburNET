@@ -20,6 +20,18 @@ describe('AnticheburNETShellMethods.subscriptionUpdate', () => {
     vi.useRealTimers();
   });
 
+  it('returns an already finished job without an initial polling delay', async () => {
+    mocks.executeShellCommand.mockResolvedValue({
+      stdout: JSON.stringify({ success: true, running: false }),
+      stderr: '',
+      code: 0,
+    });
+    const response =
+      await AnticheburNETShellMethods.waitSubscriptionUpdateJob('finished');
+    expect(response.success).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('starts a targeted background subscription update and waits for its state', async () => {
     mocks.executeShellCommand.mockImplementation(({ args }) => {
       if (args[0] === 'subscription_update_async') {

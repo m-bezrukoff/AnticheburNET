@@ -781,13 +781,12 @@ export const AnticheburNETShellMethods = {
     );
 
     while (true) {
-      await sleep(SUBSCRIPTION_UPDATE_POLL_INTERVAL_MS);
-
       const response =
         await AnticheburNETShellMethods.subscriptionUpdateStatus(jobId);
 
       if (!response.success) {
         if (transientRpc.shouldContinue(response.error)) {
+          await sleep(SUBSCRIPTION_UPDATE_POLL_INTERVAL_MS);
           continue;
         }
 
@@ -796,6 +795,7 @@ export const AnticheburNETShellMethods = {
 
       transientRpc.reset();
       if (response.data.running) {
+        await sleep(SUBSCRIPTION_UPDATE_POLL_INTERVAL_MS);
         continue;
       }
 

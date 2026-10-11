@@ -8,7 +8,10 @@ import { copyToClipboard } from '../../../helpers/copyToClipboard';
 import { showToast } from '../../../helpers/showToast';
 import { prettyBytes } from '../../../helpers/prettyBytes';
 import { renderCopyIcon24 } from '../../../icons';
-import { CustomAnticheburNETMethods, AnticheburNETShellMethods } from '../../methods';
+import {
+  CustomAnticheburNETMethods,
+  AnticheburNETShellMethods,
+} from '../../methods';
 import {
   logger,
   markUiActionOwned,
@@ -37,6 +40,10 @@ import { isActiveLuciTab } from '../../helpers/isActiveLuciTab';
 import { isTransientRpcError } from '../../helpers/isTransientRpcError';
 import { shouldShowLoadingForRestoredAction } from '../../helpers/restoredActionLoading';
 import { getServiceAvailability } from '../../helpers/serviceAvailability';
+import {
+  getSubscriptionLatencyTest,
+  preserveSubscriptionLatency,
+} from './subscriptionLatency';
 
 const SECTIONS_REFRESH_INTERVAL_MS = 10000;
 const LATENCY_TEST_BUTTON_CLASS = 'dashboard-sections-grid-item-test-latency';
@@ -55,6 +62,71 @@ const followedSubscriptionJobs = new Set<string>();
 const followedLatencyJobs = new Set<string>();
 const handledSubscriptionJobs = new Set<string>();
 const handledLatencyJobs = new Set<string>();
+const subscriptionLatencySnapshot = new Map<
+  string,
+  AnticheburNET.OutboundGroup
+>();
+const pendingSubscriptionLatency = new Set<string>();
+let subscriptionLatencyRefreshPending = false;
+let subscriptionLatencyRevision = 0;
+let subscriptionRuntimeSettlingUntil = 0;
+
+function captureSubscriptionLatency() {
+  subscriptionLatencyRevision += 1;
+  for (const section of store.get().sectionsWidget.data) {
+    if (!subscriptionLatencySnapshot.has(section.sectionName)) {
+      subscriptionLatencySnapshot.set(section.sectionName, section);
+    }
+  }
+}
+
+function refreshSubscriptionLatency(data: AnticheburNET.OutboundGroup[]) {
+  const widget = store.get().sectionsWidget;
+  if (Object.keys(widget.subscriptionUpdatingSections).length) {
+    return;
+  }
+
+  if (subscriptionLatencyRefreshPending) {
+    subscriptionLatencyRefreshPending = false;
+    for (const section of data) {
+      pendingSubscriptionLatency.add(section.sectionName);
+    }
+    const sectionNames = new Set(data.map((section) => section.sectionName));
+    for (const sectionName of subscriptionLatencySnapshot.keys()) {
+      if (!sectionNames.has(sectionName)) {
+        subscriptionLatencySnapshot.delete(sectionName);
+        pendingSubscriptionLatency.delete(sectionName);
+      }
+    }
+  }
+
+  for (const section of data) {
+    if (
+      !pendingSubscriptionLatency.has(section.sectionName) ||
+      widget.latencyFetchingSections[section.sectionName]
+    ) {
+      continue;
+    }
+    const test = getSubscriptionLatencyTest(section);
+    // Retry on the next data refresh if the runtime is still coming up.
+    if (!test) {
+      continue;
+    }
+    pendingSubscriptionLatency.delete(section.sectionName);
+    const revision = subscriptionLatencyRevision;
+    void handleTestLatency(
+      test.type,
+      section.sectionName,
+      test.tag,
+      test.timeout,
+    ).finally(() => {
+      if (revision === subscriptionLatencyRevision) {
+        subscriptionLatencySnapshot.delete(section.sectionName);
+        void fetchDashboardSections({ force: true });
+      }
+    });
+  }
+}
 
 if (typeof window !== 'undefined') {
   window.addEventListener('pagehide', () => {
@@ -74,6 +146,7 @@ async function fetchDashboardSectionsOnce(mountId: number) {
 
   const prev = store.get().sectionsWidget;
   const hasRenderedData = prev.data.length > 0;
+  const refreshPendingAtStart = subscriptionLatencyRefreshPending;
 
   store.set({
     sectionsWidget: {
@@ -84,7 +157,8 @@ async function fetchDashboardSectionsOnce(mountId: number) {
   });
 
   try {
-    const { data, success } = await CustomAnticheburNETMethods.getDashboardSections();
+    const { data, success } =
+      await CustomAnticheburNETMethods.getDashboardSections();
 
     if (
       !dashboardMounted ||
@@ -105,9 +179,19 @@ async function fetchDashboardSectionsOnce(mountId: number) {
         ...current,
         loading: false,
         failed: false,
-        data,
+        data: data.map((section) =>
+          preserveSubscriptionLatency(
+            section,
+            subscriptionLatencySnapshot.get(section.sectionName),
+          ),
+        ),
       },
     });
+
+    // A request started before job completion may still contain the old nodes.
+    if (!subscriptionLatencyRefreshPending || refreshPendingAtStart) {
+      refreshSubscriptionLatency(data);
+    }
 
     return true;
   } catch (error) {
@@ -289,6 +373,13 @@ async function completeSubscriptionUpdateJob(
     handledSubscriptionJobs.add(jobId);
   }
 
+  if (!failed) {
+    if (!subscriptionLatencySnapshot.size) {
+      captureSubscriptionLatency();
+    }
+    subscriptionLatencyRefreshPending = true;
+    subscriptionRuntimeSettlingUntil = Date.now() + 15000;
+  }
   setSubscriptionUpdating(sectionName, false);
 
   if (jobId && response.success) {
@@ -296,6 +387,9 @@ async function completeSubscriptionUpdateJob(
   }
 
   if (failed) {
+    subscriptionLatencySnapshot.clear();
+    pendingSubscriptionLatency.clear();
+    subscriptionLatencyRefreshPending = false;
     if (shouldNotify) {
       showToast(_('Failed to update subscriptions'), 'error');
     }
@@ -325,6 +419,7 @@ async function followSubscriptionUpdateState(
 
   followedSubscriptionJobs.add(jobId);
   if (shouldShowLoadingForRestoredAction(state)) {
+    captureSubscriptionLatency();
     setSubscriptionUpdating(sectionName, true);
   }
 
@@ -572,6 +667,16 @@ async function connectToClashSockets(dataUpdatesId: number) {
 
 function getDashboardServiceAvailability() {
   const service = store.get().servicesInfoWidget;
+  const sections = store.get().sectionsWidget;
+
+  if (
+    sections.data.length &&
+    (Object.keys(sections.subscriptionUpdatingSections).length ||
+      (subscriptionLatencyRefreshPending &&
+        Date.now() < subscriptionRuntimeSettlingUntil))
+  ) {
+    return 'running';
+  }
 
   return getServiceAvailability({
     loading: service.loading,
@@ -1289,14 +1394,16 @@ async function handleUpdateSubscription(section: AnticheburNET.OutboundGroup) {
     return;
   }
 
+  captureSubscriptionLatency();
   setSubscriptionUpdating(section.sectionName, true, true);
   let jobId = '';
   let ownsJobFollow = false;
 
   try {
-    const startResponse = await AnticheburNETShellMethods.subscriptionUpdateStart(
-      section.sectionName,
-    );
+    const startResponse =
+      await AnticheburNETShellMethods.subscriptionUpdateStart(
+        section.sectionName,
+      );
 
     if (!startResponse.success) {
       throw new Error(startResponse.error);
@@ -1310,7 +1417,8 @@ async function handleUpdateSubscription(section: AnticheburNET.OutboundGroup) {
 
     followedSubscriptionJobs.add(jobId);
     ownsJobFollow = true;
-    const response = await AnticheburNETShellMethods.waitSubscriptionUpdateJob(jobId);
+    const response =
+      await AnticheburNETShellMethods.waitSubscriptionUpdateJob(jobId);
     await completeSubscriptionUpdateJob(jobId, section.sectionName, response);
   } catch (error) {
     logger.error('[DASHBOARD]', 'handleUpdateSubscription: failed', error);
@@ -1321,6 +1429,7 @@ async function handleUpdateSubscription(section: AnticheburNET.OutboundGroup) {
           : _('Failed to update subscriptions');
 
       setSubscriptionUpdating(section.sectionName, false);
+      subscriptionLatencySnapshot.clear();
       if (!isTransientRpcError(message)) {
         showToast(_('Failed to update subscriptions'), 'error');
       }

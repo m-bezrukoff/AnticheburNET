@@ -87,8 +87,10 @@ require_pattern 'return "current reload";' \
   "reload-time queued reload must be distinguishable in logs"
 require_file_pattern "$LIFECYCLE_UC" '>/dev/null 2>&1 1000>&- &' \
   "service/lifecycle.uc background modules must close inherited procd lock fd"
-require_file_pattern "$INITD_UC" 'reload pending >/dev/null 2>&1 1000>&- &' \
-  "service/initd.uc pending reload worker must close inherited procd lock fd"
+require_file_pattern "$INITD_UC" 'fs.fdopen(1000, "w")' \
+  "service/initd.uc must wrap the inherited procd lock fd"
+require_file_pattern "$INITD_UC" 'inherited_procd_lock.close()' \
+  "service/initd.uc must close its inherited procd lock before launching workers"
 require_file_pattern "$STATE_UC" 'reload pending >/dev/null 2>&1 1000>&- &' \
   "service/state.uc pending reload worker must close inherited procd lock fd"
 require_file_pattern "$ANTICHEBURNET_INIT" 'ANTICHEBURNET_LAST_START_STATUS="$?"' \

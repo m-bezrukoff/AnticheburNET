@@ -67,7 +67,7 @@ hy=next(o for o in c['outbounds'] if o['type']=='hysteria2')
 assert hy['tls']['ech']=={'enabled':True,'config':['-----BEGIN ECH CONFIGS-----','QUJDRA==','-----END ECH CONFIGS-----']}
 rules=c['route']['rules']; text=json.dumps(rules)
 assert 'example.ru' in text and '192.0.2.0/24' in text and 'ads.example' in text
-assert any(r.get('action')=='resolve' and r.get('server','').endswith('-happ-remote') for r in rules)
+assert any(r.get('action')=='resolve' and 'server' not in r for r in rules)
 servers={s['tag']:s for s in c['dns']['servers']}
 remote=next(s for k,s in servers.items() if k.endswith('-happ-remote'))
 domestic=next(s for k,s in servers.items() if k.endswith('-happ-domestic'))

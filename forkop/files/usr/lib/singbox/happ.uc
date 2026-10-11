@@ -88,7 +88,7 @@ function route_action(kind, tag) {
 function append_routes(config, policy, scope, tag) {
     let profile = policy.profile, order = split(profile.order, "-");
     if (profile.strategy == "IPOnDemand")
-        push(config.route.rules, scoped(scope, {}, { action: "resolve", server: policy.remote }));
+        push(config.route.rules, scoped(scope, {}, { action: "resolve" }));
     for (let kind in order) {
         let group = policy.groups[kind], matches = [];
         if (length(keys(group.sites))) push(matches, group.sites);
@@ -98,7 +98,7 @@ function append_routes(config, policy, scope, tag) {
         push(config.route.rules, scoped(scope, match, route_action(kind, tag)));
     }
     if (profile.strategy == "IPIfNonMatch") {
-        push(config.route.rules, scoped(scope, {}, { action: "resolve", server: policy.remote }));
+        push(config.route.rules, scoped(scope, {}, { action: "resolve" }));
         for (let kind in order)
             if (length(keys(policy.groups[kind].ips)))
                 push(config.route.rules, scoped(scope, policy.groups[kind].ips, route_action(kind, tag)));

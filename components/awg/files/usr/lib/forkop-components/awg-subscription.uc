@@ -42,6 +42,11 @@ function list_value(value) {
 }
 
 function append(lines, key, value) {
+    if (key == "RandomTrailers" || key == "DisableCookies") {
+        if (value === true || value == "true" || value == "on" || value == "1") value = "on";
+        else if (value === false || value == "false" || value == "off" || value == "0") value = "off";
+        else if (value != null) die("Invalid AWG boolean option\n");
+    }
     if (value != null && value != "") push(lines, key + " = " + scalar(value));
 }
 

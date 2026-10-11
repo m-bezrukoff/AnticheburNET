@@ -48,6 +48,8 @@ def dns_server():
         question = data[12:cursor + 4]
         name = '.'.join(labels)
         address = '192.0.2.1' if name == 'geo.test' else '127.0.0.1'
+        # Only the imported DnsHosts mapping can make this host reachable.
+        if name == 'hosts.test': address = '203.0.113.1'
         answer = b''
         if qtype == 1:
             answer = b'\xc0\x0c' + struct.pack('!HHIH', 1, 1, 60, 4) + ipaddress.ip_address(address).packed

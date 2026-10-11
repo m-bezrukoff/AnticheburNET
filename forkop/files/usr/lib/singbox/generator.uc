@@ -1565,8 +1565,10 @@ function add_mixed_proxy_for_section(config, section, service_address) {
         inbound.users = [{ username, password }];
     }
     push(config.inbounds, inbound);
-    if (runtime_happ_policies[section[".name"]] != null)
+    if (runtime_happ_policies[section[".name"]] != null) {
         runtime_happ.append_routes(config, runtime_happ_policies[section[".name"]], { inbound: inbound.tag }, runtime_constants.outbound_tag(section[".name"]));
+        runtime_happ.append_dns(config, runtime_happ_policies[section[".name"]], { inbound: inbound.tag });
+    }
     push(config.route.rules, {
         action: "route",
         inbound: inbound.tag,

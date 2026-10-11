@@ -24,6 +24,11 @@ jobs:
       - run: |
           find forkop/files/usr/lib components -name '*.uc' -print0 | xargs -0 -n1 ucode -c -o /dev/null
           find forkop/files/usr/lib components -name '*.uc' -print0 | xargs -0 -n1 ucode -S -c -o /dev/null
+      - name: Check Happ and AWG subscription imports
+        run: |
+          bash -x tests/awg_subscription.sh
+          bash -x tests/happ_subscription.sh
+      - run: |
           printf '%s\0' tests/*.sh | xargs -0 -n1 -P4 bash
       - run: |
           mapfile -d '' scripts < <(find . -not -path './.git/*' -not -path './.build/*' -type f \( -name '*.sh' -o -path '*/etc/init.d/*' -o -path '*/usr/bin/forkop-awg-run' -o -path '*/usr/bin/forkop-xray-*' \) -print0)

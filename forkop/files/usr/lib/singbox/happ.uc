@@ -12,14 +12,34 @@ function merge(target, source) {
     }
 }
 
-function matchers(group, profile, directory, data) {
+function geo_match(config, profile, directory, data, kind, code, tag) {
+    if (!match(code, /^[A-Za-z0-9_@.-]+$/)) die("Unsupported Happ geodata tag\n");
+    let key = kind + ":" + lc(code);
+    if (data[key] != null) return { rule_set: [ data[key] ] };
+    if (data[kind] == null) data[kind] = geodata.load(profile[kind + "_url"], directory, kind);
+    let converted = geodata.convert(data[kind], kind, code);
+    let name = tag + "-happ-" + kind + "-" + b64enc(lc(code));
+    let path = directory + "/converted.json";
+    if (fs.writefile(path, sprintf("%J\n", { version: 3, rules: [ converted ] })) == null)
+        die("Cannot write RAM geodata ruleset\n");
+    let pipe = fs.popen("sha256sum " + geodata.quote(path), "r");
+    let digest = pipe ? substr(pipe.read("all") || "", 0, 64) : "";
+    if (pipe) pipe.close();
+    if (!match(digest, /^[a-f0-9]{64}$/)) die("Cannot identify RAM geodata ruleset\n");
+    let target = directory + "/" + digest + ".json";
+    if (!fs.rename(path, target)) die("Cannot install RAM geodata ruleset\n");
+    push(config.route.rule_set, { type: "local", tag: name, format: "source", path: target });
+    data[key] = name;
+    return { rule_set: [ name ] };
+}
+
+function matchers(config, group, profile, directory, data, tag) {
     let sites = {}, ips = {};
     for (let item in group.sites) {
         let prefix = "", value = item, colon = index(item, ":");
         if (colon >= 0) { prefix = substr(item, 0, colon); value = substr(item, colon + 1); }
         if (prefix == "geosite") {
-            if (data.geosite == null) data.geosite = geodata.load(profile.geosite_url, directory, "geosite");
-            merge(sites, geodata.convert(data.geosite, "geosite", value));
+            merge(sites, geo_match(config, profile, directory, data, "geosite", value, tag));
             continue;
         }
         let key = { "": "domain_keyword", domain: "domain_suffix", full: "domain", keyword: "domain_keyword", regexp: "domain_regex" }[prefix];
@@ -30,8 +50,7 @@ function matchers(group, profile, directory, data) {
     }
     for (let item in group.ips) {
         if (index(item, "geoip:") == 0) {
-            if (data.geoip == null) data.geoip = geodata.load(profile.geoip_url, directory, "geoip");
-            merge(ips, geodata.convert(data.geoip, "geoip", substr(item, 6)));
+            merge(ips, geo_match(config, profile, directory, data, "geoip", substr(item, 6), tag));
         }
         else {
             if (!ip.valid_ip_or_cidr(item)) die("Invalid Happ IP rule\n");
@@ -45,7 +64,7 @@ function matchers(group, profile, directory, data) {
 function prepared(config, profile, tag, directory) {
     if (profile.fake_dns) die("Happ FakeDNS profiles currently require FakeDNS=false\n");
     let groups = {}, data = {};
-    for (let kind in [ "block", "proxy", "direct" ]) groups[kind] = matchers(profile.rules[kind], profile, directory, data);
+    for (let kind in [ "block", "proxy", "direct" ]) groups[kind] = matchers(config, profile.rules[kind], profile, directory, data, tag);
     let predefined = {}, hosts = tag + "-happ-hosts", host_names = [];
     for (let name, value in profile.hosts) {
         let values = type(value) == "array" ? value : [ value ];
@@ -76,7 +95,11 @@ function prepared(config, profile, tag, directory) {
 }
 
 function scoped(scope, match, action) {
-    let rule = length(keys(match)) ? { type: "logical", mode: "and", rules: [ scope, match ] } : { ...scope };
+    // DNS generation removes inbound from its scope. Route rules must own their
+    // scope, rather than retaining a reference to that subsequently changed object.
+    let owned_scope = json(sprintf("%J", scope));
+    let rule = !length(keys(owned_scope)) ? { ...match } :
+        (length(keys(match)) ? { type: "logical", mode: "and", rules: [ owned_scope, match ] } : owned_scope);
     for (let key, value in action) rule[key] = value;
     return rule;
 }

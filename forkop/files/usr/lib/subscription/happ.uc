@@ -22,6 +22,7 @@ function normalize(profile) {
         order: profile.RouteOrder || "block-proxy-direct",
         strategy: profile.DomainStrategy || "IPIfNonMatch",
         fake_dns: boolean(profile.FakeDNS, false),
+        last_updated: profile.LastUpdated || "",
         geoip_url: profile.Geoipurl || "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat",
         geosite_url: profile.Geositeurl || "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat",
         hosts: profile.DnsHosts || {}, rules: {} };

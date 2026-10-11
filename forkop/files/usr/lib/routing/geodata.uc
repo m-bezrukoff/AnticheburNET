@@ -123,4 +123,4 @@ function load(url, directory, kind) {
     return data;
 }
 
-return { convert, load };
+return { convert, load, quote };

@@ -2302,3 +2302,30 @@ msgstr "Количество последовательных неудачных
 
 msgid "Number of consecutive successful checks required before returning to a higher-priority DNS server."
 msgstr "Количество последовательных успешных проверок, необходимое для возврата к DNS-серверу с более высоким приоритетом."
+
+msgid "Checking for updates"
+msgstr "Проверка обновлений"
+
+msgid "Preparing update"
+msgstr "Подготовка обновления"
+
+msgid "Downloading packages"
+msgstr "Загрузка пакетов"
+
+msgid "Verifying packages"
+msgstr "Проверка пакетов"
+
+msgid "Backing up settings"
+msgstr "Сохранение настроек"
+
+msgid "Installing update"
+msgstr "Установка обновления"
+
+msgid "Restarting service"
+msgstr "Перезапуск сервиса"
+
+msgid "Waiting for service"
+msgstr "Ожидание запуска сервиса"
+
+msgid "Unable to confirm the update. Refresh the page and check the installed version and update logs."
+msgstr "Не удалось подтвердить обновление. Обновите страницу и проверьте установленную версию и журнал обновления."

@@ -23,6 +23,24 @@ generate_apk_metadata_files() { :; }
 unshare() { :; }
 export TEST_COMPONENT_LOG="$WORK_DIR/actions"
 
+# Load the installer's real APK boundary without running it on the test host.
+sed '/^main "\$@"$/d' "$ROOT_DIR/install.sh" > "$WORK_DIR/installer.sh"
+source "$WORK_DIR/installer.sh"
+PKG_IS_APK=1
+apk() {
+  local preserve_env=0
+  if [[ "$1" = --preserve-env ]]; then
+    preserve_env=1
+    shift
+  fi
+  [[ "$1" = add && "$2" = --allow-untrusted ]] || return 1
+  # Model APK's script environment, retaining only test instrumentation and PATH.
+  local hook_defer=
+  [[ "$preserve_env" = 0 ]] || hook_defer="${ANTICHEBURNET_DEFER_PACKAGE_RESTART:-}"
+  env -i PATH="$PATH" TEST_COMPONENT_LOG="$TEST_COMPONENT_LOG" \
+    ANTICHEBURNET_DEFER_PACKAGE_RESTART="$hook_defer" sh "$WORK_DIR/post.sh"
+}
+
 for name in sing-box-extended anticheburnet-xray anticheburnet-amneziawg; do
   mkdir -p "$work/$name-root"
   package_component "$name" 1.0.0 'Test component' '' MIT
@@ -51,6 +69,15 @@ SH
     sh "$WORK_DIR/post.sh"
   [[ "$(cat "$TEST_COMPONENT_LOG")" = $'enable\nrestart' ]] ||
     fail "$name standalone installation lost service setup"
+
+  : > "$TEST_COMPONENT_LOG"
+  ANTICHEBURNET_DEFER_PACKAGE_RESTART=1 pkg_install_files "$output/$name.apk"
+  [[ ! -s "$TEST_COMPONENT_LOG" ]] || fail "$name restarted inside deferred APK installation"
+
+  : > "$TEST_COMPONENT_LOG"
+  ANTICHEBURNET_DEFER_PACKAGE_RESTART=0 pkg_install_files "$output/$name.apk"
+  [[ "$(cat "$TEST_COMPONENT_LOG")" = $'enable\nrestart' ]] ||
+    fail "$name ordinary APK installation lost service setup"
 done
 
 printf 'component package lifecycle checks passed\n'

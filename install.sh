@@ -1813,7 +1813,13 @@ pkg_install_name() {
 
 pkg_install_files() {
     if [ "$PKG_IS_APK" -eq 1 ]; then
-        apk add --allow-untrusted "$@" </dev/null
+        # APK 3 sanitizes hook environments by default. Keep the deferred-start
+        # flag available to backend and engine hooks during the suite transaction.
+        if [ "${ANTICHEBURNET_DEFER_PACKAGE_RESTART:-}" = 1 ]; then
+            apk --preserve-env add --allow-untrusted "$@" </dev/null
+        else
+            apk add --allow-untrusted "$@" </dev/null
+        fi
     else
         opkg install --force-overwrite --force-downgrade "$@" </dev/null
     fi

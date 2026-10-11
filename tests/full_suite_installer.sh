@@ -30,6 +30,11 @@ cp "$WORK_DIR/fixtures/SHA256SUMS" "$WORK_DIR/good-sums"
 
 cat > "$WORK_DIR/bin/apk" <<'SH'
 #!/bin/sh
+preserve_env=0
+if [ "$1" = --preserve-env ]; then
+  preserve_env=1
+  shift
+fi
 case "$1" in
   --version) printf 'apk-tools 3.0.0\n' ;;
   info)
@@ -52,7 +57,11 @@ case "$1" in
     if [ "$*" = 'add ucode ucode-mod-fs ucode-mod-uci' ]; then
       exit "${TEST_RUNTIME_STATUS:-0}"
     fi
-    [ "${ANTICHEBURNET_DEFER_PACKAGE_RESTART:-}" = 1 ] || exit 1
+    # APK 3 strips caller variables from hook environments unless requested.
+    hook_defer=
+    [ "$preserve_env" = 0 ] || hook_defer="${ANTICHEBURNET_DEFER_PACKAGE_RESTART:-}"
+    env -i PATH="$PATH" ANTICHEBURNET_DEFER_PACKAGE_RESTART="$hook_defer" \
+      sh -c '[ "$ANTICHEBURNET_DEFER_PACKAGE_RESTART" = 1 ]' || exit 1
     # Migration, firewall setup and LuCI post-install hooks must still execute.
     [ "${IPKG_NO_SCRIPT:-}" != 1 ] || exit 1
     [ "$2" = --allow-untrusted ] && [ "$#" = 8 ] || exit 1

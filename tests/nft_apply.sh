@@ -670,6 +670,8 @@ br-lan tun0
 1
 [rule.text_rule.action]
 bypass
+[rule.text_rule.happ_real_ip]
+0
 [rule.text_rule.ip_cidr]
 198.51.100.1,203.0.113.0/24
 [rule.text_rule.source_ip_cidr]
@@ -690,6 +692,8 @@ https://example.com/subnets.lst
 https://example.com/mixed.lst
 [rule.default_enabled.action]
 proxy
+[rule.default_enabled.happ_real_ip]
+0
 [rule.default_enabled.ip_cidr]
 10.0.0.0/8,192.0.2.1
 [rule.default_enabled.source_ip_cidr]
@@ -740,6 +744,8 @@ br-lan tun0
 1
 [rule.enabled.action]
 bypass
+[rule.enabled.happ_real_ip]
+0
 [rule.enabled.ip_cidr]
 10.0.0.0/8,192.0.2.1
 [rule.enabled.source_ip_cidr]

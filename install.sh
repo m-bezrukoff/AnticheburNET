@@ -2,7 +2,7 @@
 # shellcheck shell=dash
 
 REPO_OWNER="m-bezrukoff"
-REPO_NAME="anticheburnet"
+REPO_NAME="AnticheburNET"
 INSTALL_MODE="full"
 INSTALL_MODE_EXPLICIT=0
 FULL_COMPONENT_FILES=""

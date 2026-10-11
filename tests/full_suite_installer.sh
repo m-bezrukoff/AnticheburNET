@@ -52,6 +52,9 @@ case "$1" in
     if [ "$*" = 'add ucode ucode-mod-fs ucode-mod-uci' ]; then
       exit "${TEST_RUNTIME_STATUS:-0}"
     fi
+    [ "${ANTICHEBURNET_DEFER_PACKAGE_RESTART:-}" = 1 ] || exit 1
+    # Migration, firewall setup and LuCI post-install hooks must still execute.
+    [ "${IPKG_NO_SCRIPT:-}" != 1 ] || exit 1
     [ "$2" = --allow-untrusted ] && [ "$#" = 8 ] || exit 1
     shift 2
     for file do [ -s "$file" ] || exit 1; done

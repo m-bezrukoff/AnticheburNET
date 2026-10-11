@@ -2010,8 +2010,11 @@ install_full_suite() {
     sync || fail "Failed to synchronize flash before the space check; backup: $FULL_BACKUP_DIR"
     check_flash_space
     # Package names are validated above and TMP_DIR is created by mktemp.
+    # Keep migrations and LuCI hooks active, but let post_install restore the
+    # parent service after all engines are installed and configs can be rebuilt.
     # shellcheck disable=SC2086
-    pkg_install_files "$ANTICHEBURNET_BACKEND_FILE" "$ANTICHEBURNET_APP_FILE" "$ANTICHEBURNET_I18N_FILE" $FULL_COMPONENT_FILES ||
+    ANTICHEBURNET_DEFER_PACKAGE_RESTART=1 \
+        pkg_install_files "$ANTICHEBURNET_BACKEND_FILE" "$ANTICHEBURNET_APP_FILE" "$ANTICHEBURNET_I18N_FILE" $FULL_COMPONENT_FILES ||
         fail "Complete suite installation failed"
     migrate_legacy_configuration
     post_install

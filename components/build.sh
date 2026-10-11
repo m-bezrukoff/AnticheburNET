@@ -77,6 +77,9 @@ package_component() {
   cat >> "$scripts/post.sh" <<'SH'
 [ "${IPKG_NO_SCRIPT:-}" != 1 ] || exit 0
 [ -z "${IPKG_INSTROOT:-}" ] || exit 0
+# AnticheburNET regenerates engine configs and temporary Happ rule sets before
+# starting the suite, after APK has released its database lock.
+[ "${ANTICHEBURNET_DEFER_PACKAGE_RESTART:-}" != 1 ] || exit 0
 "/etc/init.d/$service" enable
 "/etc/init.d/$service" restart || true
 SH

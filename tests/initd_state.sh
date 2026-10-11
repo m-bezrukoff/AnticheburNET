@@ -281,4 +281,19 @@ if grep -Fq 'initd-should-' "$STATE_UC"; then
   fail "service/state.uc must not keep init.d decision owner modes"
 fi
 
+# A retry worker must not retain OpenWrt's procd flock after its caller exits.
+lock_retry_pid="$WORK_DIR/lock-retry.pid"
+lock_retry_file="$WORK_DIR/procd.lock"
+(
+  exec 1000>"$lock_retry_file"
+  flock 1000
+  ANTICHEBURNET_SERVICE_INIT="$WORK_DIR/missing-retry-init" \
+    initd_ucode schedule-start-retry "$lock_retry_pid" 10 >/dev/null
+)
+if ! flock -n "$lock_retry_file" true; then
+  initd_ucode cancel-scheduled-start-retry "$lock_retry_pid"
+  fail "background retry retained the procd lock"
+fi
+initd_ucode cancel-scheduled-start-retry "$lock_retry_pid"
+
 printf 'init.d state checks passed\n'

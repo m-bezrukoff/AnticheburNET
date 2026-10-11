@@ -4,7 +4,7 @@ on:
     inputs:
       package_version:
         type: string
-        default: '1.0.3'
+        default: '1.0.4'
         description: AnticheburNET release version
       components_from:
         type: string
@@ -17,7 +17,7 @@ on:
       update_baseline:
         type: boolean
         default: true
-        description: Build version 1.0.1 for an update test
+        description: Build version 1.0.0 for an update test
   push:
     branches: [main, 'anticheburnet/**']
     paths: ['components/**', '.github/workflows/filogic-build.yml', 'build.sh']
@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      PACKAGE_VERSION: ${{ inputs.package_version || '1.0.3' }}
+      PACKAGE_VERSION: ${{ inputs.package_version || '1.0.4' }}
     steps:
       - uses: actions/checkout@v5.0.0
       - uses: actions/setup-go@v5.0.0
@@ -68,12 +68,12 @@ jobs:
           cp ./*.apk ../../dist/filogic/
       - name: Build update test baseline
         if: github.event_name == 'workflow_dispatch' && inputs.update_baseline
-        run: bash build.sh 1.0.1 "$PWD/dist/update-baseline"
+        run: bash build.sh 1.0.0 "$PWD/dist/update-baseline"
       - name: Upload update baseline
         if: github.event_name == 'workflow_dispatch' && inputs.update_baseline
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: anticheburnet-update-baseline-1.0.1
+          name: anticheburnet-update-baseline-1.0.0
           path: dist/update-baseline/*
           if-no-files-found: error
       - name: Prepare release checksums

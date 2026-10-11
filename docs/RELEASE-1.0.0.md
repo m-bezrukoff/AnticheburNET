@@ -1,6 +1,6 @@
 # Forkop Plus 1.0.0 — Redmi AX6000 / Filogic / OpenWrt 25.12
 
-Основа: 20 проверенных PR из `ushan0v/forkop`. [Аудит всех 23 PR](https://github.com/m-bezrukoff/forkop-plus/blob/main/docs/PR-AUDIT.md); #121, #130 и #135 не включены.
+Комплект VPN, прокси и маршрутизации для Xiaomi Redmi Router AX6000 на OpenWrt 25.12.
 
 Комплект APK для `aarch64_cortex-a53`:
 

@@ -9196,7 +9196,7 @@ function renderWikiDisclaimer(kind) {
       classNames: ["cbi-button-save"],
       text: _("Open Project Page"),
       onClick: () => window.open(
-        "https://github.com/ushan0v/forkop#readme",
+        "https://github.com/m-bezrukoff/forkop-plus#readme",
         "_blank",
         "noopener,noreferrer"
       )

@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 💬 Если у вас что-то не работает, прежде всего прочитайте README проекта
-    url: https://github.com/ushan0v/forkop
-    about: README проекта
-  - name: 📚 Если вы не нашли в README документацию, то вот ссылка на неё
-    url: https://github.com/ushan0v/forkop#readme
-    about: README Forkop
+  - name: 📖 Возможности и ограничения Forkop Plus
+    url: https://github.com/m-bezrukoff/forkop-plus#readme
+    about: Описание проекта, поддерживаемая платформа и ссылки на релизы
+  - name: 📚 Установка и настройка Redmi AX6000
+    url: https://github.com/m-bezrukoff/forkop-plus/blob/main/docs/REDMI-AX6000.md
+    about: Установка пакетов, подписки, маршрутизация и настройка компонентов

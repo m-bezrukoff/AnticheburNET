@@ -168,3 +168,4 @@ cp "$component_root/components/versions.env" "$output/versions.env"
   sha256sum ./*.apk > SHA256SUMS
 )
 sudo bash "$component_root/components/test-runtime.sh" "$work"
+sudo bash "$component_root/components/test-happ-runtime.sh" "$work"

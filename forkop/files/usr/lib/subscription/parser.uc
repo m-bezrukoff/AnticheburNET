@@ -961,8 +961,12 @@ function process_hysteria2(raw, url) {
     if ((url.query.alpn || "") != "")
         tls.alpn = split_csv(url.query.alpn);
 
-    if ((url.query.ech || "") != "")
-        tls.ech = { enabled: true, config: [ url.query.ech ] };
+    if ((url.query.ech || "") != "") {
+        let ech = url.query.ech;
+        if (base64_decode(ech) == null)
+            return null;
+        tls.ech = { enabled: true, config: [ "-----BEGIN ECH CONFIGS-----", ech, "-----END ECH CONFIGS-----" ] };
+    }
 
     let outbound = {
         type: "hysteria2",

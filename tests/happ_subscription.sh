@@ -16,7 +16,7 @@ profile={'Name':'Router test', 'RouteOrder':'block-proxy-direct','GlobalProxy':'
 routing='happ://routing/onadd/'+base64.b64encode(json.dumps(profile).encode()).decode()
 (p/'headers').write_text('HTTP/1.1 302 Found\nRouting: happ://routing/off\n\nHTTP/1.1 200 OK\nRouting: '+routing+'\nRouting-Enable: true\n')
 (p/'profile').write_text(json.dumps(profile))
-(p/'body').write_text('hy2://test@example.com:443?ech=TESTECH#Happ%20node\n')
+(p/'body').write_text('hy2://test@example.com:443?ech=QUJDRA==#Happ%20node\n')
 (p/'wrapped').write_text(base64.b64encode((routing+'\n'+(p/'body').read_text()).encode()).decode())
 (p/'fixture').write_text(json.dumps({'settings':{'.name':'settings','.type':'settings','dns_server':'1.1.1.1'},
  'section':[{'.name':'happ_test','.type':'section','enabled':'1','action':'proxy','subscription_urls':['https://example.com/sub'],'subscription_user_agent':'Happ'}]}))
@@ -64,7 +64,7 @@ python3 - "$work/config" <<'PY'
 import json,sys
 c=json.load(open(sys.argv[1]))
 hy=next(o for o in c['outbounds'] if o['type']=='hysteria2')
-assert hy['tls']['ech']=={'enabled':True,'config':['TESTECH']}
+assert hy['tls']['ech']=={'enabled':True,'config':['-----BEGIN ECH CONFIGS-----','QUJDRA==','-----END ECH CONFIGS-----']}
 rules=c['route']['rules']; text=json.dumps(rules)
 assert 'example.ru' in text and '192.0.2.0/24' in text and 'ads.example' in text
 assert any(r.get('action')=='resolve' and r.get('server','').endswith('-happ-remote') for r in rules)

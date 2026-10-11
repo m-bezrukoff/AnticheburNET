@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Check the generated subscription policy with the exact packed ARM64 core.
+set -euo pipefail
+work="$1"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+lib="$root/forkop/files/usr/lib"
+test_dir=$(mktemp -d)
+pids=()
+cleanup() {
+  for pid in "${pids[@]}"; do kill "$pid" 2>/dev/null || true; done
+  ip address del 192.0.2.1/32 dev lo 2>/dev/null || true
+  rm -rf "$test_dir"
+}
+trap cleanup EXIT
+ip address add 192.0.2.1/32 dev lo
+qemu-aarch64 "$work/sing-box.arm64" generate ech-keypair public.test > "$test_dir/ech.pem"
+openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=localhost \
+  -addext 'subjectAltName=DNS:localhost,DNS:public.test' \
+  -keyout "$test_dir/key.pem" -out "$test_dir/cert.pem" >/dev/null 2>&1
+python3 - "$test_dir" <<'PY'
+import base64,json,pathlib,re,sys
+p=pathlib.Path(sys.argv[1]);pem=(p/'ech.pem').read_text()
+config=re.search(r'-----BEGIN ECH CONFIGS-----\s*(.*?)\s*-----END ECH CONFIGS-----',pem,re.S).group(1)
+key=re.search(r'-----BEGIN ECH KEYS-----.*?-----END ECH KEYS-----',pem,re.S).group()
+profile={'Name':'ARM64 runtime', 'DirectSites':['domain:direct.test'], 'DirectIp':['geoip:ru'],
+ 'BlockSites':['full:blocked.direct.test'], 'ProxySites':['full:proxy.direct.test'],
+ 'RemoteDNSType':'DoU','RemoteDNSIP':'127.0.0.1','DomesticDNSType':'DoU','DomesticDNSIP':'127.0.0.1',
+ 'DomainStrategy':'IPIfNonMatch','GlobalProxy':'true','RouteOrder':'block-proxy-direct',
+ 'Geoipurl':'http://127.0.0.1:18081/geoip.dat','DnsHosts':{'hosts.test':'127.0.0.1'}}
+(p/'routing-header').write_text('happ://routing/onadd/'+base64.b64encode(json.dumps(profile).encode()).decode())
+link='hy2://local-test@127.0.0.1:18445?sni=localhost&insecure=1&ech='+config.replace('\n','')+'#Happ-runtime'
+(p/'subscription').write_text(base64.b64encode(link.encode()).decode())
+(p/'fixture').write_text(json.dumps({'settings':{'.name':'settings','.type':'settings','dns_server':'1.1.1.1','dns_type':'udp'},
+ 'section':[{'.name':'happ_runtime','.type':'section','enabled':'1','action':'proxy','subscription_urls':['http://127.0.0.1:18081/subscription'],
+ 'subscription_user_agent':'Happ','mixed_proxy_enabled':'1','mixed_proxy_port':'10823'}]}))
+(p/'server.json').write_text(json.dumps({'inbounds':[{'type':'hysteria2','listen':'127.0.0.1','listen_port':18445,'users':[{'password':'local-test'}],
+ 'tls':{'enabled':True,'certificate_path':str(p/'cert.pem'),'key_path':str(p/'key.pem'),'ech':{'enabled':True,'key':[key]}}}],
+ 'outbounds':[{'type':'direct','inet4_bind_address':'127.0.0.2'}]}))
+def field(n,v):
+ def vi(i):
+  r=bytearray()
+  while i>127:r.append((i&127)|128);i>>=7
+  return bytes(r)+bytes([i])
+ return vi(n*8+2)+vi(len(v))+v
+cidr=field(1,bytes([192,0,2,0]))+bytes([16,24])
+(p/'geoip.dat').write_bytes(field(1,field(1,b'RU')+field(2,cidr)))
+PY
+python3 "$root/components/test-happ-runtime.py" "$test_dir" > "$test_dir/http.log" 2>&1 &
+pids+=("$!")
+for attempt in {1..30}; do curl -fsS http://127.0.0.1:18081/subscription >/dev/null && break; sleep 0.2; done
+mkdir "$test_dir/subscriptions"
+curl -fsS --user-agent Happ --dump-header "$test_dir/headers" http://127.0.0.1:18081/subscription -o "$test_dir/body"
+normalized="$test_dir/subscriptions/happ_runtime-subscription-1.json"
+ucode -L "$lib" "$lib/subscription/parser.uc" normalize-content-validated "$test_dir/body" "$normalized"
+ucode -L "$lib" -e 'if(!require("subscription.happ").attach(ARGV[0],ARGV[1],ARGV[2]))exit(1);' "$test_dir/headers" "$test_dir/body" "$normalized"
+printf '%s' http://127.0.0.1:18081/subscription > "$test_dir/subscriptions/happ_runtime-subscription-1.url"
+printf '%s' Happ > "$test_dir/subscriptions/happ_runtime-subscription-1.user_agent"
+TMP_SUBSCRIPTION_FOLDER="$test_dir/subscriptions" ucode -L "$lib" "$lib/singbox/generator.uc" generate-config-fixture "$test_dir/fixture" "$test_dir/client.json" 127.0.0.1 0 true '' 1.14.1
+# Bind the direct exit differently from the encrypted proxy's exit: the HTTP
+# fixture reports its real peer address, proving which route carried the request.
+python3 - "$test_dir/client.json" <<'PY'
+import json,sys
+p=sys.argv[1];v=json.load(open(p));next(o for o in v['outbounds'] if o['tag']=='direct-out')['inet4_bind_address']='127.0.0.1'
+open(p,'w').write(json.dumps(v))
+PY
+for role in server client; do
+  qemu-aarch64 "$work/sing-box.arm64" check -c "$test_dir/$role.json"
+  qemu-aarch64 "$work/sing-box.arm64" run -c "$test_dir/$role.json" > "$test_dir/$role.log" 2>&1 &
+  pids+=("$!")
+done
+sleep 1
+for pair in 'www.direct.test 127.0.0.1' 'proxy.direct.test 127.0.0.2' 'other.test 127.0.0.2' 'geo.test 127.0.0.1' 'hosts.test 127.0.0.2'; do
+  read -r domain expected <<< "$pair"
+  actual=$(curl --noproxy '' -fsS --max-time 15 --socks5-hostname 127.0.0.1:10823 "http://$domain:18081/source") || { cat "$test_dir/"*.log; exit 1; }
+  [[ "$actual" == "$expected" ]] || { echo "Wrong route for $domain: $actual" >&2; exit 1; }
+done
+if curl --noproxy '' -fsS --max-time 4 --socks5-hostname 127.0.0.1:10823 http://blocked.direct.test:18081/source; then
+  echo 'Blocked Happ domain was reachable' >&2; exit 1
+fi
+echo 'ARM64 Happ header, DNS, ECH Hysteria2, block/proxy/direct priority and GeoIP after resolution passed'

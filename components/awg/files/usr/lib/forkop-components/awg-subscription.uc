@@ -47,7 +47,8 @@ function append(lines, key, value) {
 
 function endpoint(host, port) {
     host = scalar(host);
-    if (!match(host, /^[A-Za-z0-9_.:\[\]-]+$/) || !match("" + port, /^[0-9]+$/) || int(port) < 1 || int(port) > 65535)
+    if (substr(host, 0, 1) == "[" && substr(host, length(host) - 1) == "]") host = substr(host, 1, length(host) - 2);
+    if (!match(host, /^[A-Za-z0-9_.:-]+$/) || !match("" + port, /^[0-9]+$/) || int(port) < 1 || int(port) > 65535)
         die("Invalid AWG peer endpoint\n");
     if (index(host, ":") >= 0 && substr(host, 0, 1) != "[") host = "[" + host + "]";
     return host + ":" + port;

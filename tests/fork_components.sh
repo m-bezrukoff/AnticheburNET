@@ -50,7 +50,7 @@ if grep -Eq '^(Address|MTU|DNS) =' "$work/device.conf"; then exit 1; fi
 uc -e 'let fs=require("fs"); let c=json(fs.readfile(ARGV[0])); if(length(c.addresses)!=2 || c.mtu!=1376) die("AWG network metadata lost");' "$work/state.json"
 cat >> "$work/awg.conf" <<'CONF'
 [Peer]
-PublicKey = BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=
+PublicKey = AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
 AllowedIPs = 192.0.2.0/24
 CONF
 uc "$awg" prepare "$work/awg.conf" "$work/device.conf" > "$work/state.json"

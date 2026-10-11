@@ -10,7 +10,6 @@ let runtime_route = require("singbox.route");
 let runtime_rulesets = require("singbox.rulesets");
 let runtime_servers = require("singbox.servers");
 let runtime_subscription = require("singbox.subscription");
-let runtime_reality = require("singbox.reality");
 let runtime_happ = require("singbox.happ");
 let runtime_happ_profiles = {};
 let runtime_happ_policies = {};

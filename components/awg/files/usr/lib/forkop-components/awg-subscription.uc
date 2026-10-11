@@ -1,7 +1,7 @@
 #!/usr/bin/ucode
 let fs = require("fs");
 let parser = require("subscription.parser");
-let awg = require("forkop-components.awg");
+let awg = require("awg");
 let happ = require("subscription.happ");
 
 let fields = {

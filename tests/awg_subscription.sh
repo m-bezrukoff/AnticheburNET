@@ -48,7 +48,7 @@ bad=json.loads(json.dumps(node));bad['amnezia']['i1']='hello\nPreUp = malicious'
 (p/'absent').write_text('hy2://pw@example.com:443#no-awg')
 (p/'headers').write_text('Routing: happ://routing/onadd/'+base64.b64encode(json.dumps({'DirectSites':['domain:example.ru']}).encode()).decode())
 PY
-uc() { ucode -L "$lib" -L "$component" "$parser" "$@"; }
+uc() { ucode -L "$lib" -L "$component/forkop-components" "$parser" "$@"; }
 for format in native base64 mihomo yaml; do
   uc list "$work/$format" | grep -Fq 'AWG #1'
   uc extract "$work/$format" "$work/$format.conf" 'AWG #1' "$work/headers"

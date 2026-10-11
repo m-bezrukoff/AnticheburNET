@@ -27,7 +27,7 @@ done
 backend_lib=${FORKOP_LIB:-/usr/lib/forkop}
 component_lib=${FORKOP_COMPONENT_LIB:-/usr/lib}
 parser="$component_lib/forkop-components/awg-subscription.uc"
-uc() { ucode -L "$backend_lib" -L "$component_lib" "$parser" "$@"; }
+uc() { ucode -L "$backend_lib" -L "$component_lib/forkop-components" "$parser" "$@"; }
 url=$(uc url "$1")
 work=$(mktemp -d /tmp/forkop-awg-import.XXXXXX)
 candidate=''
@@ -48,8 +48,8 @@ fi
 if [ "$mode" = list ]; then uc list "$work/body"; exit 0; fi
 uc extract "$work/body" "$work/config" "$profile" "$work/headers"
 # Validate the private key with the official AWG tools before storing anything.
-ucode -L "$backend_lib" -L "$component_lib" -e '
-let a=require("forkop-components.awg"); let fs=require("fs");
+ucode -L "$backend_lib" -L "$component_lib/forkop-components" -e '
+let a=require("awg"); let fs=require("fs");
 let config=a.prepare(ARGV[0]);
 let key=match(config.device, /\nPrivateKey = ([^\n]+)/);
 if(!key) die("AWG private key is required\n");

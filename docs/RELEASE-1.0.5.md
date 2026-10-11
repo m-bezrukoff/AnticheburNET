@@ -13,3 +13,5 @@ Backend upgrades preserve the separately managed sing-box binary and service. Se
 Failed-start retry workers release the procd file descriptor, keeping service start, stop and update operations responsive.
 
 WAN recovery queues restart and reload after their procd handler releases its lock, preventing a recursive service lock during boot.
+
+Cold startup generates HAPP routing and downloads geodata before enabling traffic interception, so bootstrap requests are not sent to a proxy that has not started yet.

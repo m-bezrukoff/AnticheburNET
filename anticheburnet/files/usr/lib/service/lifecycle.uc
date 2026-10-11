@@ -698,15 +698,22 @@ function start_main() {
         return status;
     }
 
-    status = nft_rebuild_runtime();
-    if (status != 0)
-        return status;
-
     status = module_status(SINGBOX_UC, [ "configure-service" ]);
     if (status != 0)
         return status;
 
+    // HAPP geodata may need downloading after boot. Build it before enabling
+    // output interception, while no proxy is listening yet.
+    nft_populate_enabled = 0;
     status = singbox_init_config();
+    nft_populate_enabled = NFT_POPULATE_ENABLED_DEFAULT;
+    if (status != 0)
+        return status;
+
+    status = nft_rebuild_runtime();
+    if (status != 0)
+        return status;
+    status = nft_populate_runtime_sets();
     if (status != 0)
         return status;
 

@@ -1559,6 +1559,8 @@ function normalize_uri_list_data(data, output_file) {
         if (index(line, "\r") >= 0)
             line = replace(line, /\r/g, "");
         line = trim(line);
+        if (starts_with(line, "happ://routing/"))
+            continue;
         if (line != "" && !starts_with(line, "#")) {
             let outbound = parse_share_link(line);
             if (outbound) {

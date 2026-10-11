@@ -34,6 +34,17 @@ export FORKOP_XRAY_ASSET_SOURCE="$work/forkop-xray-root/usr/share/xray"
 export FORKOP_XRAY_ASSET_STATE="$test_dir/xray-cache"
 XRAY_LOCATION_ASSET=$(sh "$root/components/xray/files/usr/bin/forkop-xray-assets")
 export XRAY_LOCATION_ASSET
+# Exercise the converter on complete, real DAT files, including IPv4 and IPv6.
+ucode -L "$FORKOP_LIB" -e '
+let g=require("routing.geodata"),fs=require("fs"),ip=require("core.ip");
+let networks=g.convert(fs.readfile(ARGV[0]),"geoip","ru").ip_cidr;
+if(length(networks)<100)die("Full GeoIP RU entry was not read\n");
+for(let prefix in networks)if(!ip.valid_ip_cidr(prefix))die("Invalid converted GeoIP prefix\n");
+let domains=g.convert(fs.readfile(ARGV[1]),"geosite","cn");
+let count=0;for(let key,values in domains)count+=length(values);
+if(count<100)die("Full GeoSite entry was not read\n");
+print("Full DAT GeoIP/GeoSite conversion passed\n");
+' "$XRAY_LOCATION_ASSET/geoip.dat" "$XRAY_LOCATION_ASSET/geosite.dat"
 # A second invocation must reuse the verified RAM cache.
 [[ "$(sh "$root/components/xray/files/usr/bin/forkop-xray-assets")" == "$XRAY_LOCATION_ASSET" ]]
 qemu-aarch64 "$work/xray/xray" run -test -config "$test_dir/xray.json"

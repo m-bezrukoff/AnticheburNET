@@ -48,13 +48,7 @@ fi
 if [ "$mode" = list ]; then uc list "$work/body"; exit 0; fi
 uc extract "$work/body" "$work/config" "$profile" "$work/headers"
 # Validate the private key with the official AWG tools before storing anything.
-ucode -L "$backend_lib" -L "$component_lib/forkop-components" -e '
-let a=require("awg"); let fs=require("fs");
-let config=a.prepare(ARGV[0]);
-let key=match(config.device, /\nPrivateKey = ([^\n]+)/);
-if(!key) die("AWG private key is required\n");
-print(key[1],"\n");
-' "$work/config" | awg pubkey >/dev/null
+uc private-key "$work/config" | awg pubkey >/dev/null
 mkdir -p "$(dirname "$output")"
 candidate=$(mktemp "$output.XXXXXX")
 cat "$work/config" > "$candidate"

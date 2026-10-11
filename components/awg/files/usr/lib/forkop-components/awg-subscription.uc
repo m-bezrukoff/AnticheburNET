@@ -168,6 +168,12 @@ if (mode == "url") {
     if (!source.valid || match(source.url, /\s/) || index(source.url, chr(0)) >= 0) die("Use an HTTP(S) subscription URL\n");
     print(source.url);
 }
+else if (mode == "private-key") {
+    let prepared = awg.prepare(ARGV[1]);
+    let key = match(prepared.device, /\nPrivateKey = ([^\n]+)/);
+    if (!key) die("AWG private key is required\n");
+    print(key[1], "\n");
+}
 else if (mode == "list" || mode == "extract") {
     parser.try_decode_gzip_content_file(ARGV[1]);
     let candidates = profiles(ARGV[1]);

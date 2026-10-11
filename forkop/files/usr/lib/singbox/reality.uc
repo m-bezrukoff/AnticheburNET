@@ -11,24 +11,25 @@ function supports_hybrid_share(version) {
 }
 
 function prepare_outbounds(outbounds, version) {
-    if (!supports_hybrid_share(version))
-        return;
-
+    let hybrid_supported = supports_hybrid_share(version);
     for (let outbound in outbounds || []) {
         let tls = outbound.tls;
         if (type(tls) != "object" || tls.enabled !== true ||
             type(tls.reality) != "object" || tls.reality.enabled !== true)
             continue;
+        // Preserve the configured browser preset. The flag only keeps hybrid
+        // shares already supplied by that preset; it cannot add missing shares.
+        // Chrome 133 in the pinned uTLS supplies X25519MLKEM768 by default.
+        if (type(tls.utls) != "object")
+            tls.utls = { enabled: true, fingerprint: "chrome" };
+        else if (tls.utls.fingerprint == null || tls.utls.fingerprint == "") {
+            tls.utls.fingerprint = "chrome";
+            if (tls.utls.enabled == null)
+                tls.utls.enabled = true;
+        }
         // Explicit false keeps the classical handshake available for old servers.
-        if (tls.reality.support_x25519mlkem768 === false)
-            continue;
-        tls.reality.support_x25519mlkem768 = true;
-        // In the pinned uTLS, Chrome 133 carries ML-KEM before plain X25519.
-        // Merely enabling the flag cannot add a share to older browser presets.
-        if (type(tls.utls) == "object" && tls.utls.fingerprint != null &&
-            tls.utls.fingerprint != "" && tls.utls.fingerprint != "chrome")
-            warn("REALITY outbound '", outbound.tag || "", "': using chrome fingerprint for X25519MLKEM768\n");
-        tls.utls = { enabled: true, fingerprint: "chrome" };
+        if (hybrid_supported && tls.reality.support_x25519mlkem768 !== false)
+            tls.reality.support_x25519mlkem768 = true;
     }
 }
 

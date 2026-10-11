@@ -466,6 +466,14 @@ function retry_start_on_wan_up_action(runtime_running_value, service_enabled_val
     return "restart";
 }
 
+function queue_service_action(action, reason) {
+    // rc.common owns the lock until this handler returns. Let its next action
+    // acquire that lock after we exit instead of waiting on our own caller.
+    let result = command_capture(command_from_args([ SERVICE_INIT, action, reason ]) +
+        " </dev/null >/dev/null 2>&1 & echo $!");
+    return result.status == 0 && numeric_text(trim(result.output)) ? 0 : 1;
+}
+
 function retry_start_on_wan_up(owner_pid) {
     let action = retry_start_on_wan_up_action(
         runtime_is_running() ? "1" : "0",
@@ -482,7 +490,7 @@ function retry_start_on_wan_up(owner_pid) {
         return 0;
 
     command_success_from_args([ "logger", "-t", SERVICE_NAME, "[info] Retrying failed AnticheburNET start after WAN came up" ]);
-    return command_status_from_args([ SERVICE_INIT, "restart", "triggered" ]);
+    return queue_service_action("restart", "triggered");
 }
 
 function badwan_interface_monitored(settings, interface_name) {
@@ -517,7 +525,7 @@ function handle_wan_up(owner_pid) {
         clear_start_retry(START_RETRY_FILE);
         cancel_scheduled_start_retry(START_RETRY_PID_FILE);
         command_success_from_args([ "logger", "-t", SERVICE_NAME, "[info] Reloading AnticheburNET after monitored WAN came up" ]);
-        return command_status_from_args([ SERVICE_INIT, "reload", "badwan_interface_up" ]);
+        return queue_service_action("reload", "badwan_interface_up");
     }
 
     if (action == "skip_running") {

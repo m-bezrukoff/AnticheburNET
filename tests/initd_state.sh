@@ -296,4 +296,30 @@ if ! flock -n "$lock_retry_file" true; then
 fi
 initd_ucode cancel-scheduled-start-retry "$lock_retry_pid"
 
+# WAN handlers run under rc.common's lock and must return before reacquiring it.
+awk '/^let mode = ARGV\[0\]/{exit} {print}' "$INITD_UC" >"$WORK_DIR/queue.uc"
+printf '%s\n' 'exit(queue_service_action(ARGV[0], ARGV[1]));' >>"$WORK_DIR/queue.uc"
+cat >"$WORK_DIR/reentrant-init" <<'SH'
+#!/bin/sh
+flock "$QUEUE_LOCK" sh -c 'printf "%s %s\n" "$1" "$2" > "$QUEUE_RESULT"' sh "$1" "$2"
+SH
+chmod +x "$WORK_DIR/reentrant-init"
+for queued_action in restart reload; do
+  export QUEUE_LOCK="$WORK_DIR/procd-$queued_action.lock"
+  export QUEUE_RESULT="$WORK_DIR/$queued_action.result"
+  (
+    exec 1000>"$QUEUE_LOCK"
+    flock 1000
+    ANTICHEBURNET_SERVICE_INIT="$WORK_DIR/reentrant-init" \
+      timeout 4 ucode -L "$ANTICHEBURNET_LIB" "$WORK_DIR/queue.uc" "$queued_action" triggered ||
+      fail "WAN handler waited for its own procd lock"
+  )
+  for attempt in {1..30}; do
+    [ -f "$QUEUE_RESULT" ] && break
+    sleep 0.1
+  done
+  [ "$(cat "$QUEUE_RESULT" 2>/dev/null)" = "$queued_action triggered" ] ||
+    fail "queued WAN action did not run after its caller released the lock"
+done
+
 printf 'init.d state checks passed\n'

@@ -110,8 +110,25 @@ Endpoint = 192.0.2.$peer:18444
 PersistentKeepalive = 20-30
 AdvancedSecurity = on
 CONF
+  # Fetch the profile through the production URL importer before applying it to
+  # the real official ARM64 AWG tools and performing an encrypted handshake.
+  mkdir -p "$test_dir/bin"
+  cat > "$test_dir/bin/awg" <<SH
+#!/bin/sh
+exec qemu-aarch64 "$work/awg-tools/src/wg" "\$@"
+SH
+  chmod 755 "$test_dir/bin/awg"
+  FORKOP_COMPONENT_LIB="$root/components/awg/files/usr/lib" PATH="$test_dir/bin:$PATH" \
+    sh "$root/components/awg/files/usr/bin/forkop-awg-import" --output "$test_dir/imported$index.conf" \
+    "http://127.0.0.1:18080/awg$index.conf"
+  cmp "$test_dir/awg$index.conf" "$test_dir/imported$index.conf"
+  # A non-AWG response must not replace the saved, working profile.
+  if FORKOP_COMPONENT_LIB="$root/components/awg/files/usr/lib" PATH="$test_dir/bin:$PATH" \
+    sh "$root/components/awg/files/usr/bin/forkop-awg-import" --output "$test_dir/imported$index.conf" \
+    http://127.0.0.1:18080/probe.txt; then exit 1; fi
+  cmp "$test_dir/awg$index.conf" "$test_dir/imported$index.conf"
   ucode -L "$FORKOP_LIB" "$root/components/awg/files/usr/lib/forkop-components/awg.uc" prepare \
-    "$test_dir/awg$index.conf" "$test_dir/device$index.conf" > "$test_dir/state$index.json"
+    "$test_dir/imported$index.conf" "$test_dir/device$index.conf" > "$test_dir/state$index.json"
   if ! ip netns exec "$ns" qemu-aarch64 "$work/awg-tools/src/wg" setconf "fawg$index" "$test_dir/device$index.conf"; then
     cat "$test_dir/awg$index.log"; exit 1
   fi

@@ -90,6 +90,50 @@ uci commit forkop_xray
 
 ## AmneziaWG 3.1
 
+### Подписки Happ и маршрутизация
+
+Обычную HTTP(S)-ссылку подписки Happ добавляйте в секцию Forkop. При необходимости задайте
+User-Agent `Happ`. Узлы VLESS/Hysteria 2 импортируются из обычного или base64-кодированного
+списка ссылок. ECHConfigList из параметра `ech` Hysteria 2 преобразуется в PEM-конфигурацию
+ядра. Закрытые `happ://crypt...` ссылки требуют исходной HTTP(S)-ссылки провайдера;
+приватная подписка не передаётся сторонним сервисам расшифровки.
+
+Заголовки `Routing` и `Routing-Enable`, а также строки `happ://routing/add/...`,
+`happ://routing/onadd/...` и `happ://routing/off` в теле подписки обрабатываются вместе с узлами.
+Применяются `RouteOrder`, `GlobalProxy`, `Direct/Proxy/BlockSites`, `Direct/Proxy/BlockIp`,
+`DomainStrategy`, Remote/Domestic DNS и `DnsHosts`. Доменные префиксы `domain:`, `full:`,
+`keyword:` и `regexp:` сохраняют своё значение; `geoip:` и `geosite:` читаются из DAT-файлов,
+указанных провайдером. DAT кэшируются на неделю в `/tmp/forkop-happ-<секция>`, занимая RAM.
+Неподдерживаемый или повреждённый профиль вызывает явную ошибку; он не заменяется другой политикой.
+Для этой версии используйте профили с `FakeDNS=false` и IP-адресами в `DnsHosts`.
+
+Правила провайдера действуют внутри условий своей секции и в её локальном mixed proxy.
+Для полного покрытия клиентов задайте секцию для всего нужного трафика. Пустая секция
+с активным профилем Happ использует глобальную политику провайдера. Более ранние секции
+Forkop сохраняют приоритет. Разные активные профили требуют отдельных секций.
+Изменение только маршрутизации вызывает перегенерацию конфигурации.
+Android-списки `Per-App-Proxy` не применимы к маршрутизатору: для отдельных устройств
+задавайте исходные IP/подсети в Forkop.
+
+Для AWG подписка может содержать `.conf`, JSON endpoint/outbound sing-box extended или
+Mihomo WireGuard с `amnezia-wg-option` (JSON/YAML). Обычный WireGuard без параметров AWG
+не переименовывается в AmneziaWG. Если профилей несколько, выберите точное имя:
+
+```sh
+forkop-awg-import --list 'https://provider.example/subscription'
+forkop-awg-import --profile 'AWG profile' 'https://provider.example/subscription'
+uci set forkop_awg.settings.subscription_url='https://provider.example/subscription'
+uci set forkop_awg.settings.subscription_profile='AWG profile'
+uci commit forkop_awg
+```
+
+Ссылка обновляется при старте/перезапуске `forkop-awg`. При ошибке загрузки сохраняется
+последняя конфигурация; неоднозначный профиль, неверный ключ и shell hooks отклоняются.
+Конфигурация записывается атомарно с правами `0600`. Переданные правила Happ сохраняются
+в комментарии конфигурации и применяются секцией Forkop, использующей интерфейс `awg0`.
+Доступная проверенная подписка пока содержит только VLESS/Hysteria 2; формат реального
+AWG-профиля провайдера следует подтвердить после его появления.
+
 Скопируйте конфигурацию AWG 3.1 от вашего сервера в `/etc/forkop/awg0.conf` и установите права. Настройки клиента должны совпадать с сервером: частный/публичный ключи, Endpoint, Address, AllowedIPs и параметры обфускации.
 
 ```sh

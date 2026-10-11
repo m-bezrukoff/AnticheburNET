@@ -21,6 +21,8 @@ proxies:
     port: 443
     uuid: 00000000-0000-4000-8000-000000000001
     tls: true
+    servername: example.com
+    servername: example.com
     client-fingerprint: firefox
     reality-opts:
       public-key: jNXHt1yRo0vDuchQlIP6Z0ZvjT3KtzVI-T4E7RoLJS0
@@ -120,6 +122,10 @@ for (let name in ["extended", "stable", "old", "unknown"]) {
             check(tls.utls.enabled === true && tls.utls.fingerprint == "chrome", "compatible fingerprint for " + outbound.tag);
         } else {
             check(tls.reality.support_x25519mlkem768 == null, "extended field must not leak into unsupported core");
+            if (outbound.tag == "clash")
+                check(tls.utls.fingerprint == "firefox", "unsupported core keeps imported fingerprint");
+            if (outbound.tag == "xray")
+                check(tls.utls.fingerprint == "edge", "unsupported core keeps Xray fingerprint");
         }
     }
     check(count == 6, "all six REALITY sources must reach generation: " + name);

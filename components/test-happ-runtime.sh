@@ -18,7 +18,7 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=localhost \
   -addext 'subjectAltName=DNS:localhost,DNS:public.test' \
   -keyout "$test_dir/key.pem" -out "$test_dir/cert.pem" >/dev/null 2>&1
 python3 - "$test_dir" <<'PY'
-import base64,json,pathlib,re,sys
+import base64,json,pathlib,re,sys,urllib.parse
 p=pathlib.Path(sys.argv[1]);pem=(p/'ech.pem').read_text()
 config=re.search(r'-----BEGIN ECH CONFIGS-----\s*(.*?)\s*-----END ECH CONFIGS-----',pem,re.S).group(1)
 key=re.search(r'-----BEGIN ECH KEYS-----.*?-----END ECH KEYS-----',pem,re.S).group()
@@ -28,7 +28,7 @@ profile={'Name':'ARM64 runtime', 'DirectSites':['domain:direct.test'], 'DirectIp
  'DomainStrategy':'IPIfNonMatch','GlobalProxy':'true','RouteOrder':'block-proxy-direct',
  'Geoipurl':'http://127.0.0.1:18081/geoip.dat','DnsHosts':{'hosts.test':'127.0.0.1'}}
 (p/'routing-header').write_text('happ://routing/onadd/'+base64.b64encode(json.dumps(profile).encode()).decode())
-link='hy2://local-test@127.0.0.1:18445?sni=localhost&insecure=1&ech='+config.replace('\n','')+'#Happ-runtime'
+link='hy2://local-test@127.0.0.1:18445?'+urllib.parse.urlencode({'sni':'localhost','insecure':'1','ech':config.replace('\n','')})+'#Happ-runtime'
 (p/'subscription').write_text(base64.b64encode(link.encode()).decode())
 (p/'fixture').write_text(json.dumps({'settings':{'.name':'settings','.type':'settings','dns_server':'1.1.1.1','dns_type':'udp'},
  'section':[{'.name':'happ_runtime','.type':'section','enabled':'1','action':'proxy','subscription_urls':['http://127.0.0.1:18081/subscription'],

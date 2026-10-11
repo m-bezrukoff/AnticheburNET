@@ -12,20 +12,13 @@ for runner in \
     for scenario in ready timeout; do
         case_dir="$work/$(basename "$runner")-$scenario"
         mkdir -p "$case_dir/run/amneziawg" "$case_dir/run/anticheburnet"
-        sed "s|/var/run|$case_dir/run|g" "$root/$runner" > "$case_dir/runner"
+        sed -e "s|/var/run|$case_dir/run|g" -e 's/\[ -S /[ -f /g' "$root/$runner" > "$case_dir/runner"
         set +e
         (
             # Mock a BusyBox build without fractional sleep support.
             sleep() {
                 case "$1" in *[!0-9]*) echo "sleep: invalid number '$1'" >&2; return 1 ;; esac
                 command sleep "$@"
-            }
-            [() {
-                if [[ $# == 3 && $1 == -S && $3 == ']' ]]; then
-                    builtin [ -f "$2" ]
-                else
-                    builtin [ "$@"
-                fi
             }
             ip() {
                 printf '%s\n' "$*" >> "$case_dir/ip.log"

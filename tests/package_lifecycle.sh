@@ -192,6 +192,21 @@ ANTICHEBURNET_RT_TABLES="$WORK_DIR/rt_tables_upgrade" \
 [ ! -e "$ANTICHEBURNET_PACKAGE_UPGRADE_STATE" ] ||
   fail "package pre-upgrade must not mark an already stopped service"
 
+# Backend upgrade must preserve its separately managed sing-box runtime.
+printf '#!/bin/sh\n# AnticheburNET managed sing-box service for binary variants\nexit 0\n' > "$WORK_DIR/managed-sing-box-init"
+chmod 0755 "$WORK_DIR/managed-sing-box-init"
+printf 'existing core\n' > "$WORK_DIR/managed-sing-box-bin"
+printf 'existing cronet\n' > "$WORK_DIR/managed-cronet"
+ANTICHEBURNET_UCI_STATE_FILE="$WORK_DIR/stop-order.state" \
+ANTICHEBURNET_INIT="$WORK_DIR/upgrade-init" \
+ANTICHEBURNET_SING_BOX_INIT="$WORK_DIR/managed-sing-box-init" \
+ANTICHEBURNET_SING_BOX_BIN="$WORK_DIR/managed-sing-box-bin" \
+ANTICHEBURNET_SING_BOX_CRONET="$WORK_DIR/managed-cronet" \
+ANTICHEBURNET_RT_TABLES="$WORK_DIR/rt_tables_upgrade" \
+  ucode -L "$ANTICHEBURNET_LIB" "$PACKAGE_UC" prerm upgrade
+[ -s "$WORK_DIR/managed-sing-box-init" ] && [ -s "$WORK_DIR/managed-sing-box-bin" ] && \
+  [ -s "$WORK_DIR/managed-cronet" ] || fail "backend upgrade removed the managed core"
+
 # A self-update must not query the locked APK database from post-upgrade.
 for defer_flag in ANTICHEBURNET_DEFER_PACKAGE_RESTART ANTICHEBURNET_UI_COMPONENT_ACTION_TRACKED; do
   printf '1\n' > "$ANTICHEBURNET_PACKAGE_UPGRADE_STATE"

@@ -8,4 +8,4 @@ Subscription TLS fingerprints are preserved. Current Firefox and Safari browser 
 
 All six ARM64 packages target OpenWrt 25.12 on Filogic / aarch64_cortex-a53. Use the release installer to install the renamed application after uninstalling the previous program.
 
-Self-update restarts the service after the APK package transaction finishes, so package scripts do not query the locked APK database. Configuration and subscription device identity are retained. The ARM64 cores are unchanged from the successful 1.0.2 hardware build and retain their tested checksums.
+Backend upgrades preserve the separately managed sing-box binary and service. Self-update restarts the application after the APK package transaction finishes. Configuration and subscription device identity are retained. The ARM64 cores are unchanged from the successful 1.0.2 hardware build and retain their tested checksums.

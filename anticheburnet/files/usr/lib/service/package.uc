@@ -236,7 +236,8 @@ function prerm_cleanup(action) {
     if (!PACKAGE_TEST_MODE) {
         command_success_from_args([ INIT_PATH, "stop" ]);
         restore_dnsmasq_if_needed();
-        remove_managed_sing_box();
+        if (as_string(action) != "upgrade")
+            remove_managed_sing_box();
     }
 
     let firewall_ok = true;

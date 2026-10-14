@@ -2010,7 +2010,7 @@ function subscription_update_section(section, force) {
             continue;
         }
         let metadata_output_path = record.metadata_path;
-        let result_text = trim_string(read_text(record.result_path));
+        let result_text = trim(read_text(record.result_path));
         let update_result = result_text == "0" ? 0 : (result_text == "2" ? 2 : (result_text == "4" ? 4 : 1));
         unlink_path(record.result_path);
 

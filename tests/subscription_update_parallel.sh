@@ -16,7 +16,8 @@ system = function(command) {
 };
 update_subscription_sources_parallel({ ".name": "proxy" }, true);
 UC
-ANTICHEBURNET_LIB="$lib" TMP_SUBSCRIPTION_FOLDER="$work/subscriptions" command ucode -L "$lib" "$work/planner.uc" > "$work/plan.sh"
+ucode_bin="$(command -v ucode)"
+ANTICHEBURNET_LIB="$lib" TMP_SUBSCRIPTION_FOLDER="$work/subscriptions" "$ucode_bin" -L "$lib" "$work/planner.uc" > "$work/plan.sh"
 events="$work/events.tsv"
 : > "$events"
 ucode() {

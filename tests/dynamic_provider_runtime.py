@@ -135,7 +135,11 @@ def main():
             command = ([args.runner] if args.runner else []) + [binary, "run", "-c", str(config_path)]
             process = subprocess.Popen(command, stdout=log, stderr=log, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
             try:
-                for _ in range(100):
+                # UPX unpacking under ARM64 user-mode emulation takes longer
+                # than native startup. This deadline applies only to initial
+                # process startup, before any subscription update is measured.
+                startup_deadline = time.monotonic() + 30
+                while time.monotonic() < startup_deadline:
                     if process.poll() is not None:
                         raise AssertionError((work / "runtime.log").read_text())
                     try:

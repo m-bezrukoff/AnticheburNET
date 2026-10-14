@@ -473,8 +473,10 @@ function pkg_install_name_downgrade(package_name, package_version) {
         command_success(command_from_args([ "opkg", "install", "--force-downgrade", package_name ]) + " </dev/null");
 }
 
-function pkg_install_files_command(files) {
+function pkg_install_files_command(files, preserve_env) {
     let args = is_apk() ? [ "apk", "add", "--allow-untrusted" ] : [ "opkg", "install", "--force-overwrite", "--force-downgrade" ];
+    if (is_apk() && preserve_env)
+        args = [ "apk", "--preserve-env", "add", "--allow-untrusted" ];
     for (let file in files)
         push(args, file);
     return command_from_args(args) + " </dev/null";
@@ -1861,18 +1863,33 @@ function resolve_anticheburnet_release(latest_version) {
         return null;
     let asset_ext = is_apk() ? "apk" : "ipk";
     let i18n_required = pkg_is_installed("luci-i18n-anticheburnet-ru") ? "1" : "0";
-    let plan = trim(helper_output_input(release_json, "anticheburnet-release-plan", [ latest_version, asset_ext, i18n_required ]));
+    let arch = read_openwrt_release_value("DISTRIB_ARCH");
+    let cores_required = (is_apk() && arch == "aarch64_cortex-a53" &&
+        read_openwrt_release_value("DISTRIB_TARGET") == "mediatek/filogic") ||
+        pkg_is_installed("sing-box-extended") || pkg_is_installed("anticheburnet-xray") ||
+        pkg_is_installed("anticheburnet-amneziawg");
+    // Preserve empty translation fields at the end of a generic release plan.
+    let plan = replace(helper_output_input(release_json, "anticheburnet-release-plan",
+        [ latest_version, asset_ext, i18n_required, arch, cores_required ? "1" : "0" ]), /[\r\n]+$/, "");
     let fields = split(plan, "\t");
     if (length(fields) < 7 || as_string(fields[1]) == "" || as_string(fields[2]) == "" || as_string(fields[3]) == "" || as_string(fields[4]) == "")
         return null;
+    if (cores_required && length(fields) != 13)
+        return null;
+    let packages = [ { name: fields[1], url: fields[2] }, { name: fields[3], url: fields[4] } ];
+    if (fields[6] != "") push(packages, { name: fields[5], url: fields[6] });
+    for (let i = 7; i + 1 < length(fields); i += 2)
+        push(packages, { name: fields[i], url: fields[i + 1] });
+    let release_prefix = "https://github.com/" + ANTICHEBURNET_RELEASE_REPO + "/releases/download/" + latest_version + "/";
+    for (let asset in packages) {
+        if (match(asset.name, /^[A-Za-z0-9.+_-]+$/) == null || asset.url != release_prefix + asset.name)
+            return null;
+    }
     return {
         release_url: fields[0],
-        backend_name: fields[1],
-        backend_url: fields[2],
-        app_name: fields[3],
-        app_url: fields[4],
-        i18n_name: fields[5],
-        i18n_url: fields[6]
+        packages,
+        cores_required,
+        manifest_url: release_prefix + (is_apk() ? "SHA256SUMS" : "SHA256SUMS-IPK")
     };
 }
 
@@ -1892,7 +1909,27 @@ function verify_release_package(path, name, manifest) {
     return expected != "" && lc(as_string(actual)) == expected;
 }
 
-function install_anticheburnet(requested_version) {
+function anticheburnet_cores_need_update(release) {
+    if (!release.cores_required) return false;
+    for (let asset in release.packages) {
+        for (let name in [ "sing-box-extended", "anticheburnet-xray", "anticheburnet-amneziawg" ]) {
+            let prefix = name + "_";
+            if (substr(asset.name, 0, length(prefix)) != prefix) continue;
+            let suffix = (name == "sing-box-extended" ? "_openwrt_" : "_") +
+                read_openwrt_release_value("DISTRIB_ARCH") + (is_apk() ? ".apk" : ".ipk");
+            let version = substr(asset.name, length(prefix), length(asset.name) - length(prefix) - length(suffix));
+            let current = installed_package_version(name);
+            // The sing-box asset uses its extended binary version, while APK
+            // metadata uses a shorter version with an rN package revision.
+            if (name == "sing-box-extended" && current != "")
+                current = sing_box_runtime_output("version", []);
+            if (current == "" || compare_versions(current, version) == -1) return true;
+        }
+    }
+    return false;
+}
+
+function install_anticheburnet(requested_version, resolved_release) {
     let latest_version = requested_version || latest_anticheburnet_version();
     if (latest_version == "")
         latest_version = "unknown";
@@ -1905,51 +1942,64 @@ function install_anticheburnet(requested_version) {
     write_anticheburnet_latest_version_cache(latest_version, now_seconds());
     init_tmp_dir() || action_fail("anticheburnet", "install", "Failed to create temporary directory", ANTICHEBURNET_VERSION, latest_version);
     updates_log("Resolving AnticheburNET release " + latest_version + " packages");
-    let release = resolve_anticheburnet_release(latest_version);
+    let release = resolved_release || resolve_anticheburnet_release(latest_version);
     if (release == null)
         action_fail("anticheburnet", "install", "Failed to resolve AnticheburNET release packages", ANTICHEBURNET_VERSION, latest_version);
 
-    let backend_file = tmp_dir + "/" + release.backend_name;
-    let app_file = tmp_dir + "/" + release.app_name;
-    let i18n_file = release.i18n_url != "" ? tmp_dir + "/" + release.i18n_name : "";
-    if (!download_with_retry(release.backend_url, backend_file, release.backend_name) ||
-        !download_with_retry(release.app_url, app_file, release.app_name) ||
-        (release.i18n_url != "" && !download_with_retry(release.i18n_url, i18n_file, release.i18n_name)))
-        action_fail("anticheburnet", "install", "Failed to download AnticheburNET release packages", ANTICHEBURNET_VERSION, latest_version);
+    let packages = [];
+    for (let asset in release.packages) {
+        asset.file = tmp_dir + "/" + asset.name;
+        if (!download_with_retry(asset.url, asset.file, asset.name))
+            action_fail("anticheburnet", "install", "Failed to download " + asset.name, ANTICHEBURNET_VERSION, latest_version);
+        push(packages, asset.file);
+    }
 
     let manifest_file = tmp_dir + "/SHA256SUMS";
-    let manifest_url = substr(release.backend_url, 0, length(release.backend_url) - length(release.backend_name)) + (is_apk() ? "SHA256SUMS" : "SHA256SUMS-IPK");
-    if (!download_with_retry(manifest_url, manifest_file, "SHA256SUMS"))
+    if (!download_with_retry(release.manifest_url, manifest_file, "SHA256SUMS"))
         action_fail("anticheburnet", "install", "Failed to download release checksums", ANTICHEBURNET_VERSION, latest_version);
     report_update_progress("verifying", "");
-    if (!verify_release_package(backend_file, release.backend_name, read_file(manifest_file)) ||
-        !verify_release_package(app_file, release.app_name, read_file(manifest_file)) ||
-        (i18n_file != "" && !verify_release_package(i18n_file, release.i18n_name, read_file(manifest_file))))
-        action_fail("anticheburnet", "install", "Release package checksum verification failed", ANTICHEBURNET_VERSION, latest_version);
+    let manifest = read_file(manifest_file);
+    for (let asset in release.packages) {
+        if (!verify_release_package(asset.file, asset.name, manifest))
+            action_fail("anticheburnet", "install", "Release package checksum verification failed: " + asset.name, ANTICHEBURNET_VERSION, latest_version);
+    }
 
     let config_path = constants.ANTICHEBURNET_CONFIG || "/etc/config/anticheburnet";
     report_update_progress("backup", "");
-    let original_config = file_exists(config_path) ? read_file(config_path) : null;
+    let configs = [];
+    for (let path in [ config_path, "/etc/config/anticheburnet_xray", "/etc/config/anticheburnet_awg", "/etc/config/sing-box" ]) {
+        if (file_exists(path)) push(configs, { path, content: read_file(path), name: path_basename(path) });
+    }
     let backup_dir = "/root/anticheburnet-backups/update-" + now_seconds() + "-" + owner_pid();
-    if (!ensure_dir(backup_dir) || !command_success_from_args([ "chmod", "700", backup_dir ]) ||
-        (original_config != null && !command_success_from_args([ "cp", "-p", config_path, backup_dir + "/anticheburnet.uci" ])) ||
-        (file_exists("/etc/anticheburnet") && !command_success_from_args([ "tar", "-C", "/etc", "-czf", backup_dir + "/persistent.tar.gz", "anticheburnet" ])))
+    if (!ensure_dir(backup_dir) || !command_success_from_args([ "chmod", "700", backup_dir ]))
         action_fail("anticheburnet", "install", "Failed to back up configuration; update cancelled", ANTICHEBURNET_VERSION, latest_version);
+    for (let config in configs) {
+        if (!command_success_from_args([ "cp", "-p", config.path, backup_dir + "/" + config.name + ".uci" ]))
+            action_fail("anticheburnet", "install", "Failed to back up configuration; update cancelled", ANTICHEBURNET_VERSION, latest_version);
+    }
+    for (let name in [ "anticheburnet", "sing-box" ]) {
+        if (file_exists("/etc/" + name) && !command_success_from_args([ "tar", "-C", "/etc", "-czf", backup_dir + "/" + name + ".tar.gz", name ]))
+            action_fail("anticheburnet", "install", "Failed to back up configuration; update cancelled", ANTICHEBURNET_VERSION, latest_version);
+    }
     updates_log("Configuration backup: " + backup_dir);
 
-    let packages = [ backend_file, app_file ];
-    if (i18n_file != "")
-        push(packages, i18n_file);
+    // All downloads and backups must succeed before any running engine is replaced.
+    if (release.cores_required && anticheburnet_was_running && file_exists(SERVICE_INIT)) {
+        if (!run_logged("Stopping AnticheburNET before complete-suite update", command_from_args([ SERVICE_INIT, "stop" ])))
+            action_fail("anticheburnet", "install", "Failed to stop service; update cancelled", ANTICHEBURNET_VERSION, latest_version);
+        anticheburnet_stopped_for_sing_box_change = true;
+    }
     report_update_progress("installing", "");
     let installed = run_logged("Installing AnticheburNET release packages",
-        command_env({ ANTICHEBURNET_DEFER_PACKAGE_RESTART: "1" }) + " " + pkg_install_files_command(packages));
+        command_env({ ANTICHEBURNET_DEFER_PACKAGE_RESTART: "1" }) + " " + pkg_install_files_command(packages, true));
     // Keep user settings even when package scripts replace the configuration.
-    if (original_config != null && read_file(config_path) != original_config &&
-        !command_success_from_args([ "cp", "-p", backup_dir + "/anticheburnet.uci", config_path ]))
-        action_fail("anticheburnet", "install", "Failed to restore configuration from " + backup_dir, ANTICHEBURNET_VERSION, latest_version);
+    for (let config in configs) {
+        if (read_file(config.path) != config.content &&
+            !command_success_from_args([ "cp", "-p", backup_dir + "/" + config.name + ".uci", config.path ]))
+            action_fail("anticheburnet", "install", "Failed to restore configuration from " + backup_dir, ANTICHEBURNET_VERSION, latest_version);
+    }
     if (!installed)
         action_fail("anticheburnet", "install", "Failed to install release packages; configuration backup: " + backup_dir, ANTICHEBURNET_VERSION, latest_version);
-
     remove_file("/var/luci-indexcache");
     command_success("rm -f /var/luci-indexcache* /tmp/luci-indexcache* 2>/dev/null");
     command_success("rm -rf /tmp/luci-modulecache/ 2>/dev/null");
@@ -1973,9 +2023,19 @@ function install_anticheburnet(requested_version) {
 function check_and_update_anticheburnet() {
     report_update_progress("checking", "");
     let latest_version = latest_anticheburnet_version();
-    if (helper_success("anticheburnet-release-version-valid", [ ANTICHEBURNET_VERSION ]) &&
-        trim(helper_output("anticheburnet-release-version-compare", [ ANTICHEBURNET_VERSION, latest_version ])) == "-1")
+    let comparison = helper_success("anticheburnet-release-version-valid", [ ANTICHEBURNET_VERSION ]) ?
+        trim(helper_output("anticheburnet-release-version-compare", [ ANTICHEBURNET_VERSION, latest_version ])) : "";
+    if (comparison == "-1")
         install_anticheburnet(latest_version);
+    else if (comparison == "0") {
+        let release = resolve_anticheburnet_release(latest_version);
+        if (release == null)
+            action_fail("anticheburnet", "check_and_update", "Failed to resolve complete AnticheburNET release packages", ANTICHEBURNET_VERSION, latest_version);
+        if (anticheburnet_cores_need_update(release))
+            install_anticheburnet(latest_version, release);
+        else
+            check_anticheburnet();
+    }
     else
         check_anticheburnet();
 }

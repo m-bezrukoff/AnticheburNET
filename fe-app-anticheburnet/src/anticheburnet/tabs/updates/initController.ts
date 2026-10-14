@@ -93,10 +93,6 @@ if (typeof window !== 'undefined') {
   });
 }
 
-function isNotInstalled(version: string | undefined) {
-  return !version || version === 'not installed';
-}
-
 function shouldShowInstallAfterCheck(component: AnticheburNET.ComponentName) {
   const status = getVisibleCheckResult(component)?.status;
 
@@ -831,18 +827,11 @@ function getComponentCards(): ComponentCard[] {
   const zapretInstalled = Boolean(systemInfo.zapret_installed);
   const zapret2Installed = Boolean(systemInfo.zapret2_installed);
   const byedpiInstalled = Boolean(systemInfo.byedpi_installed);
-  const singBoxInstalled = !isNotInstalled(systemInfo.sing_box_version);
 
   const anticheburnetActions = getInstalledUpdateActions(
     'anticheburnet',
     'anticheburnetCheck',
     'anticheburnetInstall',
-  );
-  const singBoxActions = getInstalledUpdateActions(
-    'sing_box',
-    'singBoxCheck',
-    'singBoxInstall',
-    singBoxInstalled,
   );
 
   const zapretActions = getOptionalComponentActions({
@@ -886,9 +875,7 @@ function getComponentCards(): ComponentCard[] {
       version: systemInfoLoading
         ? _('Loading...')
         : formatSingBoxVersion(systemInfo),
-      latestVersion: getLatestVersion('sing_box'),
-      releaseUrl: getGitHubReleaseUrl('sing_box'),
-      actions: singBoxActions,
+      actions: [],
     },
     {
       component: 'zapret',
@@ -962,7 +949,10 @@ function renderComponentCard(card: ComponentCard) {
 
   // 2. Details (renders status messages for check results)
   const detailsChildren: Node[] = [];
-  const checkResult = getVisibleCheckResult(card.component);
+  const checkResult =
+    card.component === 'sing_box'
+      ? null
+      : getVisibleCheckResult(card.component);
 
   if (
     checkResult &&

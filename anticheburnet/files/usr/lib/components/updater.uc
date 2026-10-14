@@ -237,20 +237,39 @@ function release_asset_url_by_suffix(suffix) {
 }
 
 function release_asset_pair(release, expected_name) {
+    let selected = null;
     for (let asset in array_or_empty(release.assets)) {
         if (type(asset) != "object")
             continue;
 
         let name = as_string(asset.name || "");
         let url = as_string(asset.browser_download_url || "");
-        if (name == as_string(expected_name) && url != "")
-            return { name, url };
+        if (name == as_string(expected_name)) {
+            if (selected != null || url == "") return null;
+            selected = { name, url };
+        }
     }
 
-    return null;
+    return selected;
 }
 
-function anticheburnet_release_plan(latest_version, asset_ext, i18n_required) {
+function anticheburnet_core_asset_pair(release, package_name, arch, asset_ext) {
+    let selected = null;
+    let prefix = package_name + "_";
+    let suffix = (package_name == "sing-box-extended" ? "_openwrt_" : "_") + arch + "." + asset_ext;
+    for (let asset in array_or_empty(release.assets)) {
+        if (type(asset) != "object") continue;
+        let name = as_string(asset.name || "");
+        if (!str_startswith(name, prefix) || !str_endswith(name, suffix)) continue;
+        let version = substr(name, length(prefix), length(name) - length(prefix) - length(suffix));
+        if (match(version, /^[A-Za-z0-9.+_-]+$/) == null || selected != null)
+            return null;
+        selected = { name, url: as_string(asset.browser_download_url || "") };
+    }
+    return selected != null && selected.url != "" ? selected : null;
+}
+
+function anticheburnet_release_plan(latest_version, asset_ext, i18n_required, arch, cores_required) {
     let release = object_or_empty(read_stdin_json());
 
     if (as_string(release.tag_name || "") != as_string(latest_version))
@@ -271,10 +290,18 @@ function anticheburnet_release_plan(latest_version, asset_ext, i18n_required) {
             exit(1);
     }
 
-    print(as_string(release.html_url || ""), "\t",
-        backend.name, "\t", backend.url, "\t",
-        app.name, "\t", app.url, "\t",
-        i18n.name, "\t", i18n.url, "\n");
+    let fields = [ as_string(release.html_url || ""), backend.name, backend.url,
+        app.name, app.url, i18n.name, i18n.url ];
+    if (arg_bool(cores_required)) {
+        if (match(as_string(arch), /^[A-Za-z0-9_-]+$/) == null)
+            exit(1);
+        for (let package_name in [ "sing-box-extended", "anticheburnet-xray", "anticheburnet-amneziawg" ]) {
+            let asset = anticheburnet_core_asset_pair(release, package_name, arch, asset_ext);
+            if (asset == null) exit(1);
+            push(fields, asset.name, asset.url);
+        }
+    }
+    print(join("\t", fields), "\n");
 }
 
 function release_metadata_tsv() {
@@ -1139,7 +1166,7 @@ else if (mode == "release-asset-name-by-suffix")
 else if (mode == "release-asset-url-by-suffix")
     release_asset_url_by_suffix(ARGV[1]);
 else if (mode == "anticheburnet-release-plan")
-    anticheburnet_release_plan(ARGV[1], ARGV[2], ARGV[3]);
+    anticheburnet_release_plan(ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5]);
 else if (mode == "release-metadata-tsv")
     release_metadata_tsv();
 else if (mode == "openwrt-release-value")

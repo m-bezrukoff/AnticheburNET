@@ -17,6 +17,7 @@ helper_success = function(mode, args) { return true; };
 helper_output = function(mode, args) { return compare; };
 install_anticheburnet = function(version) { called = "install:" + version; };
 check_anticheburnet = function() { called = "check"; };
+resolve_anticheburnet_release = function(version) { return { packages: [], cores_required: false }; };
 check_and_update_anticheburnet();
 if (called != "install:1.0.2") die("New release was not installed");
 for (let value in [ "0", "1", "" ]) {

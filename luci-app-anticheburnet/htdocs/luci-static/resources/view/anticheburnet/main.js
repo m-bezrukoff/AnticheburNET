@@ -13053,9 +13053,6 @@ if (typeof window !== "undefined") {
     pageUnloading2 = false;
   });
 }
-function isNotInstalled(version) {
-  return !version || version === "not installed";
-}
 function shouldShowInstallAfterCheck(component) {
   const status = getVisibleCheckResult(component)?.status;
   return status === "outdated" || status === "dev";
@@ -13592,17 +13589,10 @@ function getComponentCards() {
   const zapretInstalled = Boolean(systemInfo.zapret_installed);
   const zapret2Installed = Boolean(systemInfo.zapret2_installed);
   const byedpiInstalled = Boolean(systemInfo.byedpi_installed);
-  const singBoxInstalled = !isNotInstalled(systemInfo.sing_box_version);
   const anticheburnetActions = getInstalledUpdateActions(
     "anticheburnet",
     "anticheburnetCheck",
     "anticheburnetInstall"
-  );
-  const singBoxActions = getInstalledUpdateActions(
-    "sing_box",
-    "singBoxCheck",
-    "singBoxInstall",
-    singBoxInstalled
   );
   const zapretActions = getOptionalComponentActions({
     component: "zapret",
@@ -13640,9 +13630,7 @@ function getComponentCards() {
       column: 0,
       title: "Sing-box",
       version: systemInfoLoading ? _("Loading...") : formatSingBoxVersion(systemInfo),
-      latestVersion: getLatestVersion("sing_box"),
-      releaseUrl: getGitHubReleaseUrl("sing_box"),
-      actions: singBoxActions
+      actions: []
     },
     {
       component: "zapret",
@@ -13696,7 +13684,7 @@ function renderComponentCard(card) {
     headerChildren
   );
   const detailsChildren = [];
-  const checkResult = getVisibleCheckResult(card.component);
+  const checkResult = card.component === "sing_box" ? null : getVisibleCheckResult(card.component);
   if (checkResult && checkResult.status && !(activeUpdate && checkResult.status === "latest")) {
     let labelText = "";
     const latestValueNodes = [];

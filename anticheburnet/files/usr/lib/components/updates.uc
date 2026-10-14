@@ -2654,6 +2654,15 @@ function run_pending_reload_if_requested() {
     service_state_success([ "run-pending-reload-if-requested", PENDING_RELOAD_FILE, SERVICE_INIT ]);
 }
 
+function run_pending_config_reload_if_requested() {
+    let pending = as_string(fs.readfile(PENDING_RELOAD_FILE) || "");
+    let reason = getenv("ANTICHEBURNET_CONFIG_CHANGE_REASON") || "on_config_change";
+    // A concurrent LuCI Apply remains authoritative. Do not consume legacy
+    // subscription/reload-busy markers or create a reload request ourselves.
+    if (index(pending, "reason=" + reason + "\n") == 0)
+        run_pending_reload_if_requested();
+}
+
 function subscription_update_common_locked(force, target_section, target_source_index) {
     let result = subscription_cache_capture([
         "update-request",
@@ -2681,52 +2690,17 @@ function subscription_update_common_locked(force, target_section, target_source_
             log_message("Subscription update finished with errors; keeping the last working cache", "info");
             return false;
         }
-        if (unchanged > 0)
+        if (unchanged > 0) {
+            if (!singbox_runtime_success([ "update-providers", "1" ])) return false;
             log_message("Subscription update completed: no changes detected", "info");
+        }
         else
             log_message("No subscription rules are due for update", "info");
         return true;
     }
 
-    log_message("Reloading sing-box to apply updated subscriptions", "info");
-    if (!module_success([ LIB_DIR + "/server/service.uc", "prepare-all-defaults" ]))
-        return false;
-    if (!module_success([ LIB_DIR + "/config/validator.uc", "validate-runtime" ])) {
-        log_message("Runtime config validation failed. Aborted.", "fatal");
-        return false;
-    }
-
-    if (!singbox_runtime_success([ "configure-service" ]))
-        return false;
-    let sing_box_config_path = option(uci_settings(), "config_path", "");
-    let sing_box_config_hash_before = file_md5(sing_box_config_path);
-    let sing_box_pid_before = trim(module_output([ LIB_DIR + "/service/state.uc", "sing-box-service-runtime-pid" ]));
-    module_success([ DNS_FAILOVER_UC, "stop-runtime" ]);
-    if (!singbox_runtime_success([ "init-config", "0", "1", "1" ])) {
-        module_success([ DNS_FAILOVER_UC, "start-runtime" ]);
-        log_message("Failed to rebuild sing-box after subscription update", "error");
-        return false;
-    }
-    module_success([ PRIORITY_UC, "stop-runtime" ]);
-    if (!service_state_success([
-        "reload-sing-box-runtime",
-        sing_box_pid_before,
-        sing_box_config_hash_before,
-        file_md5(sing_box_config_path)
-    ])) {
-        module_success([ PRIORITY_UC, "start-runtime" ]);
-        module_success([ DNS_FAILOVER_UC, "start-runtime" ]);
-        return false;
-    }
-    if (!module_success([ PRIORITY_UC, "start-runtime" ])) {
-        log_message("Failed to restart Priority runtime after subscription update", "error");
-        return false;
-    }
-    if (!module_success([ DNS_FAILOVER_UC, "start-runtime" ])) {
-        log_message("Failed to restart DNS failover runtime after subscription update", "error");
-        return false;
-    }
-    if (!write_current_reload_state_clean())
+    log_message("Applying updated subscriptions through dynamic providers", "info");
+    if (!singbox_runtime_success([ "update-providers" ]))
         return false;
 
     if (failed > 0)
@@ -2741,25 +2715,21 @@ function subscription_update_common(force, target_section, target_source_index) 
         exit(1);
 
     force = !!force;
-    if (!acquire_runtime_lock(SUBSCRIPTION_UPDATE_LOCK_DIR, force)) {
+    if (!acquire_runtime_lock(SUBSCRIPTION_UPDATE_LOCK_DIR, false)) {
         log_message("Subscription update is already running", "info");
-        if (force)
-            mark_pending_reload("subscription_update_busy");
         return force ? 1 : 0;
     }
 
-    if (!acquire_runtime_lock(RELOAD_LOCK_DIR, force)) {
+    if (!acquire_runtime_lock(RELOAD_LOCK_DIR, false)) {
         release_runtime_lock(SUBSCRIPTION_UPDATE_LOCK_DIR);
         log_message("AnticheburNET reload is already running; skipping subscription update", "info");
-        if (force)
-            mark_pending_reload("reload_busy");
         return force ? 1 : 0;
     }
 
     let ok = subscription_update_common_locked(force, target_section, target_source_index);
     release_runtime_lock(RELOAD_LOCK_DIR);
     release_runtime_lock(SUBSCRIPTION_UPDATE_LOCK_DIR);
-    run_pending_reload_if_requested();
+    run_pending_config_reload_if_requested();
     return ok ? 0 : 1;
 }
 

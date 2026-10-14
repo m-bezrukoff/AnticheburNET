@@ -85,12 +85,9 @@ exit(ARGV[0] == "validate-runtime" ? 0 : 64);
 
 write_stub "$FAKE_LIB/singbox/runtime.uc" "$stub_header"'
 let mode = as_string(ARGV[0]);
-if (mode == "init-config")
-    record("singbox/runtime:init-config:" + as_string(ARGV[1]) + ":" + as_string(ARGV[2]) + ":" + as_string(ARGV[3]));
-else
-    record("singbox/runtime:" + mode);
-if (mode == "configure-service" || mode == "init-config")
-    exit(0);
+record("singbox/runtime:" + mode + ":" + as_string(ARGV[1]));
+if (mode == "update-providers")
+    exit(int(getenv("FAKE_PROVIDER_FAIL") || "0"));
 exit(64);
 '
 
@@ -145,18 +142,7 @@ const fs = require("fs");
 const calls = fs.readFileSync(process.argv[2], "utf8").trim().split(/\n+/);
 const expected = [
   "subscription/cache:update-request",
-  "server/service:prepare-all-defaults",
-  "config/validator:validate-runtime",
-  "singbox/runtime:configure-service",
-  "service/state:sing-box-service-runtime-pid",
-  "singbox/dns_failover:stop-runtime",
-  "singbox/runtime:init-config:0:1:1",
-  "singbox/priority:stop-runtime",
-  "service/state:reload-sing-box-runtime",
-  "singbox/priority:start-runtime",
-  "singbox/dns_failover:start-runtime",
-  "service/state:write-current-reload-state-clean",
-  "service/state:run-pending-reload-if-requested"
+  "singbox/runtime:update-providers:"
 ];
 
 let position = -1;
@@ -171,11 +157,22 @@ for (const item of expected) {
 }
 JS
 
+if grep -Eq 'server/service|config/validator|configure-service|init-config|singbox/priority|singbox/dns_failover|reload-sing-box-runtime|write-current-reload-state-clean|run-pending-reload|mark-pending-reload|acquire-runtime-dir-lock-wait' "$updated_log"; then
+  fail "subscription update must not stop/reload services, queue a reload, or wait for lifecycle locks"
+fi
+
 unchanged_log="$WORK_DIR/unchanged.log"
 run_update "0 0 1 0" "$unchanged_log"
 
-if grep -Eq 'server/service|config/validator|singbox/runtime|singbox/priority|singbox/dns_failover|reload-sing-box-runtime|write-current-reload-state-clean' "$unchanged_log"; then
+grep -Fq 'singbox/runtime:update-providers:1' "$unchanged_log" || fail "unchanged downloads must retry a previously rejected provider update only if pending"
+if grep -Eq 'server/service|config/validator|configure-service|init-config|singbox/priority|singbox/dns_failover|reload-sing-box-runtime|write-current-reload-state-clean|run-pending-reload' "$unchanged_log"; then
   fail "unchanged subscription update must not rebuild or reload sing-box"
 fi
 
-printf 'subscription update reload checks passed\n'
+export FAKE_PROVIDER_FAIL=1
+if run_update "1 0 0 0" "$WORK_DIR/rejected.log"; then
+  fail "rejected provider update must not report success"
+fi
+unset FAKE_PROVIDER_FAIL
+
+printf 'subscription update without service reload checks passed\n'

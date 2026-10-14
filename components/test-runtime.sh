@@ -15,6 +15,7 @@ cleanup() {
 }
 trap cleanup EXIT
 qemu-aarch64 "$work/test-socket-mark.arm64"
+python3 "$root/tests/dynamic_provider_runtime.py" --runner qemu-aarch64 --binary "$work/sing-box.arm64"
 printf 'anticheburnet-arm64-runtime-ok\n' > "$test_dir/probe.txt"
 python3 -m http.server 18080 --bind 127.0.0.1 --directory "$test_dir" > "$test_dir/http.log" 2>&1 &
 pids+=("$!")

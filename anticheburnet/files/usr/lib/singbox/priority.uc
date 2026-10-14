@@ -414,16 +414,46 @@ function tick_group(state, group) {
     }
 }
 
+function reconcile_group_states(groups, previous) {
+    let result = {};
+    for (let group in groups) {
+        let state = previous[group.tag];
+        let signature = sprintf("%J", group);
+        if (type(state) != "object") state = init_group_state(group);
+        if (state.groupSignature != signature) {
+            let level_index = -1;
+            for (let i = 0; i < length(group.levels); i++)
+                if (index(array_or_empty(group.levels[i].outbounds), state.active) >= 0) {
+                    level_index = i;
+                    break;
+                }
+            if (level_index < 0) {
+                state.active = "";
+                state.activeDelay = 0;
+            }
+            state.levelIndex = level_index;
+            state.nextActiveCheck = now_seconds();
+            state.nextRecoveryCheck = now_seconds() + duration_to_seconds(group.recovery_check_interval, 15);
+            state.nextFastestCheck = now_seconds() + duration_to_seconds(group.fastest_check_interval, 180);
+            state.groupSignature = signature;
+        }
+        result[group.tag] = state;
+    }
+    return result;
+}
+
 function worker() {
     let groups = priority_groups_from_cache();
     if (length(groups) == 0)
         return 0;
 
     let states = {};
-    for (let group in groups)
-        states[group.tag] = init_group_state(group);
 
     while (true) {
+        // Provider updates publish new membership atomically. Refresh it in
+        // place and retain valid selections without stopping this worker.
+        groups = priority_groups_from_cache();
+        states = reconcile_group_states(groups, states);
         for (let group in groups)
             tick_group(states[group.tag], group);
         system("sleep 1");
@@ -489,6 +519,8 @@ else if (mode == "select-faster-fixture")
     select_faster_fixture(ARGV[1], ARGV[2], ARGV[3], ARGV[4]);
 else if (mode == "now-seconds-fixture")
     print(now_seconds(), "\n");
+else if (mode == "reconcile-groups-fixture")
+    write_json(reconcile_group_states(array_or_empty(read_json_file(ARGV[1])), object_or_empty(read_json_file(ARGV[2]))));
 else {
     warn("Usage: singbox/priority.uc <start-runtime|stop-runtime|worker|select-fixture|select-faster-fixture|now-seconds-fixture>\n");
     exit(1);

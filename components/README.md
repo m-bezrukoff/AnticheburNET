@@ -56,3 +56,34 @@ normalized by the importer: tools' legacy flag has no corresponding official Go 
 UAPI field, and that daemon always runs AWG. `off` is rejected explicitly.
 
 Services and user configuration are documented in [the OpenWrt 25.12 guide](../docs/OPENWRT-25.12.md).
+
+## Dynamic subscription providers
+
+Component `sing-box-extended` 1.14.1-r3 (`anticheburnet.3`) includes the managed
+provider installed by `prepare-providers.py`. Build this component together with
+the backend; older component APKs do not implement its atomic update API.
+After installing both, Apply configuration once to migrate an existing flat
+configuration. Subsequent subscription updates leave sing-box, DNS failover,
+Priority, inbounds and firewall services running.
+
+The backend writes a private provider file and explicitly updates it through
+`PUT /providers/proxies/anticheburnet-subscriptions`. It checks the returned live
+revision before publishing dashboard metadata. Constructors, dependencies and
+startup are validated in isolation; a rejected update retains the previous graph.
+Unchanged nodes are reused, changed credentials rebuild dependent groups, and
+selected nodes are retained when still present. Ordinary downloads use the last
+working request profile first, run up to eight sources concurrently, and have no
+retry sleeps. Manual updates share a two-second request budget per source across
+compatibility profiles; bootstrap downloads have a separate fifteen-second budget.
+Network failures retain the working cache.
+
+Changes to Happ routing/DNS or native AWG interfaces require Apply configuration;
+the subscription button reports this instead of restarting services. A concurrent
+explicit LuCI Apply remains queued independently. The subscription update itself
+never creates a pending lifecycle reload.
+
+`tests/dynamic_provider_runtime.py` verifies actual proxy traffic, unchanged PID,
+continuous API availability, an existing connection, selected-node preservation,
+node deletion and rejection of invalid graphs. `test-runtime.sh` runs it against
+the exact ARM64 binary through QEMU. Total download time still depends on the
+subscription server; the hot apply operation does not wait for a service restart.

@@ -93,7 +93,7 @@ describe('dashboard subscription refresh', () => {
     vi.unstubAllGlobals();
   });
 
-  it('keeps tiles during a restart, probes every group in the updated dashboard, then replaces cached values', async () => {
+  it('keeps service checkmarks and tiles during a provider update, probes groups, then replaces cached values', async () => {
     const { store } = await import('../../../services/store.service');
     const toggle = vi.fn();
     vi.stubGlobal('document', {
@@ -163,15 +163,8 @@ describe('dashboard subscription refresh', () => {
       .find(([options]) => options.section.sectionName === 'main')![0];
     view.onUpdateSubscription(view.section);
     await settle();
-    store.set({
-      servicesInfoWidget: {
-        ...store.get().servicesInfoWidget,
-        data: {
-          ...store.get().servicesInfoWidget.data,
-          anticheburnetRunning: 0,
-        },
-      },
-    });
+    expect(store.get().servicesInfoWidget.data.anticheburnetRunning).toBe(1);
+    expect(store.get().servicesInfoWidget.data.singbox).toBe(1);
     expect(toggle).toHaveBeenLastCalledWith(
       'fkp_dashboard-page--service-stopped',
       false,

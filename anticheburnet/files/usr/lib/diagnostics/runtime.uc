@@ -1673,6 +1673,22 @@ function clash_api(action, arg1, arg2, arg3) {
     let test_url = latency_test_url();
     let auth = clash_auth_args();
 
+    if (action == "update_provider") {
+        let provider_url = base_url + "/providers/proxies/" + clash_urlencode(arg1);
+        let args = [ "curl", "-q", "-f", "-sS", "--max-time", "5", "-X", "PUT", "-o", "/dev/null" ];
+        for (let item in auth) push(args, item);
+        push(args, provider_url);
+        let status = command_status(command_from_args(args));
+        if (as_string(arg2) == "") return status;
+        let verify_args = [ "curl", "-q", "-f", "-sS", "--max-time", "3" ];
+        for (let item in auth) push(verify_args, item);
+        push(verify_args, provider_url + "?revision=true");
+        let result = command_capture(command_from_args(verify_args));
+        let value = {};
+        try { value = json(result.output); } catch (e) {}
+        return result.status == 0 && as_string(value.revision) == as_string(arg2) ? 0 : 1;
+    }
+
     if (action == "get_proxies") {
         let args = [ "curl", "-s" ];
         for (let item in auth) push(args, item);

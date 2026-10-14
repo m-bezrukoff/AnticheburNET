@@ -4,7 +4,7 @@ import { executeShellCommand } from '../../../helpers';
 import { isTransientRpcError } from '../../helpers/isTransientRpcError';
 
 const SUBSCRIPTION_UPDATE_RPC_TIMEOUT_MS = 15000;
-const SUBSCRIPTION_UPDATE_POLL_INTERVAL_MS = 1500;
+const SUBSCRIPTION_UPDATE_POLL_INTERVAL_MS = 250;
 const UI_ACTION_RPC_TIMEOUT_MS = 15000;
 const UI_ACTION_TRANSIENT_RPC_GRACE_MS = 30000;
 const SERVICE_ACTION_TIMEOUT_MS = 2 * 60 * 1000;

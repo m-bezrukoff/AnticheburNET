@@ -32,6 +32,27 @@ describe('AnticheburNETShellMethods.subscriptionUpdate', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('detects job completion on the next 250ms poll', async () => {
+    mocks.executeShellCommand
+      .mockResolvedValueOnce({
+        stdout: JSON.stringify({ success: true, running: true }),
+        stderr: '',
+        code: 0,
+      })
+      .mockResolvedValueOnce({
+        stdout: JSON.stringify({ success: true, running: false }),
+        stderr: '',
+        code: 0,
+      });
+    const response =
+      AnticheburNETShellMethods.waitSubscriptionUpdateJob('fast');
+    await vi.advanceTimersByTimeAsync(249);
+    expect(mocks.executeShellCommand).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect((await response).success).toBe(true);
+    expect(mocks.executeShellCommand).toHaveBeenCalledTimes(2);
+  });
+
   it('starts a targeted background subscription update and waits for its state', async () => {
     mocks.executeShellCommand.mockImplementation(({ args }) => {
       if (args[0] === 'subscription_update_async') {

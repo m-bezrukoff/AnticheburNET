@@ -1,0 +1,9 @@
+# AnticheburNET 1.0.10
+
+Subscription refresh uses managed dynamic providers in the new sing-box 1.14.1-extended-2.7.2-anticheburnet.3 core (package revision r3). New and changed proxy nodes are applied transactionally through the running core's API. Subscription updates no longer stop or reload sing-box, DNS failover, or Priority services. Unchanged nodes, valid selections, latency measurements, and established connections remain available; a failed update keeps the previous working configuration.
+
+Subscription sources download concurrently, up to eight at a time. Each source has a shared two-second download budget, including compatibility User-Agent attempts, with no retry sleeps. Dashboard status polling is reduced to 250 ms and the artificial post-update settling delay is removed. Network speed and the number of download batches still affect total refresh time; the two-second budget is not a guarantee for the entire job.
+
+Install both the updated AnticheburNET packages and the r3 sing-box core, then use Apply once to migrate the running configuration to managed providers. Later proxy-node updates apply without a service restart. Changes to Happ routing/DNS rules or native AmneziaWG interfaces require an explicit Apply; subscription refresh reports those changes instead of silently restarting services. Failed applications can be retried even when the downloaded subscription has not changed.
+
+Validation includes 526 frontend tests, backend regression checks, and traffic tests on the freshly built ARM64 core under QEMU. Provider tests change credentials and server addresses, add/remove nodes, retain an existing connection, verify an unchanged PID and continuous API availability, and reject invalid updates without losing the working graph. Local native-core application measurements were 1.5–24 ms after download. All ARM64 components are rebuilt for this release, and published package checksums are verified after download.

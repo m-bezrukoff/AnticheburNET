@@ -3,6 +3,7 @@
 let fs = require("fs");
 let uci_core = require("core.uci");
 let common = require("core.common");
+let read_json_file = common.read_json_file;
 let runtime_dns = require("singbox.dns");
 let runtime_awg = require("singbox.awg");
 
@@ -770,6 +771,49 @@ function restore_dns_config(backup_path) {
     return command_success_from_args([ "mv", "-f", backup_path, config_path ]);
 }
 
+function managed_provider(config) {
+    for (let provider in array_or_empty(object_or_empty(config).providers))
+        if (provider.type == "anticheburnet" && provider.tag == "anticheburnet-subscriptions")
+            return provider;
+    return null;
+}
+
+function canonical_value(value) {
+    if (type(value) == "array") {
+        let result = [];
+        for (let item in value) push(result, canonical_value(item));
+        return result;
+    }
+    if (type(value) != "object") return value;
+    let result = {}, names = keys(value);
+    sort(names);
+    for (let name in names) result[name] = canonical_value(value[name]);
+    return result;
+}
+
+function provider_update_compatible(current, candidate, current_awg, candidate_awg) {
+    if (managed_provider(current) == null || managed_provider(candidate) == null)
+        return false;
+    let old = read_json_file(managed_provider(current).path);
+    let fresh = read_json_file(managed_provider(candidate).path);
+    if (type(old) != "object" || type(fresh) != "object" ||
+        type(old.configuration) != "object" || type(fresh.configuration) != "object" ||
+        type(fresh.outbounds) != "array" || length(fresh.outbounds) == 0)
+        return false;
+    return sprintf("%J", canonical_value(old.configuration)) == sprintf("%J", canonical_value(fresh.configuration)) &&
+        sprintf("%J", canonical_value(current_awg)) == sprintf("%J", canonical_value(candidate_awg));
+}
+
+function install_provider_file(temp_config, config_path) {
+    let config = read_json_file(temp_config);
+    let provider = managed_provider(config);
+    if (provider == null) return true;
+    let path = config_path + ".providers.json";
+    if (!save_config_file(provider.path, path)) return false;
+    provider.path = path;
+    return fs.writefile(temp_config, sprintf("%J\n", config)) != null;
+}
+
 function init_config(populate_nft, caches_prepared, no_refresh, prepared_deferred_sections) {
     let settings = uci_settings();
     let config_path = option(settings, "config_path", "");
@@ -847,7 +891,7 @@ function init_config(populate_nft, caches_prepared, no_refresh, prepared_deferre
         exit(1);
     }
 
-    if (!save_config_file(temp_config, config_path)) {
+    if (!install_provider_file(temp_config, config_path) || !save_config_file(temp_config, config_path)) {
         remove_file(temp_config + ".awg.json");
         remove_file(runtime_log);
         exit(1);
@@ -868,12 +912,93 @@ function init_config(populate_nft, caches_prepared, no_refresh, prepared_deferre
     print(deferred_sections, "\n");
 }
 
+function remove_provider_stage(path) {
+    remove_files([ path, path + ".awg.json", path + ".providers.json", path + ".log" ]);
+    for (let item in fs.glob(path + ".section-cache/*.json")) remove_file(item);
+    fs.rmdir(path + ".section-cache");
+}
+
+function update_providers(only_if_pending) {
+    let settings = uci_settings();
+    let config_path = option(settings, "config_path", "");
+    let pending_path = config_path + ".providers.pending";
+    if (only_if_pending && fs.stat(pending_path) == null) return true;
+    if (config_path == "" || fs.writefile(pending_path, "pending\n") == null) return false;
+    let current = read_json_file(config_path);
+    let provider = managed_provider(current);
+    if (provider == null) {
+        log_message("Dynamic providers are not active. Install the current sing-box component and Apply configuration once; subscription update will not restart services", "error");
+        return false;
+    }
+    let candidate_path = temp_path();
+    if (candidate_path == "") return false;
+    if (!runtime_awg.write_private(candidate_path + ".log", "")) {
+        remove_provider_stage(candidate_path);
+        return false;
+    }
+    let stage_dir = candidate_path + ".section-cache";
+    if (!ensure_dir(stage_dir)) { remove_provider_stage(candidate_path); return false; }
+    for (let path in fs.glob(SECTION_CACHE_DIR + "/*.json"))
+        command_success_from_args([ "cp", path, stage_dir + "/" + split(path, "/")[-1] ]);
+    let command = "ANTICHEBURNET_SECTION_CACHE_DIR=" + shell_quote(stage_dir) + " " + module_command([
+        LIB_DIR + "/singbox/generator.uc", "generate-config", candidate_path,
+        service_listen_address_value(settings),
+        module_success([ LIB_DIR + "/config/validator.uc", "mwan3-is-active" ]) ? "1" : "0",
+        "1", "", sing_box_version()
+    ]);
+    if (command_status(command + " >" + shell_quote(candidate_path + ".log") + " 2>&1") != 0) {
+        log_message("Failed to prepare dynamic providers; keeping the running graph", "error");
+        log_file_lines(candidate_path + ".log", "warn", "provider generator: ");
+        remove_provider_stage(candidate_path);
+        return false;
+    }
+    let candidate = read_json_file(candidate_path);
+    if (!provider_update_compatible(current, candidate, read_json_file(config_path + ".awg.json"), read_json_file(candidate_path + ".awg.json"))) {
+        log_message("Subscription routing or native AWG interfaces changed; Apply configuration is required. Running services were preserved", "error");
+        remove_provider_stage(candidate_path);
+        return false;
+    }
+    // The provider validates constructors, references, cycles and startup in an
+    // isolated graph before atomically publishing it. No external check/reload.
+    let old_payload = fs.readfile(provider.path);
+    let new_payload = fs.readfile(managed_provider(candidate).path);
+    if (old_payload == null || new_payload == null || !save_config_file(managed_provider(candidate).path, provider.path)) {
+        remove_provider_stage(candidate_path);
+        return false;
+    }
+    let revision = substr(trim(command_output_from_args([ "sha256sum", provider.path ])), 0, 64);
+    if (!module_success([ LIB_DIR + "/diagnostics/runtime.uc", "clash-api", "update_provider", provider.tag, revision ])) {
+        let rollback_path = candidate_path + ".providers.json";
+        if (!runtime_awg.write_private(rollback_path, old_payload) || !fs.rename(rollback_path, provider.path)) {
+            log_message("Provider confirmation failed and the previous file could not be restored", "error");
+            remove_provider_stage(candidate_path);
+            return false;
+        }
+        let old_revision = substr(trim(command_output_from_args([ "sha256sum", provider.path ])), 0, 64);
+        let restored = module_success([ LIB_DIR + "/diagnostics/runtime.uc", "clash-api", "update_provider", provider.tag, old_revision ]);
+        log_message(restored ? "Dynamic provider update failed; previous graph restored and confirmed" : "Dynamic provider update could not be confirmed; previous file restored and retry remains pending", "error");
+        remove_provider_stage(candidate_path);
+        return false;
+    }
+    let ok = true;
+    for (let path in fs.glob(stage_dir + "/*.json"))
+        if (!fs.rename(path, SECTION_CACHE_DIR + "/" + split(path, "/")[-1])) ok = false;
+    remove_provider_stage(candidate_path);
+    if (ok) remove_file(pending_path);
+    if (!ok) log_message("Provider applied but section metadata could not be published", "error");
+    return ok;
+}
+
 let mode = ARGV[0] || "";
 
 if (mode == "configure-service")
     configure_service();
 else if (mode == "init-config")
     init_config(arg_bool(ARGV[1] || "1"), arg_bool(ARGV[2] || "0"), arg_bool(ARGV[3] || "0"), ARGV[4] || "");
+else if (mode == "update-providers")
+    exit(update_providers(arg_bool(ARGV[1] || "0")) ? 0 : 1);
+else if (mode == "provider-update-compatible-fixture")
+    exit(provider_update_compatible(read_json_file(ARGV[1]), read_json_file(ARGV[2]), read_json_file(ARGV[3]), read_json_file(ARGV[4])) ? 0 : 1);
 else if (mode == "save-config-file-fixture")
     exit(save_config_file(ARGV[1] || "", ARGV[2] || "") ? 0 : 1);
 else if (mode == "check-config-fixture") {

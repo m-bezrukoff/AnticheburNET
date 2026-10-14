@@ -38,6 +38,7 @@ checkout_pinned awg-tools amnezia-vpn/amneziawg-tools "$AWG_TOOLS_COMMIT"
 
 tags=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,badlinkname,tfogo_checklinkname0
 bash "$component_root/components/prepare-utls.sh" "$work/sing-box" "$work"
+python3 "$component_root/components/prepare-providers.py" "$work/sing-box"
 (
   cd "$work/sing-box"
   CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -modfile="$work/sing-box.mod" -trimpath -tags "$tags" \
@@ -113,7 +114,7 @@ cp "$component_root/components/sing-box/files/etc/config/sing-box" "$sb_root/etc
 chmod 755 "$sb_root/etc/init.d/sing-box"
 mkdir -p "$sb_root/usr/share/licenses/sing-box-extended"
 install -m644 "$work/sing-box/LICENSE" "$sb_root/usr/share/licenses/sing-box-extended/LICENSE"
-package_component sing-box-extended 1.14.1-r2 'AnticheburNET extended sing-box with Hysteria 2 and XHTTP' \
+package_component sing-box-extended 1.14.1-r3 'AnticheburNET extended sing-box with Hysteria 2 and XHTTP' \
   'ca-bundle kmod-tun !sing-box !sing-box-tiny' GPL-3.0-or-later /etc/config/sing-box
 
 for kind in xray awg; do

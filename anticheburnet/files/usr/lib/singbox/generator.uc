@@ -64,6 +64,11 @@ function sing_box_uses_legacy_independent_cache(value) {
     return major < 1 || (major == 1 && minor < 14);
 }
 
+function supports_dynamic_providers(value) {
+    let matched = match(as_string(value), /anticheburnet[.]([0-9]+)/);
+    return matched != null && int(matched[1], 10) >= 3;
+}
+
 function parent_dir(path) {
     path = as_string(path);
     let slash = rindex(path, "/");
@@ -101,6 +106,24 @@ function atomic_write_json_file(path, value) {
         return false;
     }
     return true;
+}
+
+function extract_dynamic_provider(config, output_path, version) {
+    if (!supports_dynamic_providers(version))
+        return;
+    let payload = { outbounds: config.outbounds, configuration: {} };
+    for (let name, value in config)
+        if (name != "outbounds" && name != "providers")
+            payload.configuration[name] = value;
+    let path = output_path + ".providers.json";
+    let stamp = clock();
+    let temporary = sprintf("%s.%d.%d.tmp", path, stamp[0], stamp[1]);
+    if (!ensure_parent_dir(path) || !runtime_awg.write_private(temporary, sprintf("%J\n", payload)) || !fs.rename(temporary, path)) {
+        fs.unlink(temporary);
+        die("Unable to write private dynamic provider\n");
+    }
+    config.outbounds = [];
+    config.providers = [ { type: "anticheburnet", tag: "anticheburnet-subscriptions", path } ];
 }
 
 function fixture_section_list(type_name) {
@@ -3158,6 +3181,7 @@ function generate_config(output_path, service_address, mwan3_active, supports_xh
     let awg_profiles = runtime_awg.prepare_outbounds(config.outbounds);
     assert_unique_outbound_tags(config);
     strip_internal_fields(config);
+    extract_dynamic_provider(config, output_path, runtime_sing_box_version);
     if (!write_json_file(output_path, config)) {
         warn("failed to write ", output_path, "\n");
         exit(1);

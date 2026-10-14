@@ -2459,7 +2459,7 @@ function isTransientRpcError(message) {
 
 // src/anticheburnet/methods/shell/index.ts
 var SUBSCRIPTION_UPDATE_RPC_TIMEOUT_MS = 15e3;
-var SUBSCRIPTION_UPDATE_POLL_INTERVAL_MS = 1500;
+var SUBSCRIPTION_UPDATE_POLL_INTERVAL_MS = 250;
 var UI_ACTION_RPC_TIMEOUT_MS = 15e3;
 var UI_ACTION_TRANSIENT_RPC_GRACE_MS = 3e4;
 var SERVICE_ACTION_TIMEOUT_MS = 2 * 60 * 1e3;
@@ -5593,7 +5593,6 @@ var subscriptionLatencySnapshot = /* @__PURE__ */ new Map();
 var pendingSubscriptionLatency = /* @__PURE__ */ new Set();
 var subscriptionLatencyRefreshPending = false;
 var subscriptionLatencyRevision = 0;
-var subscriptionRuntimeSettlingUntil = 0;
 function captureSubscriptionLatency() {
   subscriptionLatencyRevision += 1;
   for (const section of store.get().sectionsWidget.data) {
@@ -5822,7 +5821,6 @@ async function completeSubscriptionUpdateJob(jobId, sectionName, response) {
       captureSubscriptionLatency();
     }
     subscriptionLatencyRefreshPending = true;
-    subscriptionRuntimeSettlingUntil = Date.now() + 15e3;
   }
   setSubscriptionUpdating(sectionName, false);
   if (jobId && response.success) {
@@ -6048,10 +6046,6 @@ async function connectToClashSockets(dataUpdatesId) {
 }
 function getDashboardServiceAvailability() {
   const service = store.get().servicesInfoWidget;
-  const sections = store.get().sectionsWidget;
-  if (sections.data.length && (Object.keys(sections.subscriptionUpdatingSections).length || subscriptionLatencyRefreshPending && Date.now() < subscriptionRuntimeSettlingUntil)) {
-    return "running";
-  }
   return getServiceAvailability({
     loading: service.loading,
     failed: service.failed,

@@ -69,7 +69,6 @@ const subscriptionLatencySnapshot = new Map<
 const pendingSubscriptionLatency = new Set<string>();
 let subscriptionLatencyRefreshPending = false;
 let subscriptionLatencyRevision = 0;
-let subscriptionRuntimeSettlingUntil = 0;
 
 function captureSubscriptionLatency() {
   subscriptionLatencyRevision += 1;
@@ -378,7 +377,6 @@ async function completeSubscriptionUpdateJob(
       captureSubscriptionLatency();
     }
     subscriptionLatencyRefreshPending = true;
-    subscriptionRuntimeSettlingUntil = Date.now() + 15000;
   }
   setSubscriptionUpdating(sectionName, false);
 
@@ -667,17 +665,6 @@ async function connectToClashSockets(dataUpdatesId: number) {
 
 function getDashboardServiceAvailability() {
   const service = store.get().servicesInfoWidget;
-  const sections = store.get().sectionsWidget;
-
-  if (
-    sections.data.length &&
-    (Object.keys(sections.subscriptionUpdatingSections).length ||
-      (subscriptionLatencyRefreshPending &&
-        Date.now() < subscriptionRuntimeSettlingUntil))
-  ) {
-    return 'running';
-  }
-
   return getServiceAvailability({
     loading: service.loading,
     failed: service.failed,

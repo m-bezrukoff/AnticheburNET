@@ -2785,6 +2785,14 @@ function gzip_decode_file(input_file, output_file) {
     if (as_string(input_file) == "" || as_string(output_file) == "" || !fs.stat(input_file))
         return false;
 
+    let input = fs.open(input_file, "r");
+    if (!input)
+        return false;
+    let magic = input.read(2);
+    input.close();
+    if (magic == null || length(magic) != 2 || ord(substr(magic, 0, 1)) != 31 || ord(substr(magic, 1, 1)) != 139)
+        return false;
+
     for (let command in [ "gzip -dc", "gunzip -c", "zcat" ]) {
         let pipe = fs.popen(command + " " + shell_quote(input_file) + " 2>/dev/null", "r");
         if (!pipe)

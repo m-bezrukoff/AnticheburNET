@@ -2663,13 +2663,7 @@ function run_pending_config_reload_if_requested() {
         run_pending_reload_if_requested();
 }
 
-function subscription_update_common_locked(force, target_section, target_source_index) {
-    let result = subscription_cache_capture([
-        "update-request",
-        force ? "1" : "0",
-        as_string(target_section),
-        as_string(target_source_index)
-    ]);
+function apply_subscription_update_result(result) {
     if (result.status != 0) {
         log_file_lines_from_text(result.output, "error", "subscription update: ");
         return false;
@@ -2708,6 +2702,23 @@ function subscription_update_common_locked(force, target_section, target_source_
     else
         log_message("Subscription update completed", "info");
     return true;
+}
+
+function subscription_update_common_locked(force, target_section, target_source_index) {
+    let started = clock(true);
+    let result = subscription_cache_capture([
+        "update-request",
+        force ? "1" : "0",
+        as_string(target_section),
+        as_string(target_source_index)
+    ]);
+    let sources_finished = clock(true);
+    let success = apply_subscription_update_result(result);
+    let finished = clock(true);
+    let sources_ms = int((sources_finished[0] - started[0]) * 1000 + (sources_finished[1] - started[1]) / 1000000);
+    let apply_ms = int((finished[0] - sources_finished[0]) * 1000 + (finished[1] - sources_finished[1]) / 1000000);
+    log_message("Subscription refresh timing: sources=" + sources_ms + "ms, apply=" + apply_ms + "ms, total=" + (sources_ms + apply_ms) + "ms", "debug");
+    return success;
 }
 
 function subscription_update_common(force, target_section, target_source_index) {

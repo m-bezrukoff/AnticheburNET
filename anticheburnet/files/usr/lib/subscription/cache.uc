@@ -32,6 +32,9 @@ const SB_VERSION_STATE_FILE = getenv("SB_VERSION_STATE_FILE") || "/etc/antichebu
 const ZAPRET_PROVIDER_NFQWS_BIN = getenv("ZAPRET_PROVIDER_NFQWS_BIN") || "/opt/zapret/nfq/nfqws";
 const ZAPRET2_PROVIDER_NFQWS2_BIN = getenv("ZAPRET2_PROVIDER_NFQWS2_BIN") || "/opt/zapret2/nfq2/nfqws2";
 const BYEDPI_BIN = getenv("BYEDPI_BIN") || "/usr/bin/ciadpi";
+let cached_sing_box_version = null;
+let cached_generated_hwid = null;
+let cached_kernel_version = null;
 
 function as_string(value) {
     return value == null ? "" : "" + value;
@@ -358,6 +361,8 @@ function cache_name_from_file(path) {
 
     if (file_name == "cache-format")
         return "";
+    if (ends_with(file_name, ".response.json"))
+        return substr(file_name, 0, length(file_name) - 14);
     if (ends_with(file_name, ".metadata.json"))
         return substr(file_name, 0, length(file_name) - 14);
     if (ends_with(file_name, ".json"))
@@ -477,6 +482,10 @@ function subscription_cache_is_usable(path) {
 
 function source_json_path(dir, source_section) {
     return as_string(dir) + "/" + as_string(source_section) + ".json";
+}
+
+function source_response_path(source_section) {
+    return TMP_SUBSCRIPTION_FOLDER + "/" + as_string(source_section) + ".response.json";
 }
 
 function source_url_path(dir, source_section) {
@@ -608,11 +617,17 @@ function log_message(message, level) {
 }
 
 function ensure_dir(path) {
-    run_silent("mkdir -p " + shell_quote(path));
+    path = as_string(path);
+    if (path == "" || path == "/" || fs.stat(path) != null)
+        return true;
+    let slash = rindex(path, "/");
+    if (slash > 0 && !ensure_dir(substr(path, 0, slash)))
+        return false;
+    return fs.mkdir(path, 0755) || fs.stat(path) != null;
 }
 
 function chmod_path(path, mode) {
-    run_silent("chmod " + shell_quote(mode) + " " + shell_quote(path));
+    return fs.chmod(as_string(path), int(as_string(mode), 8));
 }
 
 function ensure_runtime_dirs() {
@@ -710,6 +725,8 @@ function get_device_model() {
 }
 
 function generate_hwid() {
+    if (cached_generated_hwid != null)
+        return cached_generated_hwid;
     let mac = trim(as_string(fs.readfile("/sys/class/net/eth0/address")));
     if (mac == "")
         mac = trim(as_string(fs.readfile("/sys/class/net/br-lan/address")));
@@ -717,7 +734,8 @@ function generate_hwid() {
     let input = mac + "-" + get_device_model();
     let output = command_output("printf %s " + shell_quote(input) + " | md5sum");
     let hash = length(whitespace_values(output)) > 0 ? substr(whitespace_values(output)[0], 0, 16) : "";
-    return substr(hash, 0, 4) + "-" + substr(hash, 4, 4) + "-" + substr(hash, 8, 4) + "-" + substr(hash, 12, 4);
+    cached_generated_hwid = substr(hash, 0, 4) + "-" + substr(hash, 4, 4) + "-" + substr(hash, 8, 4) + "-" + substr(hash, 12, 4);
+    return cached_generated_hwid;
 }
 
 function hwid_matches_config(configured_hwid, cached_hwid) {
@@ -731,7 +749,9 @@ function hwid_matches_config(configured_hwid, cached_hwid) {
 }
 
 function get_kernel_version() {
-    return trim(command_output_from_args([ "uname", "-r" ]));
+    if (cached_kernel_version == null)
+        cached_kernel_version = trim(command_output_from_args([ "uname", "-r" ]));
+    return cached_kernel_version;
 }
 
 function device_request_headers(headers) {
@@ -1392,6 +1412,7 @@ function remove_subscription_source_runtime_cache(source_section) {
     unlink_path(source_user_agent_path(TMP_SUBSCRIPTION_FOLDER, source_section));
     unlink_path(source_hwid_path(TMP_SUBSCRIPTION_FOLDER, source_section));
     unlink_path(source_device_headers_path(TMP_SUBSCRIPTION_FOLDER, source_section));
+    unlink_path(source_response_path(source_section));
 }
 
 function persist_subscription_cache(source_section, subscription_json_path, subscription_url, effective_user_agent, effective_hwid, metadata_path, effective_device_headers_signature) {
@@ -1462,16 +1483,21 @@ function sing_box_version_from_output(output) {
 }
 
 function get_sing_box_version() {
+    if (cached_sing_box_version != null)
+        return cached_sing_box_version;
     if (trim(as_string(fs.readfile(SB_VARIANT_STATE_FILE))) == "extended-compressed") {
         let version_state = trim(as_string(fs.readfile(SB_VERSION_STATE_FILE)));
-        if (version_state != "")
-            return version_state;
+        if (version_state != "") {
+            cached_sing_box_version = version_state;
+            return cached_sing_box_version;
+        }
     }
 
     if (!command_success_from_args([ "sh", "-c", "command -v sing-box" ]))
         return "";
 
-    return sing_box_version_from_output(command_output_from_args([ "sing-box", "version" ]));
+    cached_sing_box_version = sing_box_version_from_output(command_output_from_args([ "sing-box", "version" ]));
+    return cached_sing_box_version;
 }
 
 function get_subscription_user_agent(custom_user_agent) {
@@ -1490,7 +1516,7 @@ function user_agent_candidates(configured_user_agent, preferred_user_agent, defa
 
     let result = [];
     let seen = {};
-    let candidates = [ default_user_agent, preferred_user_agent ];
+    let candidates = [ preferred_user_agent, default_user_agent ];
     for (let profile in auto_user_agent_profiles)
         push(candidates, profile);
 
@@ -1610,6 +1636,55 @@ function copy_persistent_metadata_output(source_section, metadata_output_path) {
         copy_file(metadata_path, metadata_output_path) || unlink_path(metadata_output_path);
 }
 
+function response_routing_headers(headers_path) {
+    let result = {};
+    for (let line in split(read_text(headers_path), "\n")) {
+        line = trim(line);
+        if (match(line, /^HTTP\//)) result = {};
+        let colon = index(line, ":");
+        if (colon < 1) continue;
+        let name = lc(trim(substr(line, 0, colon)));
+        if (name == "routing" || name == "routing-enable")
+            result[name] = trim(substr(line, colon + 1));
+    }
+    return sprintf("%J", result);
+}
+
+function source_response_snapshot(url, user_agent, hwid, device_headers, body_path, headers_path, normalized_path) {
+    return {
+        format: ANTICHEBURNET_RUNTIME_CACHE_FORMAT,
+        url: as_string(url), user_agent: as_string(user_agent), hwid: as_string(hwid),
+        device_headers: as_string(device_headers),
+        body: fs.readfile(body_path), routing_headers: response_routing_headers(headers_path),
+        normalized: fs.readfile(normalized_path)
+    };
+}
+
+function reuse_source_response(source_section, response, normalized_tmpfile) {
+    if (response.body == null || response.normalized == null)
+        return false;
+    let cached = read_json(source_response_path(source_section));
+    if (type(cached) != "object") return false;
+    for (let key in [ "format", "url", "user_agent", "hwid", "device_headers", "body", "routing_headers", "normalized" ])
+        if (cached[key] !== response[key]) return false;
+    return write_text(normalized_tmpfile, response.normalized);
+}
+
+function remember_source_response(source_section, response, normalized_path) {
+    response.normalized = fs.readfile(normalized_path);
+    if (response.body == null || response.normalized == null)
+        return;
+    let path = source_response_path(source_section);
+    let tmp_path = temp_path(TMP_SUBSCRIPTION_FOLDER, source_section, "response");
+    // Subscription bodies and normalized nodes contain private credentials.
+    let output = fs.open(tmp_path, "w", 0600);
+    if (!output) return;
+    let written = output.write(sprintf("%J\n", response));
+    output.close();
+    if (written == null || !fs.rename(tmp_path, path))
+        unlink_path(tmp_path);
+}
+
 function subscription_config_is_current(section_name_value, subscription_url, subscription_user_agent, subscription_hwid, sections, subscription_device_headers_signature) {
     let section = find_section(sections, section_name_value);
     for (let entry in connections.subscription_urls(section)) {
@@ -1703,7 +1778,10 @@ function download_subscription_into_cache(section_name_value, subscription_url, 
         parser.extract_ui_metadata_file(headers_tmpfile, raw_tmpfile, metadata_tmpfile) || unlink_path(metadata_tmpfile);
         copy_valid_metadata_output(metadata_tmpfile, metadata_output_path);
 
-        if (!parser.normalize_content_validated(raw_tmpfile, normalized_tmpfile)) {
+        let response = source_response_snapshot(subscription_url, effective_user_agent, effective_hwid,
+            subscription_device_headers_signature, raw_tmpfile, headers_tmpfile, subscription_json_path);
+        let reused = reuse_source_response(cache_section, response, normalized_tmpfile);
+        if (!reused && !parser.normalize_content_validated(raw_tmpfile, normalized_tmpfile)) {
             if (metadata_output_path != "")
                 unlink_path(metadata_output_path);
             if (subscription_user_agent != "")
@@ -1713,12 +1791,12 @@ function download_subscription_into_cache(section_name_value, subscription_url, 
             continue;
         }
 
-        if (!require("subscription.happ").attach(headers_tmpfile, raw_tmpfile, normalized_tmpfile)) {
+        if (!reused && !require("subscription.happ").attach(headers_tmpfile, raw_tmpfile, normalized_tmpfile)) {
             log_message("Subscription routing is invalid; retaining the previous nodes and routing", "error");
             continue;
         }
 
-        if (!subscription_share_link.populate_subscription_file(normalized_tmpfile))
+        if (!reused && !subscription_share_link.populate_subscription_file(normalized_tmpfile))
             log_message("Failed to cache direct proxy links for subscription rule '" + section_name_value + "'", "warn");
 
         if (!subscription_config_is_current(section_name_value, subscription_url, subscription_user_agent, subscription_hwid, sections, subscription_device_headers_signature)) {
@@ -1733,6 +1811,7 @@ function download_subscription_into_cache(section_name_value, subscription_url, 
         }
 
         if (files_equal(normalized_tmpfile, subscription_json_path)) {
+            if (!reused) remember_source_response(cache_section, response, subscription_json_path);
             write_text(subscription_url_cache_path, subscription_url);
             write_text(subscription_user_agent_cache_path, effective_user_agent);
             write_text(subscription_hwid_cache_path, effective_hwid);
@@ -1771,6 +1850,7 @@ function download_subscription_into_cache(section_name_value, subscription_url, 
             unlink_path(headers_tmpfile);
             unlink_path(metadata_tmpfile);
             log_subscription_source_summary(section_name_value, source_index, subscription_json_path, "runtime-unchanged");
+            remember_source_response(cache_section, response, subscription_json_path);
             return 2;
         }
 
@@ -1795,6 +1875,7 @@ function download_subscription_into_cache(section_name_value, subscription_url, 
         unlink_path(headers_tmpfile);
         unlink_path(metadata_tmpfile);
         log_subscription_source_summary(section_name_value, source_index, subscription_json_path, "imported");
+        remember_source_response(cache_section, response, subscription_json_path);
         return 0;
     }
 

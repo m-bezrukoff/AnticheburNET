@@ -984,6 +984,9 @@ function sing_box_version_info() {
     if (!file_executable(SING_BOX_BIN_PATH))
         return null;
 
+    let shared = require("singbox.version").cached(SING_BOX_BIN_PATH);
+    if (shared != null) return sing_box_version_info_from_output(shared.output);
+
     let signature = sing_box_signature();
     if (signature == "")
         return null;

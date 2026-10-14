@@ -100,7 +100,7 @@ function convert(data, kind, code) {
 
 function quote(value) { return "'" + replace(value, /'/g, "'\\''") + "'"; }
 
-function load(url, directory, kind) {
+function source_path(url, directory, kind) {
     if (type(url) != "string" || !match(url, /^https?:\/\//) || match(url, /[\r\n]/) || index(url, chr(0)) >= 0)
         die("Geodata URL must use HTTP(S)\n");
     // The cache is under /tmp; URL identity prevents reuse of another provider's DAT.
@@ -108,7 +108,7 @@ function load(url, directory, kind) {
     let path = directory + "/" + kind + ".dat", identity = path + ".url";
     let stat = fs.stat(path);
     if (stat != null && time() - stat.mtime < 604800 && fs.readfile(identity) == url)
-        return fs.readfile(path);
+        return path;
     let temp = path + ".download";
     let status = system("umask 077; curl --fail --silent --show-error --location --proto '=http,https' --proto-redir '=http,https' --connect-timeout 10 --max-time 180 --max-filesize 33554432 -o " + quote(temp) + " -- " + quote(url));
     let data = fs.readfile(temp);
@@ -120,7 +120,11 @@ function load(url, directory, kind) {
     fields(data, function(field, wire, value) {});
     if (!fs.rename(temp, path)) die("Unable to save RAM geodata cache\n");
     fs.writefile(identity, url);
-    return data;
+    return path;
 }
 
-return { convert, load, quote };
+function load(url, directory, kind) {
+    return fs.readfile(source_path(url, directory, kind));
+}
+
+return { convert, load, source_path, quote };

@@ -1062,6 +1062,16 @@ function subscription_job_id() {
 }
 
 function ensure_subscription_runtime_dirs() {
+    let ready = true;
+    for (let path in [ TMP_SING_BOX_FOLDER, TMP_RULESET_FOLDER, TMP_SUBSCRIPTION_FOLDER,
+        RUNTIME_STATE_DIR, SUBSCRIPTION_UPDATE_STATE_DIR, SUBSCRIPTION_METADATA_DIR,
+        OUTBOUND_METADATA_DIR, SECTION_CACHE_DIR, SUBSCRIPTION_JOB_DIR ]) {
+        let stat = fs.stat(path);
+        if (stat == null || stat.type != "directory") { ready = false; break; }
+    }
+    // Keep cache.uc as the directory-creation owner; avoid another interpreter
+    // process when a running service has already prepared every directory.
+    if (ready) return true;
     let command = command_env({
         ANTICHEBURNET_CONFIG_NAME: CONFIG_NAME,
         ANTICHEBURNET_LIB: LIB_DIR,
@@ -1240,17 +1250,6 @@ function launch_subscription_worker(args) {
         command_from_args(command_args) +
         " >/dev/null 2>&1 1000>&- & echo $!";
     return trim(command_output("sh -c " + shell_quote(command)));
-}
-
-function subscription_update_worker(state_file, output_file, section, source_index) {
-    let status = command_status(command_from_args([
-        BIN_PATH,
-        "subscription_update",
-        as_string(section),
-        as_string(source_index)
-    ]) + " >" + shell_quote(output_file) + " 2>&1");
-
-    finish_subscription_job(state_file, status, output_file);
 }
 
 function subscription_update_async(section, source_index) {
@@ -2722,8 +2721,8 @@ function subscription_update_common_locked(force, target_section, target_source_
 }
 
 function subscription_update_common(force, target_section, target_source_index) {
-    if (!subscription_cache_success([ "ensure-runtime-dirs" ]))
-        exit(1);
+    if (!ensure_subscription_runtime_dirs())
+        return 1;
 
     force = !!force;
     if (!acquire_runtime_lock(SUBSCRIPTION_UPDATE_LOCK_DIR, false)) {
@@ -2742,6 +2741,24 @@ function subscription_update_common(force, target_section, target_source_index) 
     release_runtime_lock(SUBSCRIPTION_UPDATE_LOCK_DIR);
     run_pending_config_reload_if_requested();
     return ok ? 0 : 1;
+}
+
+function subscription_update_worker(state_file, output_file, section, source_index) {
+    if (BIN_PATH == "/usr/bin/anticheburnet") {
+        let status = 1;
+        try { status = subscription_update_common(true, section, source_index); }
+        catch (error) { log_message("Subscription update worker failed", "error"); }
+        finish_subscription_job(state_file, status, output_file);
+        return;
+    }
+    let status = command_status(command_from_args([
+        BIN_PATH,
+        "subscription_update",
+        as_string(section),
+        as_string(source_index)
+    ]) + " >" + shell_quote(output_file) + " 2>&1");
+
+    finish_subscription_job(state_file, status, output_file);
 }
 
 function subscription_update_if_due() {

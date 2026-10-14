@@ -6,6 +6,7 @@ let common = require("core.common");
 let read_json_file = common.read_json_file;
 let runtime_dns = require("singbox.dns");
 let runtime_awg = require("singbox.awg");
+let core_version = require("singbox.version");
 
 const CONFIG_NAME = getenv("ANTICHEBURNET_CONFIG_NAME") || "anticheburnet";
 const LIB_DIR = getenv("ANTICHEBURNET_LIB") || "/usr/lib/anticheburnet";
@@ -202,6 +203,8 @@ function first_line_last_field(value) {
 }
 
 function sing_box_version_output() {
+    let info = core_version.get();
+    if (info != null) return info.output;
     return command_exists("sing-box") ? command_output_from_args([ "sing-box", "version" ]) : "";
 }
 
@@ -248,6 +251,10 @@ function sing_box_restore_variant_marker(variant) {
 }
 
 function sing_box_version() {
+    let info = core_version.get();
+    if (info != null) return info.version;
+    if (fs.stat(getenv("ANTICHEBURNET_SING_BOX_BIN") || "/usr/bin/sing-box") != null)
+        return "";
     if (!command_exists("sing-box"))
         return "";
     if (sing_box_marker_is("extended-compressed"))

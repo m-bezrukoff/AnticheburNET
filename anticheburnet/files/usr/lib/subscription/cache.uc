@@ -4,6 +4,7 @@ let fs = require("fs");
 let uci_core = require("core.uci");
 let connections = require("config.connections");
 let subscription_share_link = require("subscription.share_link");
+let core_version = require("singbox.version");
 
 const CONFIG_NAME = getenv("ANTICHEBURNET_CONFIG_NAME") || "anticheburnet";
 const LIB_DIR = getenv("ANTICHEBURNET_LIB") || "/usr/lib/anticheburnet";
@@ -1485,6 +1486,13 @@ function sing_box_version_from_output(output) {
 function get_sing_box_version() {
     if (cached_sing_box_version != null)
         return cached_sing_box_version;
+    let info = core_version.get();
+    if (info != null) {
+        cached_sing_box_version = info.version;
+        return cached_sing_box_version;
+    }
+    if (fs.stat(getenv("ANTICHEBURNET_SING_BOX_BIN") || "/usr/bin/sing-box") != null)
+        return "";
     if (trim(as_string(fs.readfile(SB_VARIANT_STATE_FILE))) == "extended-compressed") {
         let version_state = trim(as_string(fs.readfile(SB_VERSION_STATE_FILE)));
         if (version_state != "") {

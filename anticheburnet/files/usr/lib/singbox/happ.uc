@@ -4,6 +4,35 @@ let url = require("core.url");
 let dns = require("singbox.dns");
 let constants = require("singbox.constants");
 let geodata = require("routing.geodata");
+let file_cache = require("core.file_cache");
+const GEODATA_CONVERSION_CACHE_FORMAT = 1;
+
+function file_digest(path) {
+    return file_cache.digest(path, path + ".sha256.json");
+}
+
+function cached_ruleset(cache_path, directory, source_url, source_digest, selector) {
+    let cached;
+    try { cached = json(fs.readfile(cache_path)); } catch (error) { return null; }
+    if (type(cached) != "object" || cached.format != GEODATA_CONVERSION_CACHE_FORMAT ||
+        cached.source_url != source_url || cached.source_digest != source_digest ||
+        cached.selector != selector ||
+        !match(cached.ruleset_digest || "", /^[a-f0-9]{64}$/)) return null;
+    let path = directory + "/" + cached.ruleset_digest + ".json";
+    return file_digest(path) == cached.ruleset_digest ? path : null;
+}
+
+function remember_ruleset(cache_path, source_url, source_digest, ruleset_digest, selector) {
+    let stamp = clock();
+    let temporary = cache_path + "." + stamp[0] + "." + stamp[1];
+    let file = fs.open(temporary, "w", 0600);
+    if (!file) return;
+    let written = file.write(sprintf("%J\n", {
+        format: GEODATA_CONVERSION_CACHE_FORMAT, source_url, source_digest, ruleset_digest, selector
+    }));
+    file.close();
+    if (written == null || !fs.rename(temporary, cache_path)) fs.unlink(temporary);
+}
 
 function merge(target, source) {
     for (let key, values in source) {
@@ -16,18 +45,31 @@ function geo_match(config, profile, directory, data, kind, code, tag) {
     if (!match(code, /^[A-Za-z0-9_@.-]+$/)) die("Unsupported Happ geodata tag\n");
     let key = kind + ":" + lc(code);
     if (data[key] != null) return { rule_set: [ data[key] ] };
-    if (data[kind] == null) data[kind] = geodata.load(profile[kind + "_url"], directory, kind);
-    let converted = geodata.convert(data[kind], kind, code);
+    if (data[kind + "_path"] == null) data[kind + "_path"] = geodata.source_path(profile[kind + "_url"], directory, kind);
+    if (data[kind + "_digest"] == null) data[kind + "_digest"] = file_digest(data[kind + "_path"]);
+    let source_digest = data[kind + "_digest"];
+    if (source_digest == "") die("Cannot identify Happ geodata source\n");
+    let source_url = profile[kind + "_url"];
+    let cache_key = replace(replace(b64enc(lc(code)), /\//g, "_"), /\+/g, "-");
+    let cache_path = directory + "/converted-" + kind + "-" + cache_key + ".cache.json";
     let name = tag + "-happ-" + kind + "-" + b64enc(lc(code));
-    let path = directory + "/converted.json";
-    if (fs.writefile(path, sprintf("%J\n", { version: 3, rules: [ converted ] })) == null)
-        die("Cannot write RAM geodata ruleset\n");
-    let pipe = fs.popen("sha256sum " + geodata.quote(path), "r");
-    let digest = pipe ? substr(pipe.read("all") || "", 0, 64) : "";
-    if (pipe) pipe.close();
-    if (!match(digest, /^[a-f0-9]{64}$/)) die("Cannot identify RAM geodata ruleset\n");
-    let target = directory + "/" + digest + ".json";
-    if (!fs.rename(path, target)) die("Cannot install RAM geodata ruleset\n");
+    let target = cached_ruleset(cache_path, directory, source_url, source_digest, key);
+    if (target == null) {
+        if (data[kind] == null) data[kind] = fs.readfile(data[kind + "_path"]);
+        let converted = geodata.convert(data[kind], kind, code);
+        let stamp = clock();
+        let path = directory + "/converted." + stamp[0] + "." + stamp[1] + ".json";
+        let output = fs.open(path, "w", 0600);
+        if (!output) die("Cannot write RAM geodata ruleset\n");
+        let written = output.write(sprintf("%J\n", { version: 3, rules: [ converted ] }));
+        output.close();
+        if (written == null) { fs.unlink(path); die("Cannot write RAM geodata ruleset\n"); }
+        let digest = file_digest(path);
+        if (digest == "") { fs.unlink(path); die("Cannot identify RAM geodata ruleset\n"); }
+        target = directory + "/" + digest + ".json";
+        if (!fs.rename(path, target)) die("Cannot install RAM geodata ruleset\n");
+        remember_ruleset(cache_path, source_url, source_digest, digest, key);
+    }
     push(config.route.rule_set, { type: "local", tag: name, format: "source", path: target });
     data[key] = name;
     return { rule_set: [ name ] };

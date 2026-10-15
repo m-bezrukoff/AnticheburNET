@@ -22,6 +22,7 @@ let lock_held = false;
 let anticheburnet_was_running = false;
 let anticheburnet_stopped_for_sing_box_change = false;
 let update_version = "";
+let suite_complete = false;
 
 function report_update_progress(stage, detail) {
     let path = getenv("ANTICHEBURNET_COMPONENT_PROGRESS_FILE");
@@ -372,6 +373,7 @@ function updates_response(success, component, action, message, current_version, 
         current_version: as_string(current_version),
         latest_version: as_string(latest_version),
         changed: int(changed || 0),
+        suite_complete: suite_complete,
         status: as_string(status),
         release_url: as_string(release_url)
     });
@@ -1858,7 +1860,13 @@ function check_anticheburnet() {
 }
 
 function resolve_anticheburnet_release(latest_version) {
-    let release_json = latest_anticheburnet_release_json();
+    let release_json;
+    if (getenv("ANTICHEBURNET_SUITE_TARGET_VERSION") == latest_version) {
+        release_json = http_get("https://api.github.com/repos/" + ANTICHEBURNET_RELEASE_REPO + "/releases/tags/" + latest_version);
+        if (!helper_success_input(release_json, "github-response-ok", [])) return null;
+    }
+    else
+        release_json = latest_anticheburnet_release_json();
     if (release_json == "")
         return null;
     let asset_ext = is_apk() ? "apk" : "ipk";
@@ -1923,10 +1931,24 @@ function anticheburnet_cores_need_update(release) {
             // metadata uses a shorter version with an rN package revision.
             if (name == "sing-box-extended" && current != "")
                 current = sing_box_runtime_output("version", []);
-            if (current == "" || compare_versions(current, version) == -1) return true;
+            let comparison = compare_versions(current, version);
+            if (current == "" || comparison == null || comparison < 0) return true;
         }
     }
     return false;
+}
+
+function anticheburnet_suite_needs_update(release, version) {
+    for (let name in [ "anticheburnet", "luci-app-anticheburnet", "luci-i18n-anticheburnet-ru" ]) {
+        let included = false;
+        for (let asset in release.packages)
+            if (asset.name == name + "_" + version + (is_apk() ? ".apk" : ".ipk")) included = true;
+        if (!included) continue;
+        let current = installed_package_version(name);
+        let comparison = compare_versions(current, version);
+        if (current == "" || comparison == null || comparison < 0) return true;
+    }
+    return anticheburnet_cores_need_update(release);
 }
 
 function install_anticheburnet(requested_version, resolved_release) {
@@ -1940,11 +1962,18 @@ function install_anticheburnet(requested_version, resolved_release) {
     report_update_progress("resolving", "");
 
     write_anticheburnet_latest_version_cache(latest_version, now_seconds());
-    init_tmp_dir() || action_fail("anticheburnet", "install", "Failed to create temporary directory", ANTICHEBURNET_VERSION, latest_version);
     updates_log("Resolving AnticheburNET release " + latest_version + " packages");
     let release = resolved_release || resolve_anticheburnet_release(latest_version);
     if (release == null)
         action_fail("anticheburnet", "install", "Failed to resolve AnticheburNET release packages", ANTICHEBURNET_VERSION, latest_version);
+    // Guard the installation itself, including stale UI buttons and legacy handoff.
+    if (!anticheburnet_suite_needs_update(release, latest_version)) {
+        suite_complete = true;
+        updates_log("AnticheburNET complete release is already up to date (" + latest_version + ")");
+        action_success("anticheburnet", "check_update", "Latest version is installed", installed_package_version("anticheburnet") || ANTICHEBURNET_VERSION, latest_version, 0, "latest", release.release_url);
+        return;
+    }
+    init_tmp_dir() || action_fail("anticheburnet", "install", "Failed to create temporary directory", ANTICHEBURNET_VERSION, latest_version);
 
     let packages = [];
     for (let asset in release.packages) {
@@ -2010,6 +2039,8 @@ function install_anticheburnet(requested_version, resolved_release) {
     report_update_progress("restarting", "");
     restart_anticheburnet_after_successful_change();
     clear_version_caches();
+    if (anticheburnet_suite_needs_update(release, latest_version))
+        action_fail("anticheburnet", "install", "Release installation is incomplete; configuration backup: " + backup_dir, ANTICHEBURNET_VERSION, latest_version);
     let new_version = installed_package_version("anticheburnet");
     if (new_version == "")
         new_version = latest_version;
@@ -2017,6 +2048,7 @@ function install_anticheburnet(requested_version, resolved_release) {
     if (!wait_anticheburnet_running_after_sing_box_change())
         action_fail("anticheburnet", "install", "Update installed, but service did not start; configuration backup: " + backup_dir, new_version, latest_version);
     updates_log("AnticheburNET updated to " + new_version);
+    suite_complete = true;
     action_success("anticheburnet", "install", "AnticheburNET has been installed", new_version, latest_version, 1, "latest", release.release_url);
 }
 
@@ -2031,7 +2063,7 @@ function check_and_update_anticheburnet() {
         let release = resolve_anticheburnet_release(latest_version);
         if (release == null)
             action_fail("anticheburnet", "check_and_update", "Failed to resolve complete AnticheburNET release packages", ANTICHEBURNET_VERSION, latest_version);
-        if (anticheburnet_cores_need_update(release))
+        if (anticheburnet_suite_needs_update(release, latest_version))
             install_anticheburnet(latest_version, release);
         else
             check_anticheburnet();
@@ -2091,8 +2123,17 @@ function component_action(component, action) {
         check_anticheburnet();
     else if (component == "anticheburnet" && action == "check_and_update")
         check_and_update_anticheburnet();
-    else if (component == "anticheburnet" && action == "install")
-        install_anticheburnet();
+    else if (component == "anticheburnet" && action == "install") {
+        let target = getenv("ANTICHEBURNET_SUITE_TARGET_VERSION");
+        if (target != null && target != "") {
+            // A legacy update continues only the release it has just installed.
+            if (target != ANTICHEBURNET_VERSION)
+                action_fail(component, action, "Installed release changed before suite completion");
+            install_anticheburnet(target);
+        }
+        else
+            check_and_update_anticheburnet();
+    }
     else if (component == "sing_box" && (action == "check_update" || action == "install" ||
         action == "install_extended" || action == "install_extended_compressed" ||
         action == "install_tiny" || action == "install_stable"))

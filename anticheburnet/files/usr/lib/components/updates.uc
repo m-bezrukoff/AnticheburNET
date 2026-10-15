@@ -3,6 +3,7 @@
 let fs = require("fs");
 let uci_core = require("core.uci");
 let connections = require("config.connections");
+let constants = require("core.constants");
 const CONFIG_NAME = getenv("ANTICHEBURNET_CONFIG_NAME") || "anticheburnet";
 const LIB_DIR = getenv("ANTICHEBURNET_LIB") || "/usr/lib/anticheburnet";
 const BIN_PATH = getenv("ANTICHEBURNET_BIN") || "/usr/bin/anticheburnet";
@@ -1514,6 +1515,8 @@ function remove_component_job_state(path) {
     remove_file(path);
     remove_file(output_path);
     remove_file(output_path + ".json");
+    remove_file(output_path + ".suite");
+    remove_file(output_path + ".suite.json");
     remove_file(path + ".progress");
     remove_file(path + ".progress.tmp");
 }
@@ -1698,6 +1701,20 @@ function finish_component_job(path, component, action, exit_code, output_file) {
     let ok;
 
     if (type(value) == "object") {
+        let previous = object_or_empty(read_json_file(path));
+        if (previous.suite_continuation === true) {
+            // Preserve the original application's upgrade in this same job.
+            value.suite_continuation = true;
+            if (value.success === true && value.suite_complete === true) {
+                value.action = "install";
+                value.changed = 1;
+                value.message = "AnticheburNET has been installed";
+            }
+            else if (value.success === true) {
+                value.success = false;
+                value.message = "Unable to confirm complete release installation";
+            }
+        }
         value.running = false;
         value.kind = "component";
         value.exit_code = arg_number(exit_code);
@@ -1740,10 +1757,12 @@ function launch_component_worker(args) {
     return trim(command_output("sh -c " + shell_quote(command)));
 }
 
-function component_action_worker(state_file, output_file, component, action) {
+function component_action_worker(state_file, output_file, component, action, target_version) {
     component = normalize_component_name(component);
     let worker_env = component_worker_env();
     worker_env.ANTICHEBURNET_COMPONENT_PROGRESS_FILE = state_file + ".progress";
+    if (as_string(target_version) != "")
+        worker_env.ANTICHEBURNET_SUITE_TARGET_VERSION = target_version;
     let command = command_env(worker_env) + " " +
         command_from_args([
             "ucode",
@@ -1756,6 +1775,51 @@ function component_action_worker(state_file, output_file, component, action) {
     let status = command_status(command);
 
     finish_component_job(state_file, component, action, status, output_file);
+}
+
+function legacy_suite_job_candidate(value) {
+    let version = getenv("ANTICHEBURNET_VERSION") || constants.ANTICHEBURNET_VERSION || "";
+    let age = now_seconds() - int(value.updated_at || 0);
+    return value.component == "anticheburnet" && value.action == "install" &&
+        value.running === false && value.success === true && int(value.changed || 0) == 1 &&
+        value.suite_complete !== true && value.suite_continuation !== true &&
+        value.acked_at == null && value.current_version == version &&
+        match(version, /^[0-9]+[.][0-9]+[.][0-9]+$/) != null && age >= 0 && age <= 3600;
+}
+
+function continue_legacy_suite_job(path) {
+    if (!legacy_suite_job_candidate(object_or_empty(read_json_file(path)))) return;
+    let lock = path + ".suite.lock";
+    if (!acquire_runtime_lock(lock, false)) return;
+    let value = object_or_empty(read_json_file(path));
+    if (!legacy_suite_job_candidate(value)) {
+        release_runtime_lock(lock);
+        return;
+    }
+    let target = value.current_version;
+    value = component_running_job_state_value("anticheburnet", "install", now_seconds());
+    value.current_version = target;
+    value.latest_version = target;
+    value.suite_continuation = true;
+    value.message = "Completing AnticheburNET release packages";
+    if (!write_state_file(path, value)) {
+        release_runtime_lock(lock);
+        component_action_status_error_exit("Failed to save release completion state");
+        return;
+    }
+    // The old worker may still be removing its original output file.
+    let pid = launch_component_worker([ "component-action-worker", path,
+        component_job_output_path_from_state(path) + ".suite", "anticheburnet", "install", target ]);
+    let registered = pid != "" && set_component_running_job_pid(path, pid);
+    let completed = object_or_empty(read_json_file(path));
+    if (!registered && !(pid != "" && completed.running === false && completed.suite_continuation === true)) {
+        if (pid != "") command_success_from_args([ "kill", pid ]);
+        value.success = false;
+        value.running = false;
+        value.message = "Failed to start release completion worker";
+        write_state_file(path, value);
+    }
+    release_runtime_lock(lock);
 }
 
 function component_action_async(component, action) {
@@ -1810,7 +1874,14 @@ function component_action_status(job_id) {
         component_action_status_error_exit("Component action job was not found");
 
     refresh_component_running_job_state(state_file);
+    continue_legacy_suite_job(state_file);
     let value = read_json_file(state_file);
+    // Another status reader may be claiming the handoff right now. Never expose
+    // the old worker's partial success while that claim is in progress.
+    if (legacy_suite_job_candidate(object_or_empty(value))) {
+        value.running = true;
+        value.message = "Completing AnticheburNET release packages";
+    }
     let progress = read_json_file(state_file + ".progress");
     if (type(progress) == "object") value.progress = progress;
     write_json(value);
@@ -2954,7 +3025,7 @@ else if (mode == "subscription-update-async")
 else if (mode == "subscription-update-status")
     subscription_update_status(ARGV[1]);
 else if (mode == "component-action-worker")
-    component_action_worker(ARGV[1], ARGV[2], ARGV[3], ARGV[4]);
+    component_action_worker(ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5]);
 else if (mode == "component-action-async")
     component_action_async(ARGV[1], ARGV[2]);
 else if (mode == "component-action-status")

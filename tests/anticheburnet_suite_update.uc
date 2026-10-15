@@ -11,7 +11,7 @@ let plan_fields = [ "release", "anticheburnet_1.2.3.apk", root_url + "antichebur
     "luci-app-anticheburnet_1.2.3.apk", root_url + "luci-app-anticheburnet_1.2.3.apk", "", "" ];
 for (let name in core_names) push(plan_fields, name, root_url + name);
 let installed_versions = { "sing-box-extended": "1.14.1-r3", "anticheburnet-xray": "26.10.10-r1",
-    "anticheburnet-amneziawg": "3.1.20260828-r4", anticheburnet: "1.2.3" };
+    "anticheburnet-amneziawg": "3.1.20260828-r4", anticheburnet: "1.2.3", "luci-app-anticheburnet": "1.2.3" };
 is_apk = function() { return true; };
 read_openwrt_release_value = function(key) { return key == "DISTRIB_ARCH" ? "aarch64_cortex-a53" : "mediatek/filogic"; };
 pkg_is_installed = function(name) { return installed_versions[name] != null; };
@@ -24,13 +24,33 @@ let suite = resolve_anticheburnet_release("1.2.3");
 check(suite != null && length(suite.packages) == 5 && suite.cores_required, "English suite did not resolve");
 check(plan_args[3] == "aarch64_cortex-a53" && plan_args[4] == "1", "architecture or complete-suite requirement lost");
 check(!anticheburnet_cores_need_update(suite), "sing-box binary and APK version mismatch caused unnecessary update");
+check(!anticheburnet_suite_needs_update(suite, "1.2.3"), "current complete suite was considered outdated");
+installed_versions["luci-app-anticheburnet"] = "old";
+check(anticheburnet_suite_needs_update(suite, "1.2.3"), "outdated LuCI was not detected");
+installed_versions["luci-app-anticheburnet"] = "1.2.3";
 installed_versions["anticheburnet-xray"] = "old";
 check(anticheburnet_cores_need_update(suite), "outdated Xray was not detected");
 installed_versions["anticheburnet-xray"] = "26.10.10-r1";
+installed_versions["anticheburnet-amneziawg"] = null;
+check(anticheburnet_suite_needs_update(suite, "1.2.3"), "missing core was not detected");
+installed_versions["anticheburnet-amneziawg"] = "newer";
+check(!anticheburnet_suite_needs_update(suite, "1.2.3"), "newer installed core would be downgraded");
+installed_versions["anticheburnet-amneziawg"] = "3.1.20260828-r4";
 let saved_url = plan_fields[8];
 plan_fields[8] = "https://example/foreign.apk";
 check(resolve_anticheburnet_release("1.2.3") == null, "foreign release core URL accepted");
 plan_fields[8] = saved_url;
+let original_getenv = getenv;
+let original_latest_release = latest_anticheburnet_release_json;
+let tag_url = "";
+getenv = function(name) { return name == "ANTICHEBURNET_SUITE_TARGET_VERSION" ? "1.2.3" : original_getenv(name); };
+latest_anticheburnet_release_json = function() { die("legacy completion followed a newer latest release"); };
+http_get = function(url) { tag_url = url; return "pinned release"; };
+helper_success_input = function(input, mode, args) { return true; };
+check(resolve_anticheburnet_release("1.2.3") != null && index(tag_url, "/releases/tags/1.2.3") > 0,
+    "legacy completion did not resolve the original release tag");
+getenv = original_getenv;
+latest_anticheburnet_release_json = original_latest_release;
 
 // Optional providers must not participate even when installed and outdated.
 provider_installed = function(runtime) { die("release update queried an optional provider"); };
@@ -48,6 +68,7 @@ let checksum_failure = "";
 let stop_ok = true;
 let install_ok = true;
 let backup_ok = true;
+let complete_install = true;
 let success = false;
 let installed_command = "";
 report_update_progress = function(stage, detail) { push(events, "progress:" + stage); };
@@ -73,6 +94,11 @@ run_logged = function(label, command) {
     push(events, "install");
     installed_command = command;
     for (let path, content in originals) files[path] = "package defaults";
+    if (install_ok && complete_install) {
+        installed_versions.anticheburnet = "1.2.3";
+        installed_versions["luci-app-anticheburnet"] = "1.2.3";
+        installed_versions["anticheburnet-amneziawg"] = "3.1.20260828-r4";
+    }
     return install_ok;
 };
 disable_standalone_service = function(component) { die("release update changed an optional service"); };
@@ -83,6 +109,8 @@ action_success = function(component, action, message) { success = true; };
 function reset() {
     events = []; files = {}; success = false; installed_command = "";
     anticheburnet_was_running = true; anticheburnet_stopped_for_sing_box_change = false;
+    suite_complete = false;
+    installed_versions["anticheburnet-amneziawg"] = "old";
     for (let path, content in originals) files[path] = content;
     for (let name in [ "zapret", "zapret2", "byedpi" ]) {
         installed_versions[name] = "old";
@@ -96,6 +124,8 @@ function expect_failure(label) {
     check(failed && !success, label + " was reported as success");
 }
 reset();
+installed_versions.anticheburnet = "old";
+installed_versions["luci-app-anticheburnet"] = "old";
 install_anticheburnet("1.2.3", suite);
 check(success, "complete-suite installation did not finish");
 check(index(events, "install") > index(events, "stop") && index(events, "stop") > index(events, "verify:" + core_names[2]), "engines changed before integrity verification");
@@ -107,6 +137,10 @@ for (let name in [ "zapret", "zapret2", "byedpi" ]) {
 check(index(installed_command, "'apk' '--preserve-env' 'add'") >= 0 && index(installed_command, "ANTICHEBURNET_DEFER_PACKAGE_RESTART='1'") >= 0, "APK hooks did not receive restart deferral");
 for (let path, content in originals) check(files[path] == content, "user config was replaced: " + path);
 check(index(events, "restart") > index(events, "copy:/root/anticheburnet-backups/update-1-test/sing-box.uci"), "service restarted before config restore");
+check(suite_complete, "successful installation did not mark the complete release");
+events = []; success = false;
+install_anticheburnet("1.2.3", suite);
+check(success && length(events) == 1 && events[0] == "progress:resolving", "second press downloaded, installed or restarted the current suite");
 reset(); download_failure = core_names[1]; expect_failure("download failure");
 check(index(events, "stop") < 0 && index(events, "install") < 0, "download failure changed services");
 download_failure = "";
@@ -122,6 +156,10 @@ stop_ok = true;
 reset(); install_ok = false; expect_failure("package failure");
 for (let path, content in originals) check(files[path] == content, "failed installation lost user config");
 install_ok = true;
+reset(); complete_install = false; expect_failure("incomplete package transaction");
+check(!suite_complete, "incomplete core installation was reported as a complete release");
+complete_install = true;
+installed_versions["anticheburnet-amneziawg"] = "3.1.20260828-r4";
 
 let called = "";
 let comparison = "0";
@@ -141,4 +179,13 @@ called = ""; check_and_update_anticheburnet();
 check(called == "check", "outdated optional providers triggered release installation");
 comparison = "1"; called = ""; check_and_update_anticheburnet();
 check(called == "check", "development app was downgraded");
+// Even a stale Update button uses the guarded complete-suite decision.
+acquire_component_lock = function() { return true; };
+capture_anticheburnet_running_state = function() {};
+comparison = "0"; called = "";
+component_action("anticheburnet", "install");
+check(called == "check", "direct install bypassed the current-suite guard");
+installed_versions["anticheburnet-amneziawg"] = "old"; called = "";
+component_action("anticheburnet", "install");
+check(called == "install", "direct update did not complete its outdated core");
 print("Complete-suite update, configuration and failure checks passed\n");

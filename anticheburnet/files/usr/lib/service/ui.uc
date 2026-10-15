@@ -195,6 +195,8 @@ function remove_state_file(path) {
     remove_file(path);
     remove_file(base + ".out");
     remove_file(base + ".out.json");
+    remove_file(base + ".out.suite");
+    remove_file(base + ".out.suite.json");
     remove_file(path + ".progress");
     remove_file(path + ".progress.tmp");
 }
@@ -247,6 +249,21 @@ function valid_action_state(value) {
     return type(value) == "object" && (value.running === true || value.running === false);
 }
 
+function complete_legacy_component_state(path, dir, value) {
+    // A successful old worker may still have left the bundled cores outdated.
+    if (value.kind == "component" && value.component == "anticheburnet" &&
+        value.action == "install" && value.running === false && value.success === true &&
+        int(value.changed || 0) == 1 && value.suite_complete !== true &&
+        value.suite_continuation !== true && value.acked_at == null) {
+        let output = command_output(command_env({ UPDATES_JOB_DIR: dir }) + " " +
+            command_from_args([ "ucode", "-L", LIB_DIR, LIB_DIR + "/components/updates.uc",
+                "component-action-status", job_id_from_path(path) ]));
+        try { return json(output); }
+        catch (e) { return null; }
+    }
+    return value;
+}
+
 function read_state_paths() {
     let result = {
         service: [],
@@ -270,6 +287,9 @@ function read_state_paths() {
         if (!valid_action_state(value))
             continue;
 
+        let dir = substr(path, 0, length(path) - length(path_basename(path)) - 1);
+        value = complete_legacy_component_state(path, dir, value);
+        if (!valid_action_state(value)) continue;
         value.job_id = job_id_from_path(path);
 
         if (type(result[kind]) == "array")
@@ -793,6 +813,8 @@ function action_state_from_dir(dir) {
         if (!valid_action_state(value))
             continue;
 
+        value = complete_legacy_component_state(path, dir, value);
+        if (!valid_action_state(value)) continue;
         value.job_id = job_id_from_path(path);
         if (value.kind == "component") {
             let progress = read_json_file(path + ".progress");

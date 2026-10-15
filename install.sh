@@ -65,7 +65,7 @@ Usage: $0 [--install | --generic | --uninstall]
 Without arguments, asks whether to install or uninstall AnticheburNET.
 --install installs the complete AnticheburNET suite from one GitHub release:
   anticheburnet, LuCI, Russian translation, sing-box extended, Xray and AmneziaWG.
-Requires OpenWrt 25.12, mediatek/filogic, aarch64_cortex-a53 and apk.
+Requires OpenWrt 25.12, mediatek/filogic or mediatek/mt7622, aarch64_cortex-a53 and apk.
 Downloads and verifies SHA256SUMS before replacing installed packages.
 Explicit mode options skip the install/uninstall question.
 Installation asks for the interface language: 1) English (default), 2) Russian.
@@ -1942,8 +1942,10 @@ check_full_suite_platform() {
         25.12|25.12.*) ;;
         *) fail "The complete suite requires OpenWrt 25.12; detected: $suite_release" ;;
     esac
-    [ "$suite_target" = "mediatek/filogic" ] && [ "$suite_arch" = "aarch64_cortex-a53" ] ||
-        fail "The complete suite requires mediatek/filogic, aarch64_cortex-a53; detected: $suite_target, $suite_arch"
+    case "$suite_target:$suite_arch" in
+        mediatek/filogic:aarch64_cortex-a53|mediatek/mt7622:aarch64_cortex-a53) ;;
+        *) fail "The complete suite requires mediatek/filogic or mediatek/mt7622, aarch64_cortex-a53; detected: $suite_target, $suite_arch" ;;
+    esac
     [ "$PKG_IS_APK" -eq 1 ] || fail "The complete suite requires the OpenWrt apk package manager"
 }
 

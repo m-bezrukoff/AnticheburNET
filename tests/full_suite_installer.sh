@@ -178,6 +178,15 @@ run_installer <<< '2' || fail 'Russian installation failed'
 [[ "$(cat "$WORK_DIR/language")" = ru ]] || fail 'Russian was not passed to post-install'
 grep -Fq 'LuCI (ru)' "$WORK_DIR/output" || fail 'result must report Russian'
 
+for TEST_RELEASE in 25.12 25.12.3; do
+  TEST_TARGET=mediatek/mt7622 run_installer < /dev/null || { cat "$WORK_DIR/output"; fail 'MT7622 complete installation failed'; }
+  [[ "$(grep -c '^apk add --allow-untrusted ' "$TEST_LOG")" = 1 ]] || fail 'MT7622 suite must use one apk transaction'
+  for name in "${names[@]}"; do
+    grep -Fq "$name" "$TEST_LOG" || fail "missing MT7622 package: $name"
+  done
+done
+unset TEST_RELEASE
+
 printf 'corrupted\n' >> "$WORK_DIR/fixtures/${names[4]}"
 if run_installer; then fail 'corrupted Xray APK was accepted'; fi
 assert_no_replacement
@@ -201,14 +210,17 @@ for kind in sing-box xray awg checksums backend app i18n; do
   assert_no_replacement
 done
 unset TEST_OMIT
-TEST_TARGET=ramips/mt7621
-if run_installer; then fail 'wrong target was accepted'; fi
-assert_no_replacement
+for TEST_TARGET in ramips/mt7621 mediatek/mt7623; do
+  if run_installer; then fail 'wrong target was accepted'; fi
+  assert_no_replacement
+done
 unset TEST_TARGET
-TEST_ARCH=x86_64
-if run_installer; then fail 'wrong architecture was accepted'; fi
-assert_no_replacement
-unset TEST_ARCH
+for TEST_TARGET in mediatek/filogic mediatek/mt7622; do
+  TEST_ARCH=x86_64
+  if run_installer; then fail 'wrong architecture was accepted'; fi
+  assert_no_replacement
+done
+unset TEST_TARGET TEST_ARCH
 TEST_RELEASE=24.10.4
 if run_installer; then fail 'wrong OpenWrt version was accepted'; fi
 assert_no_replacement

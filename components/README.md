@@ -1,7 +1,10 @@
 # AnticheburNET components
 
-AnticheburNET is intended for all devices running OpenWrt 25.12. Supported protocols include VLESS, Hysteria 2, XHTTP and AmneziaWG 3.1, with support for the full Xray 26.10.10 core. Current prebuilt component target: mediatek/filogic, aarch64_cortex-a53.
+AnticheburNET is intended for all devices running OpenWrt 25.12. Supported protocols include VLESS, Hysteria 2, XHTTP and AmneziaWG 3.1, with support for the full Xray 26.10.10 core. Current prebuilt components support mediatek/filogic and mediatek/mt7622 with aarch64_cortex-a53.
 The component build and services are separate from the architecture-independent AnticheburNET backend.
+Both targets use the same ARM64 userspace APKs. Go executables use `CGO_ENABLED=0`,
+and AmneziaWG tools are statically linked. No target-specific kernel modules are
+bundled; kernel dependencies come from the installed firmware's feeds.
 
 For installation on the router, run the single SSH command in
 [the OpenWrt 25.12 guide](../docs/OPENWRT-25.12.md#установка). It downloads all six release APKs

@@ -3,7 +3,6 @@
 let fs = require("fs");
 let uci_core = require("core.uci");
 let connections = require("config.connections");
-let constants = require("core.constants");
 const CONFIG_NAME = getenv("ANTICHEBURNET_CONFIG_NAME") || "anticheburnet";
 const LIB_DIR = getenv("ANTICHEBURNET_LIB") || "/usr/lib/anticheburnet";
 const BIN_PATH = getenv("ANTICHEBURNET_BIN") || "/usr/bin/anticheburnet";
@@ -1778,12 +1777,13 @@ function component_action_worker(state_file, output_file, component, action, tar
 }
 
 function legacy_suite_job_candidate(value) {
-    let version = getenv("ANTICHEBURNET_VERSION") || constants.ANTICHEBURNET_VERSION || "";
+    if (value.component != "anticheburnet" || value.action != "install" ||
+        value.running !== false || value.success !== true || int(value.changed || 0) != 1 ||
+        value.suite_complete === true || value.suite_continuation === true || value.acked_at != null)
+        return false;
+    let version = getenv("ANTICHEBURNET_VERSION") || require("core.constants").ANTICHEBURNET_VERSION || "";
     let age = now_seconds() - int(value.updated_at || 0);
-    return value.component == "anticheburnet" && value.action == "install" &&
-        value.running === false && value.success === true && int(value.changed || 0) == 1 &&
-        value.suite_complete !== true && value.suite_continuation !== true &&
-        value.acked_at == null && value.current_version == version &&
+    return value.current_version == version &&
         match(version, /^[0-9]+[.][0-9]+[.][0-9]+$/) != null && age >= 0 && age <= 3600;
 }
 

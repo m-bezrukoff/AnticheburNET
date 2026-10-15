@@ -1301,6 +1301,8 @@ cat >"$WORK_DIR/cron-signature.expected" <<'EOF_CRON_SIG'
 6h
 [settings.component_update_check_interval]
 2h
+[settings.release_auto_update_enabled]
+0
 [lists.list_proxy.action]
 proxy
 [lists.list_proxy.ports]
@@ -1377,6 +1379,21 @@ assert_eq "$(md5_file "$WORK_DIR/list-signature.expected")" \
 assert_eq "$(md5_file "$WORK_DIR/cron-signature.expected")" \
   "$(state_ucode cron-signature-fixture "$WORK_DIR/reload-state-signatures.json")" \
   "cron signature hash"
+node - "$WORK_DIR/reload-state-signatures.json" "$WORK_DIR/auto-update-signature.json" <<'NODE'
+const fs = require('fs');
+const data = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+data.settings.release_auto_update_enabled = '1';
+fs.writeFileSync(process.argv[3], JSON.stringify(data));
+NODE
+if [ "$(state_ucode cron-signature-fixture "$WORK_DIR/reload-state-signatures.json")" = \
+  "$(state_ucode cron-signature-fixture "$WORK_DIR/auto-update-signature.json")" ]; then
+  fail "automatic release update checkbox must change the cron signature"
+fi
+for signature in service-trigger-signature-fixture sing-box-signature-fixture dnsmasq-signature-fixture; do
+  assert_eq "$(state_ucode "$signature" "$WORK_DIR/reload-state-signatures.json")" \
+    "$(state_ucode "$signature" "$WORK_DIR/auto-update-signature.json")" \
+    "automatic release update checkbox must not change $signature"
+done
 nft_signature="$(nft_ucode nft-runtime-signature-fixture "$WORK_DIR/reload-state-signatures.json")"
 assert_eq "$nft_signature" \
   "$(state_ucode nft-signature-fixture "$WORK_DIR/reload-state-signatures.json")" \

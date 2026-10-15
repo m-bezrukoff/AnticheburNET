@@ -87,6 +87,7 @@ export namespace AnticheburNET {
     COMPONENT_ACTION_ASYNC = 'component_action_async',
     COMPONENT_ACTION_STATUS = 'component_action_status',
     COMPONENT_UPDATE_CHECK_CACHE = 'component_update_check_cache',
+    RELEASE_AUTO_UPDATE = 'release_auto_update',
     SUBSCRIPTION_UPDATE_ASYNC = 'subscription_update_async',
     SUBSCRIPTION_UPDATE_STATUS = 'subscription_update_status',
   }
@@ -606,6 +607,16 @@ export namespace AnticheburNET {
     updated_at?: number | null;
     exit_code?: number | null;
     progress?: ComponentUpdateProgress;
+  }
+
+  export interface ReleaseAutoUpdateSettings {
+    enabled: boolean;
+    last_run: {
+      at: number;
+      local_time: string;
+      status: 'running' | 'updated' | 'latest' | 'failed' | 'interrupted';
+      version: string;
+    } | null;
   }
 
   export interface ComponentUpdateCheckCache {

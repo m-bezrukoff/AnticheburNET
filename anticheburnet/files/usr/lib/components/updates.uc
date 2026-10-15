@@ -36,6 +36,10 @@ const COMPONENT_JOB_DIR = getenv("UPDATES_JOB_DIR") || getenv("ANTICHEBURNET_UI_
 const COMPONENT_UPDATE_CHECK_CACHE_DIR = getenv("ANTICHEBURNET_COMPONENT_UPDATE_CHECK_CACHE_DIR") || RUNTIME_STATE_DIR + "/component-update-checks";
 const COMPONENT_UPDATE_CHECK_STATE_FILE = getenv("ANTICHEBURNET_COMPONENT_UPDATE_CHECK_STATE_FILE") || RUNTIME_STATE_DIR + "/component-update-check.timestamp";
 const COMPONENT_UPDATE_CHECK_LOCK_DIR = getenv("ANTICHEBURNET_COMPONENT_UPDATE_CHECK_LOCK_DIR") || RUNTIME_STATE_DIR + "/component-update-check.lock";
+const RELEASE_AUTO_UPDATE_CRON_MARKER = "# anticheburnet-release-auto-update";
+const RELEASE_AUTO_UPDATE_STATE_FILE = getenv("ANTICHEBURNET_RELEASE_AUTO_UPDATE_STATE_FILE") || "/etc/anticheburnet/release-auto-update.day";
+const RELEASE_AUTO_UPDATE_RESULT_FILE = getenv("ANTICHEBURNET_RELEASE_AUTO_UPDATE_RESULT_FILE") || "/etc/anticheburnet/release-auto-update.json";
+const RELEASE_AUTO_UPDATE_LOCK_DIR = getenv("ANTICHEBURNET_RELEASE_AUTO_UPDATE_LOCK_DIR") || RUNTIME_STATE_DIR + "/release-auto-update.lock";
 const COMPONENT_JOB_FINISHED_TTL_MINUTES = getenv("UPDATES_JOB_FINISHED_TTL_MINUTES") || "60";
 const COMPONENT_JOB_ORPHAN_OUTPUT_TTL_MINUTES = getenv("UPDATES_JOB_ORPHAN_OUTPUT_TTL_MINUTES") || "60";
 const COMPONENT_JOB_STALE_GRACE_SECONDS = getenv("UPDATES_JOB_STALE_GRACE_SECONDS") || getenv("ANTICHEBURNET_UI_ACTION_STALE_GRACE_SECONDS") || "15";
@@ -739,6 +743,9 @@ function cron_refresh_plan_rows(settings, sections, bin, list_marker, subscripti
         }
     }
 
+    if (bool_option(settings, "release_auto_update_enabled", false))
+        push(rows, "release\t0 4 * * * " + as_string(bin) + " release_update_if_due " + RELEASE_AUTO_UPDATE_CRON_MARKER);
+
     return {
         status,
         rows
@@ -758,7 +765,7 @@ function cron_refresh_plan(settings, sections, bin, list_marker, subscription_ma
 
 function cron_refresh_apply_result(settings, sections, existing_crontab, bin, list_marker, subscription_marker, component_marker) {
     let plan = cron_refresh_plan_rows(settings, sections, bin, list_marker, subscription_marker, component_marker);
-    let filtered_crontab = filter_cron_markers_text(existing_crontab, [ list_marker, subscription_marker, component_marker ]);
+    let filtered_crontab = filter_cron_markers_text(existing_crontab, [ list_marker, subscription_marker, component_marker, RELEASE_AUTO_UPDATE_CRON_MARKER ]);
     let cron_jobs = "";
     let logs = [ { level: "info", message: "The cron job removed" } ];
     let tab = "\t";
@@ -796,6 +803,10 @@ function cron_refresh_apply_result(settings, sections, existing_crontab, bin, li
         else if (type == "component-error") {
             push(logs, { level: "error", message: "Invalid component_update_check_interval value: " + rest });
         }
+        else if (type == "release") {
+            cron_jobs += rest + "\n";
+            push(logs, { level: "info", message: "The release auto-update cron job has been created: " + rest });
+        }
     }
 
     return {
@@ -828,7 +839,7 @@ function log_cron_apply_result(result) {
 function remove_cron_jobs(list_marker, subscription_marker, component_marker) {
     let crontab = command_output_from_args([ "crontab", "-l" ]);
     let result = {
-        crontab: filter_cron_markers_text(crontab, [ list_marker, subscription_marker, component_marker ]),
+        crontab: filter_cron_markers_text(crontab, [ list_marker, subscription_marker, component_marker, RELEASE_AUTO_UPDATE_CRON_MARKER ]),
         logs: [ { level: "info", message: "The cron job removed" } ]
     };
 
@@ -1972,6 +1983,134 @@ function component_updates_if_due() {
     release_runtime_lock(COMPONENT_UPDATE_CHECK_LOCK_DIR);
 }
 
+function release_calendar_day(now) {
+    let date = localtime(now);
+    if (date == null || int(date.year || 0) < 2020) return null;
+    return int(timegm({ year: date.year, mon: date.mon, mday: date.mday }) / 86400);
+}
+
+function write_release_auto_update_day(day) {
+    let parent = replace(RELEASE_AUTO_UPDATE_STATE_FILE, /\/[^/]+$/, "");
+    return ensure_dir(parent) && write_file(RELEASE_AUTO_UPDATE_STATE_FILE, as_string(day) + "\n");
+}
+
+function refresh_release_auto_update_cron(enabled) {
+    let cron = filter_cron_markers_text(command_output_from_args([ "crontab", "-l" ]), [ RELEASE_AUTO_UPDATE_CRON_MARKER ]);
+    if (enabled)
+        cron += "0 4 * * * " + BIN_PATH + " release_update_if_due " + RELEASE_AUTO_UPDATE_CRON_MARKER + "\n";
+    return write_crontab_text(cron);
+}
+
+function release_auto_update_process_identity(pid) {
+    if (match(as_string(pid), /^[1-9][0-9]*$/) == null) return "";
+    let boot = trim(as_string(fs.readfile("/proc/sys/kernel/random/boot_id") || ""));
+    let stat = as_string(fs.readfile("/proc/" + pid + "/stat") || "");
+    // Skip the parenthesized command, which may itself contain spaces.
+    let fields = split(trim(replace(stat, /^.*\) /, "")), /[ \t]+/);
+    return boot != "" && length(fields) > 19 ? boot + ":" + fields[19] : "";
+}
+
+function release_auto_update_history() {
+    let record = object_or_empty(read_json_file(RELEASE_AUTO_UPDATE_RESULT_FILE));
+    let at = unsigned_number(record.finished_at || record.started_at);
+    if (at == null || at == 0) return null;
+    let status = as_string(record.status);
+    if (index([ "running", "updated", "latest", "failed", "interrupted" ], status) < 0) return null;
+    if (status == "running" && (as_string(record.process_identity) == "" ||
+        release_auto_update_process_identity(record.pid) != record.process_identity))
+        status = "interrupted";
+    let date = localtime(at);
+    if (date == null) return null;
+    return {
+        at,
+        local_time: sprintf("%04d-%02d-%02d %02d:%02d:%02d", date.year, date.mon, date.mday, date.hour, date.min, date.sec),
+        status,
+        version: as_string(record.version)
+    };
+}
+
+function write_release_auto_update_history(record) {
+    let parent = replace(RELEASE_AUTO_UPDATE_RESULT_FILE, /\/[^/]+$/, "");
+    return ensure_dir(parent) && write_state_file(RELEASE_AUTO_UPDATE_RESULT_FILE, record);
+}
+
+function release_auto_update_settings(value) {
+    let enabled = bool_option(uci_settings(), "release_auto_update_enabled", false);
+    if (as_string(value) == "") {
+        write_json({ enabled, last_run: release_auto_update_history() });
+        return true;
+    }
+    if (value != "0" && value != "1") return false;
+    if (!acquire_runtime_lock(RELEASE_AUTO_UPDATE_LOCK_DIR, false)) return false;
+    let requested = value == "1";
+    let original = as_string(fs.readfile(RELEASE_AUTO_UPDATE_STATE_FILE) || "");
+    let day = release_calendar_day(now_seconds());
+    let ok = !requested || enabled || (day != null && write_release_auto_update_day(day));
+    let path = CONFIG_NAME + ".settings.release_auto_update_enabled";
+    ok = ok && uci_core.set(path, value) && uci_core.commit(CONFIG_NAME);
+    if (ok) ok = refresh_release_auto_update_cron(requested);
+    if (!ok) {
+        uci_core.set(path, enabled ? "1" : "0");
+        uci_core.commit(CONFIG_NAME);
+        if (original != "") write_file(RELEASE_AUTO_UPDATE_STATE_FILE, original);
+        else remove_file(RELEASE_AUTO_UPDATE_STATE_FILE);
+        release_runtime_lock(RELEASE_AUTO_UPDATE_LOCK_DIR);
+        return false;
+    }
+    release_runtime_lock(RELEASE_AUTO_UPDATE_LOCK_DIR);
+    write_json({ enabled: requested, last_run: release_auto_update_history() });
+    return true;
+}
+
+function release_update_if_due() {
+    if (!bool_option(uci_settings(), "release_auto_update_enabled", false)) return true;
+    let now = now_seconds();
+    let local = localtime(now);
+    let day = release_calendar_day(now);
+    if (day == null || local.hour != 4 || local.min != 0) return true;
+    if (!acquire_runtime_lock(RELEASE_AUTO_UPDATE_LOCK_DIR, false)) return true;
+    // Re-read after taking the lock, including changes made while cron waited.
+    if (!bool_option(uci_settings(), "release_auto_update_enabled", false)) {
+        release_runtime_lock(RELEASE_AUTO_UPDATE_LOCK_DIR);
+        return true;
+    }
+    let last = unsigned_number(trim(as_string(fs.readfile(RELEASE_AUTO_UPDATE_STATE_FILE) || "")));
+    if (last == null || last > day) {
+        let saved = write_release_auto_update_day(day);
+        release_runtime_lock(RELEASE_AUTO_UPDATE_LOCK_DIR);
+        return saved;
+    }
+    if (day - last < 3) {
+        release_runtime_lock(RELEASE_AUTO_UPDATE_LOCK_DIR);
+        return true;
+    }
+    if (!ensure_component_runtime_dirs()) {
+        release_runtime_lock(RELEASE_AUTO_UPDATE_LOCK_DIR);
+        return false;
+    }
+    let job_id = component_job_id();
+    let state_file = component_job_state_path_value(job_id);
+    let state = component_running_job_state_value("anticheburnet", "check_and_update", now);
+    state.pid = owner_pid();
+    let record = { started_at: now, finished_at: 0, status: "running", pid: state.pid,
+        process_identity: release_auto_update_process_identity(state.pid), version: "" };
+    let ok = write_release_auto_update_history(record) && state_file != "" && write_state_file(state_file, state);
+    if (ok) {
+        component_action_worker(state_file, component_job_output_path(job_id), "anticheburnet", "check_and_update");
+        let result = object_or_empty(read_json_file(state_file));
+        ok = result.success === true && result.running === false && int(result.exit_code || 0) == 0;
+        record.version = as_string(result.current_version || result.latest_version);
+        record.status = ok ? (arg_bool(result.changed) ? "updated" : "latest") : "failed";
+        if (ok) ok = write_release_auto_update_day(day);
+    }
+    record.finished_at = now_seconds();
+    if (!ok) record.status = "failed";
+    if (!write_release_auto_update_history(record)) ok = false;
+    release_runtime_lock(RELEASE_AUTO_UPDATE_LOCK_DIR);
+    if (!ok) log_message("Automatic release update failed; see component update logs", "error");
+    return ok;
+}
+
 function download_via_proxy_option_for_purpose(purpose) {
     purpose = as_string(purpose || "lists");
     if (purpose == "lists")
@@ -3034,6 +3173,10 @@ else if (mode == "component-updates-if-due")
     component_updates_if_due();
 else if (mode == "component-update-check-cache")
     component_update_check_cache();
+else if (mode == "release-auto-update-settings")
+    exit(release_auto_update_settings(ARGV[1]) ? 0 : 1);
+else if (mode == "release-update-if-due")
+    exit(release_update_if_due() ? 0 : 1);
 else {
     warn("Usage: components/updates.uc <operation> ...\n");
     exit(1);

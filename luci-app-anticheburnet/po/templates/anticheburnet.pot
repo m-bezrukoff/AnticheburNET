@@ -3371,3 +3371,33 @@ msgstr ""
 
 msgid "Unable to confirm the update. Refresh the page and check the installed version and update logs."
 msgstr ""
+
+msgid "Automatically update every 3 days at 04:00"
+msgstr ""
+
+msgid "Failed to load automatic update settings"
+msgstr ""
+
+msgid "Failed to save automatic update settings"
+msgstr ""
+
+msgid "Last automatic update:"
+msgstr ""
+
+msgid "No recorded runs"
+msgstr ""
+
+msgid "In progress"
+msgstr ""
+
+msgid "Updated"
+msgstr ""
+
+msgid "Already up to date"
+msgstr ""
+
+msgid "Failed"
+msgstr ""
+
+msgid "Interrupted"
+msgstr ""

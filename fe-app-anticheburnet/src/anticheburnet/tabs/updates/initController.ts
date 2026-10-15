@@ -14,16 +14,14 @@ import type { UpdatesActionKey } from '../../helpers/getComponentActionKey';
 import { isTransientRpcError } from '../../helpers/isTransientRpcError';
 import { isActiveLuciTab } from '../../helpers/isActiveLuciTab';
 import { shouldShowLoadingForRestoredAction } from '../../helpers/restoredActionLoading';
-import {
-  formatSingBoxVersion,
-  normalizeSingBoxVariantFields,
-} from '../../helpers/singBoxVariant';
+import { normalizeSingBoxVariantFields } from '../../helpers/singBoxVariant';
 import {
   hasLocalMutatingServiceActionLoading,
   isServiceTransitionStatus,
 } from '../diagnostic/serviceTransition';
 import { shouldApplyCompletedComponentActionResult } from './componentActionCompletion';
 import { getUpdateProgressView } from './updateProgress';
+import { getAutoUpdateHistoryText } from './autoUpdateHistory';
 import {
   shouldPreserveCompletedCheckResultOnNextMount,
   shouldExposeCheckResults,
@@ -83,6 +81,55 @@ let componentActionStateUnsubscribe: (() => void) | null = null;
 let componentActionStateRefreshPromise: Promise<void> | null = null;
 const followedComponentJobs = new Set<string>();
 const handledComponentJobs = new Set<string>();
+let autoUpdateEnabled = false;
+let autoUpdateLoaded = false;
+let autoUpdateSaving = false;
+let autoUpdateRequest = 0;
+let autoUpdateLastRun: AnticheburNET.ReleaseAutoUpdateSettings['last_run'] =
+  null;
+let autoUpdateRefreshTimer: ReturnType<typeof setInterval> | null = null;
+
+async function loadAutoUpdateSettings({ silent = false } = {}) {
+  if (autoUpdateSaving) return;
+  const request = ++autoUpdateRequest;
+  const response = await AnticheburNETShellMethods.releaseAutoUpdate();
+  if (request !== autoUpdateRequest) return;
+  if (response.success && typeof response.data?.enabled === 'boolean') {
+    autoUpdateEnabled = response.data.enabled;
+    autoUpdateLastRun = response.data.last_run || null;
+    autoUpdateLoaded = true;
+  } else if (!silent) {
+    autoUpdateLoaded = false;
+    if (updatesMounted)
+      showToast(_('Failed to load automatic update settings'), 'error');
+  }
+  if (updatesMounted) renderUpdatesComponents();
+}
+
+async function saveAutoUpdateSettings(enabled: boolean) {
+  if (!autoUpdateLoaded || autoUpdateSaving) return;
+  autoUpdateRequest += 1;
+  const previous = autoUpdateEnabled;
+  autoUpdateEnabled = enabled;
+  autoUpdateSaving = true;
+  renderUpdatesComponents();
+  try {
+    const response = await AnticheburNETShellMethods.releaseAutoUpdate(enabled);
+    if (!response.success || typeof response.data?.enabled !== 'boolean') {
+      autoUpdateEnabled = previous;
+      showToast(_('Failed to save automatic update settings'), 'error');
+    } else {
+      autoUpdateEnabled = response.data.enabled;
+      autoUpdateLastRun = response.data.last_run || null;
+    }
+  } catch {
+    autoUpdateEnabled = previous;
+    showToast(_('Failed to save automatic update settings'), 'error');
+  } finally {
+    autoUpdateSaving = false;
+    if (updatesMounted) renderUpdatesComponents();
+  }
+}
 
 if (typeof window !== 'undefined') {
   window.addEventListener('pagehide', () => {
@@ -869,15 +916,6 @@ function getComponentCards(): ComponentCard[] {
       actions: anticheburnetActions,
     },
     {
-      component: 'sing_box',
-      column: 0,
-      title: 'Sing-box',
-      version: systemInfoLoading
-        ? _('Loading...')
-        : formatSingBoxVersion(systemInfo),
-      actions: [],
-    },
-    {
       component: 'zapret',
       column: 1,
       title: 'Zapret',
@@ -1152,6 +1190,32 @@ function renderComponentCard(card: ComponentCard) {
   if (detailsContainer) {
     cardChildren.push(detailsContainer);
   }
+  if (card.component === 'anticheburnet') {
+    const checkbox = E('input', {
+      type: 'checkbox',
+      id: 'fkp-release-auto-update',
+    }) as HTMLInputElement;
+    checkbox.addEventListener(
+      'change',
+      () => void saveAutoUpdateSettings(checkbox.checked),
+    );
+    checkbox.checked = autoUpdateEnabled;
+    checkbox.disabled =
+      !autoUpdateLoaded || autoUpdateSaving || anyActionLoading;
+    const history = E(
+      'div',
+      { class: 'fkp_updates-page__auto-update-history' },
+      getAutoUpdateHistoryText(autoUpdateLastRun, autoUpdateLoaded),
+    );
+    history.setAttribute('aria-live', 'polite');
+    cardChildren.push(
+      E('label', { class: 'fkp_updates-page__auto-update' }, [
+        checkbox,
+        E('span', {}, _('Automatically update every 3 days at 04:00')),
+      ]),
+      history,
+    );
+  }
   cardChildren.push(actionsContainer);
 
   return E('div', { class: 'fkp_updates-page__component' }, cardChildren);
@@ -1171,8 +1235,8 @@ function renderUpdatesComponents() {
 
   return preserveScrollForPage(() => {
     container.replaceChildren(
-      E('div', { class: 'fkp_updates-page__components-column' }, columns[0]),
-      E('div', { class: 'fkp_updates-page__components-column' }, columns[1]),
+      E('div', { class: 'fkp_updates-page__components-main' }, columns[0]),
+      E('div', { class: 'fkp_updates-page__components-optional' }, columns[1]),
     );
   });
 }
@@ -1220,6 +1284,10 @@ async function onPageMount() {
   updatesMounted = true;
   updatesMountId += 1;
   const mountId = updatesMountId;
+  void loadAutoUpdateSettings();
+  autoUpdateRefreshTimer = setInterval(() => {
+    if (!document.hidden) void loadAutoUpdateSettings({ silent: true });
+  }, 15000);
   const cachedRuntimeState = getCachedRuntimeUiState();
   const hasRuntimeSnapshot = Boolean(cachedRuntimeState);
   const needsFreshStateBeforeRender =
@@ -1266,6 +1334,10 @@ async function onPageMount() {
 }
 
 function onPageUnmount() {
+  if (autoUpdateRefreshTimer !== null) {
+    clearInterval(autoUpdateRefreshTimer);
+    autoUpdateRefreshTimer = null;
+  }
   updatesMounted = false;
   updatesMountId += 1;
   stopComponentActionStateWatcher();

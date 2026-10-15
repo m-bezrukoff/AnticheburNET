@@ -2329,3 +2329,33 @@ msgstr "Ожидание запуска сервиса"
 
 msgid "Unable to confirm the update. Refresh the page and check the installed version and update logs."
 msgstr "Не удалось подтвердить обновление. Обновите страницу и проверьте установленную версию и журнал обновления."
+
+msgid "Automatically update every 3 days at 04:00"
+msgstr "Автоматически обновлять каждые 3 дня в 04:00"
+
+msgid "Failed to load automatic update settings"
+msgstr "Не удалось загрузить настройку автоматического обновления"
+
+msgid "Failed to save automatic update settings"
+msgstr "Не удалось сохранить настройку автоматического обновления"
+
+msgid "Last automatic update:"
+msgstr "Последнее автообновление:"
+
+msgid "No recorded runs"
+msgstr "Запусков ещё не было"
+
+msgid "In progress"
+msgstr "Выполняется"
+
+msgid "Updated"
+msgstr "Обновлено"
+
+msgid "Already up to date"
+msgstr "Установлена актуальная версия"
+
+msgid "Failed"
+msgstr "Ошибка"
+
+msgid "Interrupted"
+msgstr "Прервано"

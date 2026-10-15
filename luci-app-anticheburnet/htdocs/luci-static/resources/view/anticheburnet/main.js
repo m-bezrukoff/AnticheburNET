@@ -2425,6 +2425,7 @@ var AnticheburNET;
     AvailableMethods2["COMPONENT_ACTION_ASYNC"] = "component_action_async";
     AvailableMethods2["COMPONENT_ACTION_STATUS"] = "component_action_status";
     AvailableMethods2["COMPONENT_UPDATE_CHECK_CACHE"] = "component_update_check_cache";
+    AvailableMethods2["RELEASE_AUTO_UPDATE"] = "release_auto_update";
     AvailableMethods2["SUBSCRIPTION_UPDATE_ASYNC"] = "subscription_update_async";
     AvailableMethods2["SUBSCRIPTION_UPDATE_STATUS"] = "subscription_update_status";
   })(AvailableMethods = AnticheburNET2.AvailableMethods || (AnticheburNET2.AvailableMethods = {}));
@@ -2892,6 +2893,10 @@ var AnticheburNETShellMethods = {
   },
   componentUpdateCheckCache: async () => callBaseMethod(
     AnticheburNET.AvailableMethods.COMPONENT_UPDATE_CHECK_CACHE
+  ),
+  releaseAutoUpdate: async (enabled) => callBaseMethod(
+    AnticheburNET.AvailableMethods.RELEASE_AUTO_UPDATE,
+    enabled === void 0 ? [] : [enabled ? "1" : "0"]
   ),
   waitComponentActionJob: async (jobId, component, action, expectedLatestVersion) => {
     let selfUpdateVersionMatchedAt = 0;
@@ -13005,6 +13010,22 @@ function getUpdateProgressView(progress) {
   };
 }
 
+// src/anticheburnet/tabs/updates/autoUpdateHistory.ts
+function getAutoUpdateHistoryText(lastRun, loaded) {
+  const prefix = _("Last automatic update:");
+  if (!loaded) return `${prefix} ${_("Loading...")}`;
+  if (!lastRun) return `${prefix} ${_("No recorded runs")}`;
+  const status = {
+    running: _("In progress"),
+    updated: _("Updated"),
+    latest: _("Already up to date"),
+    failed: _("Failed"),
+    interrupted: _("Interrupted")
+  }[lastRun.status];
+  const version = lastRun.status === "updated" && lastRun.version ? ` (${lastRun.version})` : "";
+  return `${prefix} ${lastRun.local_time} \xB7 ${status}${version}`;
+}
+
 // src/anticheburnet/tabs/updates/checkResultLifecycle.ts
 function shouldPreserveCompletedCheckResultOnNextMount({
   action,
@@ -13045,6 +13066,52 @@ var componentActionStateUnsubscribe = null;
 var componentActionStateRefreshPromise = null;
 var followedComponentJobs = /* @__PURE__ */ new Set();
 var handledComponentJobs = /* @__PURE__ */ new Set();
+var autoUpdateEnabled = false;
+var autoUpdateLoaded = false;
+var autoUpdateSaving = false;
+var autoUpdateRequest = 0;
+var autoUpdateLastRun = null;
+var autoUpdateRefreshTimer = null;
+async function loadAutoUpdateSettings({ silent = false } = {}) {
+  if (autoUpdateSaving) return;
+  const request = ++autoUpdateRequest;
+  const response = await AnticheburNETShellMethods.releaseAutoUpdate();
+  if (request !== autoUpdateRequest) return;
+  if (response.success && typeof response.data?.enabled === "boolean") {
+    autoUpdateEnabled = response.data.enabled;
+    autoUpdateLastRun = response.data.last_run || null;
+    autoUpdateLoaded = true;
+  } else if (!silent) {
+    autoUpdateLoaded = false;
+    if (updatesMounted)
+      showToast(_("Failed to load automatic update settings"), "error");
+  }
+  if (updatesMounted) renderUpdatesComponents();
+}
+async function saveAutoUpdateSettings(enabled) {
+  if (!autoUpdateLoaded || autoUpdateSaving) return;
+  autoUpdateRequest += 1;
+  const previous = autoUpdateEnabled;
+  autoUpdateEnabled = enabled;
+  autoUpdateSaving = true;
+  renderUpdatesComponents();
+  try {
+    const response = await AnticheburNETShellMethods.releaseAutoUpdate(enabled);
+    if (!response.success || typeof response.data?.enabled !== "boolean") {
+      autoUpdateEnabled = previous;
+      showToast(_("Failed to save automatic update settings"), "error");
+    } else {
+      autoUpdateEnabled = response.data.enabled;
+      autoUpdateLastRun = response.data.last_run || null;
+    }
+  } catch {
+    autoUpdateEnabled = previous;
+    showToast(_("Failed to save automatic update settings"), "error");
+  } finally {
+    autoUpdateSaving = false;
+    if (updatesMounted) renderUpdatesComponents();
+  }
+}
 if (typeof window !== "undefined") {
   window.addEventListener("pagehide", () => {
     pageUnloading2 = true;
@@ -13626,13 +13693,6 @@ function getComponentCards() {
       actions: anticheburnetActions
     },
     {
-      component: "sing_box",
-      column: 0,
-      title: "Sing-box",
-      version: systemInfoLoading ? _("Loading...") : formatSingBoxVersion(systemInfo),
-      actions: []
-    },
-    {
       component: "zapret",
       column: 1,
       title: "Zapret",
@@ -13842,6 +13902,31 @@ function renderComponentCard(card) {
   if (detailsContainer) {
     cardChildren.push(detailsContainer);
   }
+  if (card.component === "anticheburnet") {
+    const checkbox = E("input", {
+      type: "checkbox",
+      id: "fkp-release-auto-update"
+    });
+    checkbox.addEventListener(
+      "change",
+      () => void saveAutoUpdateSettings(checkbox.checked)
+    );
+    checkbox.checked = autoUpdateEnabled;
+    checkbox.disabled = !autoUpdateLoaded || autoUpdateSaving || anyActionLoading;
+    const history = E(
+      "div",
+      { class: "fkp_updates-page__auto-update-history" },
+      getAutoUpdateHistoryText(autoUpdateLastRun, autoUpdateLoaded)
+    );
+    history.setAttribute("aria-live", "polite");
+    cardChildren.push(
+      E("label", { class: "fkp_updates-page__auto-update" }, [
+        checkbox,
+        E("span", {}, _("Automatically update every 3 days at 04:00"))
+      ]),
+      history
+    );
+  }
   cardChildren.push(actionsContainer);
   return E("div", { class: "fkp_updates-page__component" }, cardChildren);
 }
@@ -13856,8 +13941,8 @@ function renderUpdatesComponents() {
   });
   return preserveScrollForPage(() => {
     container.replaceChildren(
-      E("div", { class: "fkp_updates-page__components-column" }, columns[0]),
-      E("div", { class: "fkp_updates-page__components-column" }, columns[1])
+      E("div", { class: "fkp_updates-page__components-main" }, columns[0]),
+      E("div", { class: "fkp_updates-page__components-optional" }, columns[1])
     );
   });
 }
@@ -13885,6 +13970,10 @@ async function onPageMount4() {
   updatesMounted = true;
   updatesMountId += 1;
   const mountId = updatesMountId;
+  void loadAutoUpdateSettings();
+  autoUpdateRefreshTimer = setInterval(() => {
+    if (!document.hidden) void loadAutoUpdateSettings({ silent: true });
+  }, 15e3);
   const cachedRuntimeState = getCachedRuntimeUiState();
   const hasRuntimeSnapshot = Boolean(cachedRuntimeState);
   const needsFreshStateBeforeRender = shouldRefreshComponentStateBeforeRender(cachedRuntimeState);
@@ -13918,6 +14007,10 @@ async function onPageMount4() {
   }
 }
 function onPageUnmount4() {
+  if (autoUpdateRefreshTimer !== null) {
+    clearInterval(autoUpdateRefreshTimer);
+    autoUpdateRefreshTimer = null;
+  }
   updatesMounted = false;
   updatesMountId += 1;
   stopComponentActionStateWatcher();
@@ -13974,26 +14067,29 @@ var styles6 = `
     align-items: flex-start;
     gap: 10px;
     width: 100%;
-    flex-wrap: wrap;
+    max-width: 100%;
+    overflow-x: auto;
 }
 
-.fkp_updates-page__components-column {
+.fkp_updates-page__components-main {
     display: flex;
-    flex: 1 1 auto;
+    flex: 1 1 0;
     flex-direction: column;
     gap: 10px;
-    min-width: max-content;
+    min-width: 260px;
 }
 
-@media (max-width: 760px) {
-    .fkp_updates-page__components {
-        flex-direction: column;
-    }
+.fkp_updates-page__components-optional {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 10px;
+    margin-left: auto;
+    align-items: flex-start;
+}
 
-    .fkp_updates-page__components-column {
-        width: 100%;
-        min-width: 0;
-    }
+.fkp_updates-page__components-optional > .fkp_updates-page__component {
+    width: 220px;
+    flex: 0 0 220px;
 }
 
 .fkp_updates-page__component {
@@ -14003,7 +14099,29 @@ var styles6 = `
     display: flex;
     flex-direction: column;
     gap: 10px;
-    min-width: max-content;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.fkp_updates-page__auto-update {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    color: var(--text-color-high);
+    font-size: 13px;
+    line-height: 1.4;
+}
+.fkp_updates-page__auto-update input {
+    margin: 0;
+    flex: 0 0 auto;
+}
+
+.fkp_updates-page__auto-update-history {
+    color: var(--text-color-medium, #888);
+    font-size: 12px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
 }
 
 .fkp_updates-page__component__header {
@@ -14092,7 +14210,7 @@ var styles6 = `
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 6px;
 }
 
@@ -14120,7 +14238,7 @@ var styles6 = `
     flex-direction: column;
     gap: 6px;
     max-width: 380px;
-    min-width: 240px;
+    min-width: 0;
 }
 .fkp_updates-page__progress progress {
     width: 100%;

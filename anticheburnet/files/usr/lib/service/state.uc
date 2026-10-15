@@ -1140,6 +1140,7 @@ function list_update_signature_body(sections) {
 function cron_signature_body(settings, sections) {
     let body = signature_add_value("", "settings.update_interval", settings_update_interval(settings));
     body = signature_add_value(body, "settings.component_update_check_interval", settings_component_update_check_interval(settings));
+    body = signature_add_value(body, "settings.release_auto_update_enabled", bool_option(settings, "release_auto_update_enabled", false) ? "1" : "0");
 
     for (let section in sections)
         body = append_list_update_signature_body(body, object_or_empty(section));

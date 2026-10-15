@@ -798,7 +798,7 @@ function canonical_value(value) {
     return result;
 }
 
-function provider_update_compatible(current, candidate, current_awg, candidate_awg) {
+function provider_update_compatible(current, candidate) {
     if (managed_provider(current) == null || managed_provider(candidate) == null)
         return false;
     let old = read_json_file(managed_provider(current).path);
@@ -807,8 +807,7 @@ function provider_update_compatible(current, candidate, current_awg, candidate_a
         type(old.configuration) != "object" || type(fresh.configuration) != "object" ||
         type(fresh.outbounds) != "array" || length(fresh.outbounds) == 0)
         return false;
-    return sprintf("%J", canonical_value(old.configuration)) == sprintf("%J", canonical_value(fresh.configuration)) &&
-        sprintf("%J", canonical_value(current_awg)) == sprintf("%J", canonical_value(candidate_awg));
+    return sprintf("%J", canonical_value(old.configuration)) == sprintf("%J", canonical_value(fresh.configuration));
 }
 
 function install_provider_file(temp_config, config_path) {
@@ -960,16 +959,38 @@ function update_providers(only_if_pending) {
         return false;
     }
     let candidate = read_json_file(candidate_path);
-    if (!provider_update_compatible(current, candidate, read_json_file(config_path + ".awg.json"), read_json_file(candidate_path + ".awg.json"))) {
-        log_message("Subscription routing or native AWG interfaces changed; Apply configuration is required. Running services were preserved", "error");
+    if (!provider_update_compatible(current, candidate)) {
+        log_message("Subscription routing changed; Apply configuration is required. Running services were preserved", "error");
+        remove_provider_stage(candidate_path);
+        return false;
+    }
+    let manifest_path = config_path + ".awg.json";
+    let candidate_provider_path = managed_provider(candidate).path;
+    let old_payload = fs.readfile(provider.path);
+    let payload = read_json_file(candidate_provider_path);
+    let awg_plan;
+    try {
+        awg_plan = runtime_awg.plan_update(runtime_awg.profiles(manifest_path),
+            runtime_awg.profiles(candidate_path + ".awg.json"), payload.outbounds);
+    }
+    catch (error) {
+        log_message("Unable to prepare native AWG subscription update; running interfaces were preserved", "error");
+        remove_provider_stage(candidate_path);
+        return false;
+    }
+    // Start only new native instances before publishing their proxy references.
+    // Existing instances retain their slots, processes and connections.
+    if (old_payload == null || !runtime_awg.write_private(candidate_provider_path, sprintf("%J\n", payload)) ||
+        !runtime_awg.begin_update(manifest_path, awg_plan)) {
+        log_message("Native AWG subscription preparation failed; running provider was preserved", "error");
         remove_provider_stage(candidate_path);
         return false;
     }
     // The provider validates constructors, references, cycles and startup in an
     // isolated graph before atomically publishing it. No external check/reload.
-    let old_payload = fs.readfile(provider.path);
-    let new_payload = fs.readfile(managed_provider(candidate).path);
-    if (old_payload == null || new_payload == null || !save_config_file(managed_provider(candidate).path, provider.path)) {
+    if (!save_config_file(candidate_provider_path, provider.path)) {
+        if (!runtime_awg.rollback_update(manifest_path, awg_plan))
+            log_message("Native AWG cleanup remains pending after provider file failure", "error");
         remove_provider_stage(candidate_path);
         return false;
     }
@@ -983,16 +1004,21 @@ function update_providers(only_if_pending) {
         }
         let old_revision = substr(trim(command_output_from_args([ "sha256sum", provider.path ])), 0, 64);
         let restored = module_success([ LIB_DIR + "/diagnostics/runtime.uc", "clash-api", "update_provider", provider.tag, old_revision ]);
+        // With an uncertain API outcome either graph may still be live. Keep
+        // both sets of native interfaces until a retry confirms the provider.
+        if (restored && !runtime_awg.rollback_update(manifest_path, awg_plan))
+            log_message("Previous provider confirmed but native AWG cleanup remains pending", "error");
         log_message(restored ? "Dynamic provider update failed; previous graph restored and confirmed" : "Dynamic provider update could not be confirmed; previous file restored and retry remains pending", "error");
         remove_provider_stage(candidate_path);
         return false;
     }
-    let ok = true;
+    let ok = runtime_awg.commit_update(manifest_path, awg_plan);
+    if (!ok) log_message("Provider applied but native AWG cleanup remains pending", "error");
     for (let path in fs.glob(stage_dir + "/*.json"))
         if (!fs.rename(path, SECTION_CACHE_DIR + "/" + split(path, "/")[-1])) ok = false;
     remove_provider_stage(candidate_path);
     if (ok) remove_file(pending_path);
-    if (!ok) log_message("Provider applied but section metadata could not be published", "error");
+    if (!ok) log_message("Provider applied but subscription finalization remains pending", "error");
     return ok;
 }
 
@@ -1005,7 +1031,7 @@ else if (mode == "init-config")
 else if (mode == "update-providers")
     exit(update_providers(arg_bool(ARGV[1] || "0")) ? 0 : 1);
 else if (mode == "provider-update-compatible-fixture")
-    exit(provider_update_compatible(read_json_file(ARGV[1]), read_json_file(ARGV[2]), read_json_file(ARGV[3]), read_json_file(ARGV[4])) ? 0 : 1);
+    exit(provider_update_compatible(read_json_file(ARGV[1]), read_json_file(ARGV[2])) ? 0 : 1);
 else if (mode == "save-config-file-fixture")
     exit(save_config_file(ARGV[1] || "", ARGV[2] || "") ? 0 : 1);
 else if (mode == "check-config-fixture") {

@@ -7,6 +7,13 @@ lib="$root/anticheburnet/files/usr/lib"
 test_dir=$(mktemp -d)
 pids=()
 cleanup() {
+  local status=$?
+  if (( status != 0 )); then
+    printf 'HAPP runtime failure diagnostics:\n' >&2
+    for log in "$test_dir/"*.log; do
+      [[ -f "$log" ]] && { printf '\n%s\n' "$log" >&2; cat "$log" >&2; }
+    done
+  fi
   for pid in "${pids[@]}"; do kill "$pid" 2>/dev/null || true; done
   ip address del 192.0.2.1/32 dev lo 2>/dev/null || true
   rm -rf "$test_dir"
@@ -98,5 +105,6 @@ for name in ['hosts.test','www.direct.test']:
  s.sendto(query,('127.0.0.42',53));response=s.recv(4096)
  assert response[:2]==b'\x12\x34' and response[3]&15==0 and response[-4:]==bytes([127,0,0,1])
 PY
-[[ "$(curl --noproxy '' -fsS --max-time 10 --socks5-hostname 127.0.0.1:10823 http://127.0.0.1:18081/source)" == 127.0.0.1 ]]
+actual=$(curl --noproxy '' -fsS --max-time 10 --socks5-hostname 127.0.0.1:10823 http://127.0.0.1:18081/source)
+[[ "$actual" == 127.0.0.1 ]] || { echo "Wrong reverse-DNS route for IP-only request: $actual (expected 127.0.0.1)" >&2; exit 1; }
 echo 'ARM64 Happ header, DNS, ECH Hysteria2, block/proxy/direct priority and GeoIP after resolution passed'

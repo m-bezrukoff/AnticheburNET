@@ -1,0 +1,36 @@
+name: Focused ARM64 routing runtime
+on:
+  workflow_dispatch:
+    inputs:
+      diagnostics_run:
+        description: Completed component build containing happ-runtime-diagnostics
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  routing:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5.0.0
+      - name: Prepare native test interpreter
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libjson-c-dev libglib2.0-0 iproute2 openssl
+          git clone --depth 1 --branch v0.0.20250529 https://github.com/jow-/ucode.git /tmp/ucode
+          cmake -S /tmp/ucode -B /tmp/ucode/build -DUBUS_SUPPORT=OFF -DUCI_SUPPORT=OFF -DULOOP_SUPPORT=OFF
+          cmake --build /tmp/ucode/build --parallel
+          sudo cmake --install /tmp/ucode/build
+          sudo ldconfig
+      - name: Restore tested ARM64 core and emulator
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DIAGNOSTICS_RUN: ${{ inputs.diagnostics_run }}
+        run: |
+          gh run download "$DIAGNOSTICS_RUN" --repo "$GITHUB_REPOSITORY" --name happ-runtime-diagnostics --dir .build/routing-runtime
+          chmod +x .build/routing-runtime/components/sing-box.arm64 .build/routing-runtime/test-qemu/build/qemu-aarch64
+          sudo ln -s "$PWD/.build/routing-runtime/test-qemu/build/qemu-aarch64" /usr/local/bin/qemu-aarch64
+      - name: Check HAPP routes and DNS on ARM64
+        run: sudo bash components/test-happ-runtime.sh "$PWD/.build/routing-runtime/components"

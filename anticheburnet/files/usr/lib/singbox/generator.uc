@@ -1594,7 +1594,9 @@ function add_mixed_proxy_for_section(config, section, service_address) {
     push(config.inbounds, inbound);
     // The section's SOCKS/HTTP listener must detect BitTorrent before its
     // catch-all section route, just like transparent TCP/UDP traffic does.
-    push(config.route.rules[0].inbound, inbound.tag);
+    // Keep SOCKS destination / reverse-DNS metadata intact: HTTP/TLS sniffing
+    // here could replace a previously learned domain with an IP Host header.
+    config.route.rules = [ { action: "sniff", inbound: inbound.tag, sniffer: [ "bittorrent" ] }, ...config.route.rules ];
     if (runtime_happ_policies[section[".name"]] != null) {
         runtime_happ.append_routes(config, runtime_happ_policies[section[".name"]], { inbound: inbound.tag }, runtime_constants.outbound_tag(section[".name"]));
         runtime_happ.append_dns(config, runtime_happ_policies[section[".name"]], { inbound: inbound.tag });

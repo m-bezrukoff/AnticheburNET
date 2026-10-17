@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+node - "$root" <<'JS'
+const fs = require('fs');
+const vm = require('vm');
+const assert = require('assert/strict');
+const source = fs.readFileSync(process.argv[2] + '/luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js', 'utf8');
+const code = source.slice(source.indexOf('function addRoutingStrategy('), source.indexOf('const EntryPoint ='));
+const registered = [], options = {};
+function ListValue() {}
+ListValue.prototype.load = function () { return 'saved-target'; };
+const context = {
+  form: { NamedSection() {}, ListValue }, UCI_PACKAGE: 'anticheburnet', _: s => s,
+  document: { createDocumentFragment: () => ({ fragment: true }) },
+  uci: { sections: (_config, _type, callback) => [
+    { '.name': 'main', action: 'connection', enabled: '1', label: 'Main' },
+    { '.name': 'off', action: 'connection', enabled: '0' },
+    { '.name': 'bypass', action: 'bypass', enabled: '1' },
+    { '.name': 'legacy', action: 'proxy' },
+  ].forEach(callback) },
+};
+const strategyNode = { querySelector: () => ({ removeAttribute: key => assert.equal(key, 'id') }) };
+const section = {
+  render: async () => strategyNode,
+  option: (_type, key) => options[key] = {
+    keylist: [], vallist: [], dependencies: [],
+    value(k, v) { this.keylist.push(k); this.vallist.push(v); },
+    depends(k, v) { this.dependencies.push([k, v]); },
+  },
+};
+const map = { section: (...args) => { registered.push(args); return section; } };
+let inserted = 0;
+const rules = { render: async () => ({ firstChild: 'table', insertBefore(node, before) {
+  assert.equal(node, strategyNode); assert.equal(before, 'table'); inserted++;
+} }) };
+vm.runInNewContext(code, context);
+context.addRoutingStrategy(map, rules);
+assert.equal(registered.length, 1);
+assert.equal(registered[0][1], 'settings');
+assert.deepEqual(options.routing_strategy.keylist, ['happ', 'selected', 'tunnel']);
+assert.equal(options.routing_strategy.default, 'selected');
+assert.equal(options.routing_strategy.rmempty, false);
+assert.equal(options.routing_section.load('settings'), 'saved-target');
+assert.deepEqual(Array.from(options.routing_section.keylist), ['', 'main', 'legacy']);
+(async () => {
+  assert.equal((await section.render()).fragment, true);
+  await rules.render(); await rules.render();
+  assert.equal(inserted, 2, 'Strategy must remain in Sections after a form refresh');
+  console.log('Routing strategy choices, connection filtering and Sections placement passed');
+})().catch(error => { console.error(error); process.exitCode = 1; });
+JS

@@ -2359,3 +2359,27 @@ msgstr "Ошибка"
 
 msgid "Interrupted"
 msgstr "Прервано"
+
+msgid "Routing strategy"
+msgstr "Выбор стратегии маршрутизации"
+
+msgid "Select routing strategy"
+msgstr "Стратегия"
+
+msgid "HAPP rules: all through the tunnel except exclusions"
+msgstr "По правилам Happ: всё в туннель, кроме исключений"
+
+msgid "Direct by default, exceptions through the tunnel"
+msgstr "Всё напрямую, исключения в туннель"
+
+msgid "All through the tunnel"
+msgstr "Всё в туннель"
+
+msgid "Tunnel connection"
+msgstr "Подключение для туннеля"
+
+msgid "Global tunnel strategies ignore section conditions. Recognized BitTorrent remains direct."
+msgstr "В стратегиях Happ и «Всё в туннель» условия секций не применяются. Распознанный BitTorrent идёт напрямую."
+
+msgid "First enabled connection"
+msgstr "Первое включённое подключение"

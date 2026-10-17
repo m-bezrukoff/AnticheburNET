@@ -97,6 +97,79 @@ function configureGridSection(sectionRef, type, title, addTitle) {
   }
 }
 
+function addRoutingStrategy(map, rulesSection) {
+  const strategySection = map.section(
+    form.NamedSection,
+    "settings",
+    "settings",
+    _("Routing strategy"),
+  );
+  strategySection.addremove = false;
+  strategySection.parentoption = rulesSection;
+
+  const strategy = strategySection.option(
+    form.ListValue,
+    "routing_strategy",
+    _("Select routing strategy"),
+  );
+  strategy.value(
+    "happ",
+    _("HAPP rules: all through the tunnel except exclusions"),
+  );
+  strategy.value(
+    "selected",
+    _("Direct by default, exceptions through the tunnel"),
+  );
+  strategy.value("tunnel", _("All through the tunnel"));
+  strategy.default = "selected";
+  strategy.rmempty = false;
+
+  const target = strategySection.option(
+    form.ListValue,
+    "routing_section",
+    _("Tunnel connection"),
+    _(
+      "Global tunnel strategies ignore section conditions. Recognized BitTorrent remains direct.",
+    ),
+  );
+  target.value("", _("First enabled connection"));
+  target.depends("routing_strategy", "happ");
+  target.depends("routing_strategy", "tunnel");
+  target.rmempty = true;
+  target.load = function (sectionId) {
+    this.keylist = [];
+    this.vallist = [];
+    this.value("", _("First enabled connection"));
+    uci.sections(UCI_PACKAGE, "section", (item) => {
+      if (
+        item.enabled !== "0" &&
+        ["connection", "proxy", "outbound", "vpn"].includes(item.action)
+      )
+        this.value(item[".name"], item.label || item[".name"]);
+    });
+    return form.ListValue.prototype.load.call(this, sectionId);
+  };
+
+  // Keep the normal form load/save lifecycle, but render these global options
+  // inside the Sections tab on every refresh instead of creating another tab.
+  const renderStrategy = strategySection.render.bind(strategySection);
+  strategySection.render = () =>
+    Promise.resolve(document.createDocumentFragment());
+  const renderRules = rulesSection.render.bind(rulesSection);
+  rulesSection.render = function () {
+    return Promise.all([renderStrategy(), renderRules()]).then(
+      ([options, rules]) => {
+        const settingsNode = options.querySelector(
+          '[data-section-id="settings"]',
+        );
+        if (settingsNode) settingsNode.removeAttribute("id");
+        rules.insertBefore(options, rules.firstChild);
+        return rules;
+      },
+    );
+  };
+}
+
 const EntryPoint = {
   async render() {
     main.injectGlobalStyles();
@@ -399,6 +472,7 @@ const EntryPoint = {
       loadActionProvidersAvailability: loadUiCapabilities,
     });
     section.createSectionContent(rulesSection);
+    addRoutingStrategy(anticheburnetMap, rulesSection);
 
     const serverSection = anticheburnetMap.section(
       form.GridSection,

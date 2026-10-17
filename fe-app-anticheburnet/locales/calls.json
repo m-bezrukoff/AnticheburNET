@@ -5653,5 +5653,62 @@
     "places": [
       "src/anticheburnet/tabs/diagnostic/checks/runZapret2Check.ts:107"
     ]
+  },
+  {
+    "call": "Routing strategy",
+    "key": "Routing strategy",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:105"
+    ]
+  },
+  {
+    "call": "Select routing strategy",
+    "key": "Select routing strategy",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:113"
+    ]
+  },
+  {
+    "call": "HAPP rules: all through the tunnel except exclusions",
+    "key": "HAPP rules: all through the tunnel except exclusions",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:117"
+    ]
+  },
+  {
+    "call": "Direct by default, exceptions through the tunnel",
+    "key": "Direct by default, exceptions through the tunnel",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:121"
+    ]
+  },
+  {
+    "call": "All through the tunnel",
+    "key": "All through the tunnel",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:123"
+    ]
+  },
+  {
+    "call": "Tunnel connection",
+    "key": "Tunnel connection",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:130"
+    ]
+  },
+  {
+    "call": "Global tunnel strategies ignore section conditions. Recognized BitTorrent remains direct.",
+    "key": "Global tunnel strategies ignore section conditions. Recognized BitTorrent remains direct.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:132"
+    ]
+  },
+  {
+    "call": "First enabled connection",
+    "key": "First enabled connection",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:135",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:142"
+    ]
   }
 ]

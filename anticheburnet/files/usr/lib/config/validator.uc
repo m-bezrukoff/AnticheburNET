@@ -1705,6 +1705,11 @@ function validate_runtime_mark_ranges_context(context) {
 function validate_runtime_config(context) {
     let settings = settings_section();
     let sections = sections_by_type("section");
+    let strategy = require("routing.strategy");
+    if (!contains([ "selected", "happ", "tunnel" ], strategy.mode(settings)))
+        fail_validation("Unsupported routing strategy. Aborted.");
+    if (strategy.global_tunnel(settings) && strategy.tunnel_section(settings, sections) == null)
+        fail_validation("Routing strategy requires an enabled tunnel connection. Aborted.");
 
     validate_runtime_mark_ranges_context(context);
     validate_dns_settings(settings, sections, context);

@@ -43,6 +43,14 @@ function config(settings, runtime) {
     if (type(runtime) == "object" && bool_value(runtime.source_aware_dns))
         push(result.rules, { action: "reject", inbound: runtime_constants.SOURCE_DNS_INBOUND_TAG });
 
+    // Peer ports are arbitrary. Match the detected protocol before section
+    // policies (including HAPP's global proxy route) select a tunnel.
+    push(result.rules, {
+        action: "route",
+        protocol: "bittorrent",
+        outbound: runtime_constants.DIRECT_OUTBOUND_TAG
+    });
+
     if (output_network_interface != "")
         result.default_interface = output_network_interface;
     if (bool_option(settings, "disable_quic", false))

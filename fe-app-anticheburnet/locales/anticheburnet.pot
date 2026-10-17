@@ -3401,3 +3401,27 @@ msgstr ""
 
 msgid "Interrupted"
 msgstr ""
+
+msgid "Routing strategy"
+msgstr ""
+
+msgid "Select routing strategy"
+msgstr ""
+
+msgid "HAPP rules: all through the tunnel except exclusions"
+msgstr ""
+
+msgid "Direct by default, exceptions through the tunnel"
+msgstr ""
+
+msgid "All through the tunnel"
+msgstr ""
+
+msgid "Tunnel connection"
+msgstr ""
+
+msgid "Global tunnel strategies ignore section conditions. Recognized BitTorrent remains direct."
+msgstr ""
+
+msgid "First enabled connection"
+msgstr ""

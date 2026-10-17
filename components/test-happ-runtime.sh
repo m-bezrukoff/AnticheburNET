@@ -30,7 +30,7 @@ profile={'Name':'ARM64 runtime', 'DirectSites':['domain:direct.test'], 'DirectIp
 (p/'routing-header').write_text('happ://routing/onadd/'+base64.b64encode(json.dumps(profile).encode()).decode())
 link='hy2://local-test@127.0.0.1:18445?'+urllib.parse.urlencode({'sni':'localhost','insecure':'1','ech':config.replace('\n','')})+'#Happ-runtime'
 (p/'subscription').write_text(base64.b64encode(link.encode()).decode())
-(p/'fixture').write_text(json.dumps({'settings':{'.name':'settings','.type':'settings','dns_server':'1.1.1.1','dns_type':'udp','cache_path':str(p/'cache.db')},
+(p/'fixture').write_text(json.dumps({'settings':{'.name':'settings','.type':'settings','routing_strategy':'happ','dns_server':'1.1.1.1','dns_type':'udp','cache_path':str(p/'cache.db')},
  'section':[{'.name':'happ_runtime','.type':'section','enabled':'1','action':'proxy','subscription_urls':['http://127.0.0.1:18081/subscription'],
  'source_ip_cidr':['127.0.0.1/32'],'fully_routed_ips':['127.0.0.3/32'],'ports':['18081'],
  'subscription_user_agent':'Happ','mixed_proxy_enabled':'1','mixed_proxy_port':'10823'}]}))

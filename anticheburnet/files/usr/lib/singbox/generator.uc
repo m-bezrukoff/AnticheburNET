@@ -13,8 +13,10 @@ let runtime_subscription = require("singbox.subscription");
 let runtime_reality = require("singbox.reality");
 let runtime_awg = require("singbox.awg");
 let runtime_happ = require("singbox.happ");
+let routing_strategy = require("routing.strategy");
 let runtime_happ_profiles = {};
 let runtime_happ_policies = {};
+let runtime_happ_section = "";
 let runtime_url = require("core.url");
 let runtime_urltest = require("singbox.urltest");
 let source_rulesets = require("routing.rulesets");
@@ -785,7 +787,7 @@ function add_subscription_source_with_state(config, section, source_index, sourc
         return 0;
 
     let routing = runtime_subscription.read_source_routing(source_section);
-    if (routing != null && routing.enabled) {
+    if (section_name == runtime_happ_section && routing != null && routing.enabled) {
         if (runtime_happ_profiles[section_name] != null && sprintf("%J", runtime_happ_profiles[section_name]) != sprintf("%J", routing))
             runtime_generate_unsupported("conflicting Happ routing profiles require separate sections");
         runtime_happ_profiles[section_name] = routing;
@@ -1590,6 +1592,9 @@ function add_mixed_proxy_for_section(config, section, service_address) {
         inbound.users = [{ username, password }];
     }
     push(config.inbounds, inbound);
+    // The section's SOCKS/HTTP listener must detect BitTorrent before its
+    // catch-all section route, just like transparent TCP/UDP traffic does.
+    push(config.route.rules[0].inbound, inbound.tag);
     if (runtime_happ_policies[section[".name"]] != null) {
         runtime_happ.append_routes(config, runtime_happ_policies[section[".name"]], { inbound: inbound.tag }, runtime_constants.outbound_tag(section[".name"]));
         runtime_happ.append_dns(config, runtime_happ_policies[section[".name"]], { inbound: inbound.tag });
@@ -2206,7 +2211,7 @@ function add_connection_interfaces(config, state, section, taken, selector_tags,
     let awg_settings = object_or_empty(uci_core.get_all("anticheburnet_awg", "settings"));
     let managed_awg = as_string(awg_settings.interface || "awg0");
     for (let i = 0; i < length(items); i++) {
-        if (as_string(items[i]) == managed_awg) {
+        if (section[".name"] == runtime_happ_section && as_string(items[i]) == managed_awg) {
             let path = as_string(awg_settings.config_file || "/etc/anticheburnet/awg0.conf");
             let text = fs.readfile(path) || "";
             let metadata = match("\n" + text, /\n# AnticheburNET-Happ-Routing = ([A-Za-z0-9+\/=]+)/);
@@ -2841,12 +2846,6 @@ function add_fully_routed_ips_rules(config, section) {
     if (target.outbound)
         route_rule.outbound = target.outbound;
     route_rule.source_ip_cidr = single_or_array(source_ip_cidr);
-    if (runtime_happ_policies[section[".name"]] != null) {
-        let scope = { inbound: tproxy_inbound_matcher(), source_ip_cidr: route_rule.source_ip_cidr };
-        runtime_happ.append_routes(config, runtime_happ_policies[section[".name"]], scope, outbound_tag(section[".name"]));
-        runtime_happ.append_dns(config, runtime_happ_policies[section[".name"]], { source_ip_cidr: route_rule.source_ip_cidr });
-        return;
-    }
     push(config.route.rules, route_rule);
 }
 
@@ -2915,20 +2914,6 @@ function add_combined_route_for_section(config, section) {
         route_rule.domain_keyword != null || route_rule.domain_regex != null ||
         route_rule.ip_cidr != null || route_rule.port != null || route_rule.port_range != null ||
         route_rule.rule_set != null;
-    if (runtime_happ_policies[section_name] != null) {
-        let scope = { ...route_rule };
-        delete scope.action;
-        delete scope.outbound;
-        runtime_happ.append_routes(config, runtime_happ_policies[section_name], scope, outbound_tag(section_name));
-        delete scope.inbound;
-        // A DNS question has no application port or destination IP yet.
-        // Keep domain/client constraints; traffic keeps the complete scope.
-        delete scope.port;
-        delete scope.port_range;
-        delete scope.ip_cidr;
-        runtime_happ.append_dns(config, runtime_happ_policies[section_name], scope);
-        return;
-    }
     if (has_route_matchers) {
         let resolve = runtime_route.resolve_rule_for_section(section, route_rule);
         if (type(resolve) == "object" && resolve.warning)
@@ -3148,14 +3133,28 @@ function generate_config(output_path, service_address, mwan3_active, supports_xh
 
     let sections = enabled_sections(deferred_sections);
     let servers = enabled_servers();
+    let strategy = routing_strategy.mode(settings);
+    if (strategy != "selected" && strategy != "happ" && strategy != "tunnel")
+        runtime_generate_unsupported("unsupported routing strategy " + strategy);
+    let tunnel = routing_strategy.tunnel_section(settings, sections);
+    if (strategy != "selected" && tunnel == null)
+        runtime_generate_unsupported("routing strategy requires an enabled tunnel connection");
+    runtime_happ_section = strategy == "happ" ? tunnel[".name"] : "";
     if (length(sections) == 0 && length(servers) == 0 && trim(as_string(deferred_sections)) == "")
         runtime_generate_unsupported("no enabled sections");
 
-    let source_aware_dns = source_aware_dns_sources(sections);
+    let source_aware_dns = strategy == "selected" ? source_aware_dns_sources(sections) : [];
     let config = base_config(settings, service_address, {
         mwan3_active: cli_bool(mwan3_active),
         source_aware_dns: length(source_aware_dns) > 0
     });
+    if (strategy == "tunnel") {
+        for (let server in config.dns.servers)
+            if (server.tag == runtime_constants.DNS_SERVER_TAG)
+                server.detour = outbound_tag(tunnel[".name"]);
+        // Resolve the tunnel endpoint outside that tunnel to avoid a DNS loop.
+        config.route.default_domain_resolver = runtime_constants.BOOTSTRAP_DNS_SERVER_TAG;
+    }
     add_source_aware_dns_support(config, source_aware_dns);
     let taken = reserved_runtime_tag_set(config.outbounds);
     reserve_section_outbound_tags(sections, taken);
@@ -3165,12 +3164,27 @@ function generate_config(output_path, service_address, mwan3_active, supports_xh
         add_outbound_for_section(config, section, taken, sections);
     for (let section in sections) {
         let name = section[".name"];
-        if (runtime_happ_profiles[name] != null)
+        if (name == runtime_happ_section && runtime_happ_profiles[name] == null)
+            runtime_generate_unsupported("Happ routing selected for section " + name + " but the subscription has no enabled routing profile");
+        if (runtime_happ_profiles[name] != null) {
+            // This strategy explicitly selects tunnel-by-default while
+            // preserving the subscription's ordered exceptions and DNS.
+            runtime_happ_profiles[name].global_proxy = true;
             runtime_happ_policies[name] = runtime_happ.prepared(config, runtime_happ_profiles[name], outbound_tag(name), "/tmp/anticheburnet-happ-" + name);
+        }
     }
-    add_service_route_rules(config, sections);
-    for (let section in sections)
-        add_route_for_section(config, section);
+    add_service_route_rules(config, strategy == "selected" ? sections : [ tunnel ]);
+    if (strategy == "selected") {
+        for (let section in sections)
+            add_route_for_section(config, section);
+    }
+    else if (strategy == "happ") {
+        runtime_happ.append_routes(config, runtime_happ_policies[tunnel[".name"]], { inbound: tproxy_inbound_matcher() }, outbound_tag(tunnel[".name"]));
+        runtime_happ.append_dns(config, runtime_happ_policies[tunnel[".name"]], {});
+    }
+    else {
+        push(config.route.rules, { action: "route", inbound: tproxy_inbound_matcher(), outbound: outbound_tag(tunnel[".name"]) });
+    }
     add_source_aware_dns_fallback(config, source_aware_dns);
     add_server_routes(config, servers, sections);
     add_service_mixed_proxy(config, settings, sections);

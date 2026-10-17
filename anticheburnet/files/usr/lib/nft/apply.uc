@@ -9,7 +9,7 @@ let domain_config = require("config.domain");
 let connections = require("config.connections");
 let routing_rulesets = require("routing.rulesets");
 let runtime_constants = require("singbox.constants");
-let runtime_subscription = require("singbox.subscription");
+let routing_strategy = require("routing.strategy");
 const CONFIG_NAME = getenv("ANTICHEBURNET_CONFIG_NAME") || "anticheburnet";
 const DNS_SOURCE_SET = "anticheburnet_dns_sources";
 const DNS_SOURCE6_SET = "anticheburnet_dns_sources6";
@@ -628,24 +628,13 @@ function section_has_fully_routed_ips(section) {
     return length(list_option(section, "fully_routed_ips")) > 0;
 }
 
-function section_has_happ_real_ip_routing(section) {
-    if (!bool_option(section, "enabled", true) ||
-        !connections.is_connections_action(option(section, "action", "")))
-        return false;
-    return runtime_subscription.has_happ_real_ip_routing(section[".name"],
-        length(connections.subscription_urls(section)));
-}
-
-function nft_add_happ_real_ip_rules_from_sections(sections, table, interface_set, mark) {
-    let enabled = false;
-    for (let section in sections)
-        if (section_has_happ_real_ip_routing(section)) enabled = true;
+function nft_add_happ_real_ip_rules_from_sections(sections, table, interface_set, mark, settings) {
+    let enabled = routing_strategy.global_tunnel(settings) && routing_strategy.tunnel_section(settings, sections) != null;
     if (!enabled)
         return true;
-    // Happ FakeDNS=false returns real addresses. They must reach sing-box so
-    // its reverse DNS mapping, profile rules and final direct route can decide
-    // the exit. Local destinations and explicit priority verdicts run first;
-    // marked proxy/provider sockets are excluded to prevent recursion.
+    // Both global tunnel strategies must intercept real IPv4/IPv6 addresses.
+    // Local destinations and marked proxy/provider sockets remain excluded
+    // to prevent recursion.
     for (let protocol in [ "tcp", "udp" ]) {
         let args = [ "meta", "mark", "0", "meta", "l4proto", protocol,
             "meta", "mark", "set", mark, "counter" ];
@@ -1497,7 +1486,6 @@ function nft_rule_signature_body(body, section) {
 
     let action = option(section, "action", "");
     body = signature_add_value(body, "rule." + section_name + ".action", action);
-    body = signature_add_value(body, "rule." + section_name + ".happ_real_ip", section_has_happ_real_ip_routing(section) ? "1" : "0");
     if (action == "dns") {
         body = signature_add_value(body, "rule." + section_name + ".source_ip_cidr", section_rule_condition_csv(section, "source_ip_cidr", "subnets"));
         body = signature_add_value(body, "rule." + section_name + ".source_aware_dns", connections.has_dns_matchers(section) ? "1" : "0");
@@ -1522,6 +1510,8 @@ function nft_runtime_signature_from_settings_and_sections(settings, sections) {
 
     body = signature_add_value(body, "settings.source_network_interfaces", option(settings, "source_network_interfaces", "br-lan"));
     body = signature_add_value(body, "settings.exclude_ntp", bool_option(settings, "exclude_ntp", false) ? "1" : "0");
+    body = signature_add_value(body, "settings.routing_strategy", routing_strategy.mode(settings));
+    body = signature_add_value(body, "settings.routing_section", option(settings, "routing_section", ""));
 
     for (let section in sections)
         body = nft_rule_signature_body(body, object_or_empty(section));
@@ -1582,11 +1572,11 @@ function nft_create_full_runtime_from_uci(rt_table, table, localv4_set, common_s
 
     return ensure_tproxy_route_rule(rt_table, fakeip_mark) &&
         nft_create_runtime_base_from_uci(table, localv4_set, common_set, port_set, ip_port_set, interface_set, fakeip_mark, outbound_mark, fakeip_range, tproxy_port, localv6_set, common6_set, ip_port6_set, fakeip6_range, tproxy6_address) &&
-        nft_add_section_priority_rules_from_sections(uci_sections("section"), table, interface_set, localv4_set, localv6_set, fakeip_mark, fakeip_range, fakeip6_range) &&
+        nft_add_section_priority_rules_from_sections(routing_strategy.global_tunnel(uci_settings()) ? [] : uci_sections("section"), table, interface_set, localv4_set, localv6_set, fakeip_mark, fakeip_range, fakeip6_range) &&
         nft_create_provider_output_rules_from_uci(table, "zapret", zapret_bin, zapret_route_mark_base, zapret_queue_base, zapret_desync_mark, zapret_desync_mark_postnat) &&
         nft_create_provider_output_rules_from_uci(table, "zapret2", zapret2_bin, zapret2_route_mark_base, zapret2_queue_base, zapret2_desync_mark, zapret2_desync_mark_postnat) &&
         nft_create_runtime_output_rules(table, localv4_set, common_set, port_set, ip_port_set, fakeip_mark, fakeip_range, localv6_set, common6_set, ip_port6_set, fakeip6_range) &&
-        nft_add_happ_real_ip_rules_from_sections(uci_sections("section"), table, interface_set, fakeip_mark);
+        nft_add_happ_real_ip_rules_from_sections(uci_sections("section"), table, interface_set, fakeip_mark, uci_settings());
 }
 
 function nft_table_present(table) {
@@ -1899,7 +1889,7 @@ else if (mode == "nft-add-section-priority-rules-fixture")
 else if (mode == "nft-add-happ-real-ip-rules-fixture") {
     let data = object_or_empty(common_read_json_file(ARGV[1]));
     connections.set_item_sections_from_data(data);
-    exit(nft_add_happ_real_ip_rules_from_sections(fixture_section_list(data, "section"), ARGV[2], ARGV[3], ARGV[4]) ? 0 : 1);
+    exit(nft_add_happ_real_ip_rules_from_sections(fixture_section_list(data, "section"), ARGV[2], ARGV[3], ARGV[4], fixture_settings(data)) ? 0 : 1);
 }
 else if (mode == "nft-create-full-runtime-from-uci")
     exit(nft_create_full_runtime_from_uci(ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6], ARGV[7], ARGV[8], ARGV[9], ARGV[10], ARGV[11], ARGV[12], ARGV[13], ARGV[14], ARGV[15], ARGV[16], ARGV[17], ARGV[18], ARGV[19], ARGV[20], ARGV[21], ARGV[22], ARGV[23], ARGV[24], ARGV[25], ARGV[26]) ? 0 : 1);

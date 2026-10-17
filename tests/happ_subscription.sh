@@ -18,7 +18,7 @@ routing='happ://routing/onadd/'+base64.b64encode(json.dumps(profile).encode()).d
 (p/'profile').write_text(json.dumps(profile))
 (p/'body').write_text('hy2://test@example.com:443?ech=QUJDRA==#Happ%20node\n')
 (p/'wrapped').write_text(base64.b64encode((routing+'\n'+(p/'body').read_text()).encode()).decode())
-(p/'fixture').write_text(json.dumps({'settings':{'.name':'settings','.type':'settings','dns_server':'1.1.1.1'},
+(p/'fixture').write_text(json.dumps({'settings':{'.name':'settings','.type':'settings','routing_strategy':'happ','dns_server':'1.1.1.1'},
  'section':[{'.name':'happ_test','.type':'section','enabled':'1','action':'proxy','subscription_urls':['https://example.com/sub'],'subscription_user_agent':'Happ'}]}))
 def varint(n):
  r=bytearray()
@@ -68,6 +68,9 @@ assert 'tproxy6-in' in c['route']['rules'][0]['inbound']
 hy=next(o for o in c['outbounds'] if o['type']=='hysteria2')
 assert hy['tls']['ech']=={'enabled':True,'config':['-----BEGIN ECH CONFIGS-----','QUJDRA==','-----END ECH CONFIGS-----']}
 rules=c['route']['rules']; text=json.dumps(rules)
+bt=next(i for i,r in enumerate(rules) if r.get('protocol')=='bittorrent')
+assert rules[bt]['outbound']=='direct-out'
+assert bt < next(i for i,r in enumerate(rules) if 'example.ru' in json.dumps(r))
 for rule in rules:
  if rule.get('type')=='logical' and rule.get('mode')=='and':
   assert rule['rules'][0].get('inbound'), 'Route scope must survive DNS generation'
@@ -82,6 +85,61 @@ assert servers[remote['domain_resolver']]['predefined']['dns.example']==['192.0.
 assert 'fakeip-server' not in json.dumps(c['dns']['rules'][3:])
 PY
 echo 'Happ routing header/body, policy reload, DAT conversion, DNS and generated routes passed'
+# The same subscription must not override the selected-sites method, including
+# when the option is absent in an existing configuration.
+for method in selected default; do
+python3 - "$work/fixture" "$work/selected-fixture" "$method" <<'PY'
+import json,sys
+v=json.load(open(sys.argv[1]));s=v['section'][0]
+if sys.argv[3]=='default': v['settings'].pop('routing_strategy',None)
+else: v['settings']['routing_strategy']=sys.argv[3]
+s['domain_suffix']=['chosen.example']
+open(sys.argv[2],'w').write(json.dumps(v))
+PY
+TMP_SUBSCRIPTION_FOLDER="$work/subscriptions" ucode -L "$lib" "$lib/singbox/generator.uc" generate-config-fixture "$work/selected-fixture" "$work/selected-config" 127.0.0.1 0 true '' 1.14.1
+python3 - "$work/selected-config" <<'PY'
+import json,sys
+c=json.load(open(sys.argv[1]))
+assert c['route']['final']=='direct-out'
+assert any(r.get('protocol')=='bittorrent' and r.get('outbound')=='direct-out' for r in c['route']['rules'])
+assert '-happ-' not in json.dumps(c)
+assert any(r.get('domain_suffix')==['chosen.example'] and r.get('outbound')!='direct-out' for r in c['route']['rules'])
+PY
+done
+mv "$work/subscriptions/happ_test-subscription-1.json" "$work/saved-profile"
+python3 - "$work/saved-profile" "$work/subscriptions/happ_test-subscription-1.json" <<'PY'
+import json,sys
+v=json.load(open(sys.argv[1]));v.pop('happ_routing')
+open(sys.argv[2],'w').write(json.dumps(v))
+PY
+if TMP_SUBSCRIPTION_FOLDER="$work/subscriptions" ucode -L "$lib" "$lib/singbox/generator.uc" generate-config-fixture "$work/fixture" "$work/missing-profile" 127.0.0.1 0 true '' 1.14.1 > "$work/missing-log" 2>&1; then
+  echo 'HAPP method must reject a missing profile' >&2; exit 1
+fi
+grep -Fq 'no enabled routing profile' "$work/missing-log"
+# Full-tunnel must work without HAPP metadata and must not reuse HAPP DNS or
+# destination exclusions. An explicitly selected connection wins over order.
+python3 - "$work/selected-fixture" "$work/tunnel-fixture" <<'PY'
+import json,sys
+v=json.load(open(sys.argv[1]));v['settings'].update(routing_strategy='tunnel',routing_section='happ_test')
+v['section'].insert(0,{'.name':'other','.type':'section','action':'connection','enabled':'1','selector_proxy_links':['socks5://127.0.0.1:1080']})
+v['section'].insert(0,{'.name':'bypass','.type':'section','action':'bypass','enabled':'1','ip_cidr':['0.0.0.0/0','::/0']})
+open(sys.argv[2],'w').write(json.dumps(v))
+PY
+TMP_SUBSCRIPTION_FOLDER="$work/subscriptions" ucode -L "$lib" "$lib/singbox/generator.uc" generate-config-fixture "$work/tunnel-fixture" "$work/tunnel-config" 127.0.0.1 0 true '' 1.14.1
+python3 - "$work/tunnel-config" <<'PY'
+import json,sys
+c=json.load(open(sys.argv[1]));text=json.dumps(c)
+assert '-happ-' not in text
+assert 'chosen.example' not in json.dumps(c['route']['rules'])
+routes=[r for r in c['route']['rules'] if r.get('inbound')==['tproxy-in','tproxy6-in'] and r.get('action')=='route']
+catchall=[r for r in routes if set(r)=={'inbound','action','outbound'}]
+assert len(catchall)==1
+assert 'happ_test' in catchall[0]['outbound'], catchall
+assert all(r['outbound']==catchall[0]['outbound'] for r in routes)
+assert next(s for s in c['dns']['servers'] if s['tag']=='dns-server')['detour']==catchall[0]['outbound']
+assert any(r.get('protocol')=='bittorrent' and r.get('outbound')=='direct-out' for r in c['route']['rules'])
+PY
+mv "$work/saved-profile" "$work/subscriptions/happ_test-subscription-1.json"
 ucode -L "$lib" -e '
 let h=require("singbox.happ");
 for(let order in ["block-proxy-direct","block-direct-proxy","proxy-block-direct","proxy-direct-block","direct-block-proxy","direct-proxy-block"]){
@@ -98,23 +156,30 @@ for(let order in ["block-proxy-direct","block-direct-proxy","proxy-block-direct"
  }
 }
 '
-python3 - "$work/fixture" <<'PY'
+python3 - "$work/fixture" "$work/subscriptions/happ_test-subscription-1.json" <<'PY'
 import json,sys
 p=sys.argv[1];v=json.load(open(p));s=v['section'][0]
-s.update(source_ip_cidr=['192.0.2.20/32'],fully_routed_ips=['192.0.2.21/32'],ports=['80'])
+s.update(source_ip_cidr=['192.0.2.20/32'],fully_routed_ips=['192.0.2.21/32'],ports=['80'],domain_suffix=['selected-only.example'],ip_cidr=['203.0.113.0/24'])
 open(p,'w').write(json.dumps(v))
+profile=json.load(open(sys.argv[2]));profile['happ_routing']['global_proxy']=False
+open(sys.argv[2],'w').write(json.dumps(profile))
 PY
 TMP_SUBSCRIPTION_FOLDER="$work/subscriptions" ucode -L "$lib" "$lib/singbox/generator.uc" generate-config-fixture "$work/fixture" "$work/scoped-config" 127.0.0.1 0 true '' 1.14.1
 python3 - "$work/scoped-config" <<'PY'
 import json,sys
 c=json.load(open(sys.argv[1]))
-assert any(i['tag']=='source-dns-in' for i in c['inbounds']), 'Device-scoped Happ must retain DNS client addresses'
+assert not any(i['tag']=='source-dns-in' for i in c['inbounds']), 'Global HAPP must ignore section device conditions'
 happ=[r for r in c['dns']['rules'] if '-happ-' in r.get('server','')]
-assert any('192.0.2.20/32' in json.dumps(r) for r in happ)
-assert any('192.0.2.21/32' in json.dumps(r) for r in happ)
+assert happ
+assert '192.0.2.20/32' not in json.dumps(happ)
+assert '192.0.2.21/32' not in json.dumps(happ)
 def check(r):
  assert all(k not in r for k in ['port','port_range','ip_cidr']), 'DNS scope must not contain application matchers'
  for child in r.get('rules',[]):check(child)
 for r in happ:check(r)
-assert any('"port": [80]' in json.dumps(r) for r in c['route']['rules']), 'Traffic must keep the port filter'
+assert 'selected-only.example' not in json.dumps(c['route']['rules'])
+assert '203.0.113.0/24' not in json.dumps(c['route']['rules'])
+assert not any(r.get('port')==[80] for r in c['route']['rules']), 'HAPP must own destination selection'
+catchall=[r for r in c['route']['rules'] if set(r)=={'action','inbound','outbound'} and r['inbound']==['tproxy-in','tproxy6-in']]
+assert len(catchall)==1 and catchall[0]['outbound']!='direct-out', 'Global HAPP strategy must default to the tunnel'
 PY

@@ -5,7 +5,6 @@ let uci_core = require("core.uci");
 let netstat = require("core.netstat");
 let rule_config = require("config.rule");
 let connections = require("config.connections");
-let runtime_subscription = require("singbox.subscription");
 let zapret_validator = require("providers.zapret.validator");
 let zapret2_validator = require("providers.zapret2.validator");
 let byedpi_validator = require("providers.byedpi.validator");
@@ -892,6 +891,8 @@ function nft_runtime_signature_body(settings, sections) {
 
     body = signature_add_value(body, "settings.source_network_interfaces", option(settings, "source_network_interfaces", "br-lan"));
     body = signature_add_value(body, "settings.exclude_ntp", bool_option(settings, "exclude_ntp", false) ? "1" : "0");
+    body = signature_add_value(body, "settings.routing_strategy", require("routing.strategy").mode(settings));
+    body = signature_add_value(body, "settings.routing_section", option(settings, "routing_section", ""));
 
     for (let section in sections) {
         section = object_or_empty(section);
@@ -901,9 +902,6 @@ function nft_runtime_signature_body(settings, sections) {
 
         let action = option(section, "action", "");
         body = signature_add_value(body, "rule." + name + ".action", action);
-        body = signature_add_value(body, "rule." + name + ".happ_real_ip",
-            connections.is_connections_action(action) &&
-            runtime_subscription.has_happ_real_ip_routing(name, length(connections.subscription_urls(section))) ? "1" : "0");
         if (action == "dns") {
             body = signature_add_value(body, "rule." + name + ".source_ip_cidr", section_rule_condition_csv(section, "source_ip_cidr", "subnets"));
             body = signature_add_value(body, "rule." + name + ".source_aware_dns", connections.has_dns_matchers(section) ? "1" : "0");

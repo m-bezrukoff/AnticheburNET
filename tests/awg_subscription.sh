@@ -79,7 +79,7 @@ for input in absent multiple bad-option bad-key bad-injection; do
 done
 if uc url 'file:///etc/shadow' 2>/dev/null; then exit 1; fi
 cat > "$work/fixture" <<'JSON'
-{"settings":{".name":"settings",".type":"settings","dns_server":"1.1.1.1"},"section":[{".name":"awg_policy",".type":"section","enabled":"1","action":"connection","interfaces":["awg0"]}]}
+{"settings":{".name":"settings",".type":"settings","dns_server":"1.1.1.1","routing_strategy":"happ"},"section":[{".name":"awg_policy",".type":"section","enabled":"1","action":"connection","interfaces":["awg0"]}]}
 JSON
 printf '%s\n' 'anticheburnet_awg.settings=settings' 'anticheburnet_awg.settings.interface=awg0' "anticheburnet_awg.settings.config_file=$work/native.conf" > "$work/uci-state"
 ANTICHEBURNET_UCI_STATE_FILE="$work/uci-state" ucode -L "$lib" "$lib/singbox/generator.uc" generate-config-fixture "$work/fixture" "$work/generated" 127.0.0.1 0 true '' 1.14.1

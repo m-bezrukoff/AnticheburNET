@@ -466,6 +466,7 @@ ln -s "$ANTICHEBURNET_LIB/core" "$runtime_lib/core"
 ln -s "$ANTICHEBURNET_LIB/config" "$runtime_lib/config"
 ln -s "$ANTICHEBURNET_LIB/subscription" "$runtime_lib/subscription"
 ln -s "$ANTICHEBURNET_LIB/providers" "$runtime_lib/providers"
+ln -s "$ANTICHEBURNET_LIB/routing" "$runtime_lib/routing"
 touch "$WORK_DIR/ciadpi-provider"
 cat >"$WORK_DIR/bad-byedpi-runtime-state.json" <<'JSON'
 {

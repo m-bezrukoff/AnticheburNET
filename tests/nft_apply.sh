@@ -668,10 +668,12 @@ cat >"$WORK_DIR/signature-expected.txt" <<'EOF_EXPECTED'
 br-lan tun0
 [settings.exclude_ntp]
 1
+[settings.routing_strategy]
+selected
+[settings.routing_section]
+
 [rule.text_rule.action]
 bypass
-[rule.text_rule.happ_real_ip]
-0
 [rule.text_rule.ip_cidr]
 198.51.100.1,203.0.113.0/24
 [rule.text_rule.source_ip_cidr]
@@ -692,8 +694,6 @@ https://example.com/subnets.lst
 https://example.com/mixed.lst
 [rule.default_enabled.action]
 proxy
-[rule.default_enabled.happ_real_ip]
-0
 [rule.default_enabled.ip_cidr]
 10.0.0.0/8,192.0.2.1
 [rule.default_enabled.source_ip_cidr]
@@ -742,10 +742,12 @@ cat >"$WORK_DIR/signature-uci-expected.txt" <<'EOF_EXPECTED'
 br-lan tun0
 [settings.exclude_ntp]
 1
+[settings.routing_strategy]
+selected
+[settings.routing_section]
+
 [rule.enabled.action]
 bypass
-[rule.enabled.happ_real_ip]
-0
 [rule.enabled.ip_cidr]
 10.0.0.0/8,192.0.2.1
 [rule.enabled.source_ip_cidr]
@@ -778,6 +780,10 @@ cat >"$WORK_DIR/signature-defaults-expected.txt" <<'EOF_EXPECTED'
 br-lan
 [settings.exclude_ntp]
 0
+[settings.routing_strategy]
+selected
+[settings.routing_section]
+
 EOF_EXPECTED
 expected_signature="$(md5sum "$WORK_DIR/signature-defaults-expected.txt" | awk '{print $1}')"
 assert_eq "$expected_signature" \

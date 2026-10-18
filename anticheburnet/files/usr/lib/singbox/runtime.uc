@@ -651,9 +651,13 @@ function first_nonblank_line(path) {
 function last_nonblank_line(path) {
     let result = "";
     let data = as_string(fs.readfile(path) || "");
-    for (let line in split(data, "\n"))
+    for (let line in split(data, "\n")) {
+        // ucode appends a stack and source pointer after the actual diagnostic.
+        if (match(line, /^In /) != null)
+            break;
         if (trim(as_string(line)) != "")
             result = as_string(line);
+    }
     return result;
 }
 

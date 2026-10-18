@@ -150,7 +150,9 @@ function source_path(url, directory, kind, options) {
         fs.unlink(temp);
         state.status = "error"; state.error = "proxy_unavailable";
         resource_status(directory, kind, state);
-        die("Unable to prepare selected connection for Happ geodata download\n");
+        let reason = trim(common.as_string(error.message));
+        die("Unable to prepare selected connection for Happ geodata download" +
+            (reason != "" ? ": " + reason : "") + "\n");
     }
     state.checked_at = time();
     let data = fs.readfile(temp);

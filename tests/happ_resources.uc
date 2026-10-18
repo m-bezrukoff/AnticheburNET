@@ -38,6 +38,12 @@ fail = false; invalid = true; rejected = false;
 try { geo.source_path("https://two.test/geoip.dat", work, "geoip", options); } catch (e) { rejected = true; }
 check(rejected && json(fs.readfile(work + "/geoip.status.json")).status == "error", "Invalid DAT must report an error");
 check(fs.readfile(work + "/geoip.dat.url") == "https://one.test/geoip.dat", "Invalid DAT must not replace cache identity");
+options.execute = function(command) { die("Unable to prepare native AWG for geodata download\n"); };
+let proxy_error = "";
+try { geo.source_path("https://two.test/geoip.dat", work, "geoip", options); }
+catch (e) { proxy_error = e.message; }
+check(index(proxy_error, "Unable to prepare native AWG for geodata download") >= 0,
+    "Geodata preparation must preserve the underlying AWG failure");
 let profile = sub_happ.normalize({ DirectIp: [ "geoip:RU" ], ProxySites: [ "geosite:youtube" ], BlockIp: [ "geoip:ru" ] });
 check(length(status.zones(profile, "geoip").ru) == 2 && status.zones(profile, "geosite").youtube[0] == "proxy", "Resource zone selection must preserve all rule groups");
 let implicit = sub_happ.normalize({});

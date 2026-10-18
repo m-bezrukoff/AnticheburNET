@@ -9,7 +9,7 @@ trap 'rm -rf "$work"' EXIT
 for runner in \
     anticheburnet/files/usr/bin/anticheburnet-awg-subscription-run \
     components/awg/files/usr/bin/anticheburnet-awg-run; do
-    for scenario in ready timeout; do
+    for scenario in ready timeout config_failure; do
         case_dir="$work/$(basename "$runner")-$scenario"
         mkdir -p "$case_dir/run/amneziawg" "$case_dir/run/anticheburnet"
         sed -e "s|/var/run|$case_dir/run|g" -e 's/\[ -S /[ -f /g' "$root/$runner" > "$case_dir/runner"
@@ -24,7 +24,10 @@ for runner in \
                 printf '%s\n' "$*" >> "$case_dir/ip.log"
                 if [[ $1 == link && $2 == show ]]; then return 1; fi
             }
-            awg() { printf '%s\n' "$*" >> "$case_dir/awg.log"; }
+            awg() {
+                printf '%s\n' "$*" >> "$case_dir/awg.log"
+                if [[ $scenario == config_failure ]]; then return 7; fi
+            }
             amneziawg-go() {
                 while ! builtin [ -f "$case_dir/run/anticheburnet/awg-acawg1.ready" ]; do
                     command sleep 1
@@ -35,7 +38,7 @@ for runner in \
                     case "$2" in
                         'sleep(100);')
                             printf 'wait\n' >> "$case_dir/waits"
-                            if [[ $scenario == ready ]]; then
+                            if [[ $scenario != timeout ]]; then
                                 touch "$case_dir/run/amneziawg/acawg1.sock"
                             fi
                             ;;
@@ -67,14 +70,18 @@ for runner in \
                 grep -Fxq -- "-$family route add default dev acawg1 table 312" "$case_dir/ip.log"
                 grep -Fxq -- "-$family rule del priority 10400 oif acawg1 table 312" "$case_dir/ip.log"
             done
-        else
+        elif [[ $scenario == timeout ]]; then
             [[ $status == 1 ]]
             [[ $(wc -l < "$case_dir/waits") == 50 ]]
             grep -Fxq 'AWG socket readiness timeout' "$case_dir/output"
             [[ ! -e "$case_dir/awg.log" ]]
+        else
+            [[ $status == 7 ]]
+            grep -Eq '^setconf acawg1 .*/device.conf$' "$case_dir/awg.log"
+            ! grep -q '^link set' "$case_dir/ip.log"
         fi
         [[ ! -e "$case_dir/run/anticheburnet/awg-acawg1.ready" ]]
         [[ -z $(find "$case_dir/run" -maxdepth 1 -name 'anticheburnet-awg.*' -print) ]]
     done
 done
-printf 'Both AWG runners pass integer-only sleep, delayed readiness, routing, timeout and cleanup checks\n'
+printf 'Both AWG runners pass readiness, routing, configuration failure, timeout and cleanup checks\n'

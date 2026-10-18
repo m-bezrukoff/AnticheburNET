@@ -139,7 +139,7 @@ install -m755 "$work/awg-tools/src/wg" "$work/anticheburnet-amneziawg-root/usr/b
 mkdir -p "$work/anticheburnet-amneziawg-root/usr/share/licenses/anticheburnet-amneziawg"
 install -m644 "$work/awg-go/LICENSE" "$work/anticheburnet-amneziawg-root/usr/share/licenses/anticheburnet-amneziawg/daemon-MIT"
 install -m644 "$work/awg-tools/COPYING" "$work/anticheburnet-amneziawg-root/usr/share/licenses/anticheburnet-amneziawg/tools-GPL-2.0"
-package_component anticheburnet-amneziawg 3.1.20260828-r4 'Official AmneziaWG 3.1 userspace client with subscription import' \
+package_component anticheburnet-amneziawg 3.1.20260828-r5 'Official AmneziaWG 3.1 userspace client with subscription import' \
   'anticheburnet kmod-tun ip-full' 'MIT AND GPL-2.0' /etc/config/anticheburnet_awg
 
 # Inspect the exact ARM binaries on the build host through qemu-user.

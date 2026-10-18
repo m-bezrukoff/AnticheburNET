@@ -125,6 +125,20 @@ generator_reason="$(ucode -L "$ANTICHEBURNET_LIB" "$SINGBOX_RUNTIME_UC" generato
 [ "$generator_reason" = 'connection section has no usable outbounds' ] ||
   fail "singbox/runtime.uc must report the terminal generator error instead of an earlier warning"
 
+cat >"$WORK_DIR/generator-stack.log" <<'EOF_GENERATOR_STACK'
+Unable to prepare selected connection for Happ geodata download: Unable to prepare native AWG for geodata download
+
+In source_path(), file /usr/lib/anticheburnet/routing/geodata.uc, line 153, byte 80:
+  called from function generate_config
+
+ `        die("Unable to prepare selected connection for Happ geodata download");`
+  Near here ---------------------------------------------------------------------^
+EOF_GENERATOR_STACK
+generator_reason="$(ucode -L "$ANTICHEBURNET_LIB" "$SINGBOX_RUNTIME_UC" generator-failure-reason-fixture \
+  "$WORK_DIR/generator-stack.log" 254)"
+[ "$generator_reason" = 'Unable to prepare selected connection for Happ geodata download: Unable to prepare native AWG for geodata download' ] ||
+  fail "generator failure must preserve the cause instead of the stack source pointer"
+
 mkdir -p "$WORK_DIR/etc" "$WORK_DIR/tmp"
 printf 'old config\n' >"$WORK_DIR/etc/config.json"
 printf 'new config\n' >"$WORK_DIR/tmp/config.json"

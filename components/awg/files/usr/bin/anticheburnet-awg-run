@@ -20,12 +20,17 @@ if [ -n "$(ip -4 route show table "$table" 2>/dev/null)$(ip -6 route show table 
 fi
 work=$(mktemp -d /var/run/anticheburnet-awg.XXXXXX)
 child=''
+config_child=''
 rule4=0
 rule6=0
 has4=0
 has6=0
 ready=''
 cleanup() {
+    if [ -n "$config_child" ]; then
+        kill "$config_child" 2>/dev/null || true
+        wait "$config_child" 2>/dev/null || true
+    fi
     [ -z "$ready" ] || rm -f "$ready"
     [ "$rule4" = 0 ] || ip -4 rule del priority 10400 oif "$iface" table "$table" 2>/dev/null || true
     [ "$rule6" = 0 ] || ip -6 rule del priority 10400 oif "$iface" table "$table" 2>/dev/null || true
@@ -53,7 +58,12 @@ until [ -S "/var/run/amneziawg/$iface.sock" ]; do
     # BusyBox sleep may only accept integer seconds; ucode sleeps in milliseconds.
     ucode -e 'sleep(100);'
 done
-awg setconf "$iface" "$work/device.conf"
+# Waiting on a background command lets TERM interrupt endpoint DNS resolution.
+# A foreground setconf delays the trap until procd kills this runner, orphaning AWG.
+awg setconf "$iface" "$work/device.conf" &
+config_child=$!
+wait "$config_child"
+config_child=''
 mtu=$(ucode -e 'let fs=require("fs"); print(json(fs.readfile(ARGV[0])).mtu);' "$work/state.json")
 ip link set dev "$iface" mtu "$mtu" up
 ucode -e 'let fs=require("fs"); for(let a in json(fs.readfile(ARGV[0])).addresses) print(a,"\n");' "$work/state.json" > "$work/addresses"

@@ -65,6 +65,13 @@ fs.writefile(output + ".awg.json", sprintf("%J", manifests));
 let commands = [];
 let command_status = 0;
 let make_ready = true;
+let original_popen = fs.popen;
+fs.popen = function(command, mode) {
+    check(index(command, "call service list") >= 0, "Lifecycle recovery may only inspect its native instance registry");
+    return { read: function(mode) {
+        return '{"anticheburnet-awg-subscriptions":{"instances":{"acawg1":{"running":true}}}}';
+    }, close: function() { return 0; } };
+};
 system = function(command) {
     push(commands, command);
     if (index(command, " restart") >= 0 && make_ready) {
@@ -90,4 +97,5 @@ command_status = 0;
 make_ready = false;
 fs.unlink(fake + "/state/awg-acawg1.ready");
 check(!owner.sync(output + ".awg.json"), "Unready tunnel must abort and stop its native service");
+fs.popen = original_popen;
 print("AWG vpn links, mixed subscription, names, advanced fields, isolation and rejection checks passed\n");

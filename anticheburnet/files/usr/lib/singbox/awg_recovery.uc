@@ -99,7 +99,18 @@ function after_upgrade() {
         if (managers != null && trim(managers) != "") continue;
         if (system("/etc/init.d/anticheburnet status >/dev/null 2>&1") == 0) return true;
         if (!has_orphans()) return true;
-        return system("/etc/init.d/anticheburnet start") == 0;
+        if (system("/etc/init.d/anticheburnet start") != 0) {
+            warn("AnticheburNET failed to start during post-upgrade AWG recovery\n");
+            return false;
+        }
+        for (let attempt = 0; attempt < 30; attempt++) {
+            sleep(2000);
+            if (system("/etc/init.d/anticheburnet status >/dev/null 2>&1") != 0) continue;
+            sleep(2000);
+            if (system("/etc/init.d/anticheburnet status >/dev/null 2>&1") == 0) return true;
+        }
+        warn("AnticheburNET did not remain running after post-upgrade AWG recovery\n");
+        return false;
     }
     warn("Timed out waiting for the package transaction before AWG recovery\n");
     return false;

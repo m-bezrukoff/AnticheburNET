@@ -1,7 +1,7 @@
 let fs = require("fs"), recovery = require("singbox.awg_recovery");
 function check(ok, message) { if (!ok) die(message + "\n"); }
 let files, links, registered, executable, parent, routes, rules, addresses, killed, alive, ticks, lock_waits, managers;
-let commands = [], profile = { interface: "acawg1", table: 312 }, reads = 0, race = "", registry_reads = 0;
+let commands = [], profile = { interface: "acawg1", table: 312 }, reads = 0, race = "", registry_reads = 0, service_running = false;
 function reset() {
     files = {}; links = {}; registered = {}; executable = "/usr/bin/amneziawg-go (deleted)";
     parent = 1; routes = ""; rules = ""; addresses = ""; killed = false; alive = true; ticks = 100; lock_waits = 0; managers = 0;
@@ -10,6 +10,7 @@ function reset() {
     files["/var/run/amneziawg/acawg1.sock"] = "socket";
     commands = [];
     reads = 0; race = ""; registry_reads = 0;
+    service_running = false;
 }
 fs.glob = function(pattern) { return alive ? [ "/proc/123/cmdline" ] : []; };
 fs.readfile = function(path) {
@@ -52,9 +53,10 @@ system = function(command) {
         killed = true; alive = false; delete files["/var/run/amneziawg/acawg1.sock"]; return 0;
     }
     if (index(command, "service add") >= 0) return 0;
-    if (index(command, "anticheburnet status") >= 0) return 1;
+    if (index(command, "anticheburnet status") >= 0) return service_running ? 0 : 1;
     if (command == "/etc/init.d/anticheburnet start") {
-        check(lock_waits == 0 && managers == 0, "Recovery started before the update transaction finished"); return 0;
+        check(lock_waits == 0 && managers == 0, "Recovery started before the update transaction finished");
+        service_running = true; return 0;
     }
     die("Unexpected recovery mutation\n");
 };
@@ -86,6 +88,6 @@ check(recovery.schedule() && length(commands) == 1 && index(commands[0], "after-
 reset(); alive = false;
 check(recovery.schedule() && !length(commands), "Intentionally stopped services without upgrade orphans must stay stopped");
 reset(); lock_waits = 2; managers = 1;
-check(recovery.after_upgrade() && commands[length(commands) - 1] == "/etc/init.d/anticheburnet start",
+check(recovery.after_upgrade() && service_running && index(commands, "/etc/init.d/anticheburnet start") >= 0,
     "Old updater must hand off failed-start recovery after releasing its lock");
 print("AWG upgrade orphan ownership, active traffic guards, deferred restart and stopped-service checks passed\n");

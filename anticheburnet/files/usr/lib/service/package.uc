@@ -258,6 +258,9 @@ function postinst_restore() {
     // The tracked flag also supports already installed one-click updaters.
     if (env("ANTICHEBURNET_DEFER_PACKAGE_RESTART", "") == "1" ||
         env("ANTICHEBURNET_UI_COMPONENT_ACTION_TRACKED", "") == "1") {
+        // Older updaters intentionally skip restart for an already stopped
+        // service. Recover a proven pre-upgrade AWG failure after they finish.
+        if (!require("singbox.awg_recovery").schedule()) return false;
         unlink_if_exists(PACKAGE_UPGRADE_STATE);
         return true;
     }

@@ -163,6 +163,11 @@ function begin_update(path, plan) {
     if (registered == null) return false;
     if (length(plan.added) && (!fs.stat(SERVICE) || !fs.stat("/usr/bin/amneziawg-go") || !fs.stat("/usr/bin/awg")))
         return false;
+    for (let profile in plan.next) {
+        if (profile == null || registered[profile.interface] != null) continue;
+        if (fs.stat("/var/run/amneziawg/" + profile.interface + ".sock") &&
+            !require("singbox.awg_recovery").recover(profile)) return false;
+    }
     for (let profile in plan.added)
         if (registered[profile.interface] != null || fs.stat("/var/run/anticheburnet/awg-" + profile.interface + ".ready") ||
             fs.stat("/var/run/amneziawg/" + profile.interface + ".sock")) return false;
@@ -214,6 +219,13 @@ function sync(path) {
         die("AWG profiles require the AnticheburNET AmneziaWG component\n");
     let text = fs.readfile(path);
     if (fs.readfile(STATE) == text && ready(items)) return true;
+    let registered = service_instances();
+    if (registered == null) return false;
+    for (let profile in items) {
+        if (profile == null || registered[profile.interface] != null) continue;
+        if (fs.stat("/var/run/amneziawg/" + profile.interface + ".sock") &&
+            !require("singbox.awg_recovery").recover(profile)) return false;
+    }
     if (system(SERVICE + " restart") != 0) { stop(); return false; }
     for (let i = 0; i < 100; i++) {
         if (ready(items)) {

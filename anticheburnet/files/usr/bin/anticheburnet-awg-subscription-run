@@ -47,7 +47,7 @@ if [ -n "$profile_index" ]; then
     ucode -L /usr/lib/anticheburnet /usr/lib/anticheburnet/singbox/awg.uc extract "$config_file" "$profile_index" "$work/profile.conf"
     config_file="$work/profile.conf"
 fi
-ucode -L /usr/lib/anticheburnet /usr/lib/anticheburnet/core/awg.uc prepare "$config_file" "$work/device.conf" > "$work/state.json"
+ucode -L /usr/lib/anticheburnet /usr/lib/anticheburnet/core/awg.uc prepare-runtime "$config_file" "$work/device.conf" > "$work/state.json"
 amneziawg-go -f "$iface" &
 child=$!
 attempt=0

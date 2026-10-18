@@ -28,7 +28,7 @@ EOF_IP
 #!/bin/sh
 case "$4" in
     extract) printf 'profile\n' > "$7" ;;
-    prepare) printf 'device\n' > "$6"; printf '{}\n' ;;
+    prepare|prepare-runtime) printf 'device\n' > "$6"; printf '{}\n' ;;
 esac
 EOF_UCODE
     cat >"$case_dir/bin/amneziawg-go" <<'EOF_GO'

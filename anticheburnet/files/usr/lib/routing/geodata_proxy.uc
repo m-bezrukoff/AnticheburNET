@@ -62,7 +62,7 @@ function execute(command, proxy_address, config, settings, section, directory, v
         "kill -0 \"$geodata_pid\" 2>/dev/null || exit 1\n" +
         "geodata_port=$(sed -n 's/.*tcp server started at 127[.]0[.]0[.]1:\\([0-9][0-9]*\\).*/\\1/p' " + quote(path + ".log") + " | head -n 1)\n" +
         "if [ -n \"$geodata_port\" ] && grep -q 'sing-box started' " + quote(path + ".log") + "; then break; fi\n" +
-        "sleep 0.1\ngeodata_wait=$((geodata_wait + 1))\ndone\n" +
+        "ucode -e 'sleep(100);'\ngeodata_wait=$((geodata_wait + 1))\ndone\n" +
         "case \"$geodata_port\" in ''|*[!0-9]*) exit 1;; esac\n" +
         "[ \"$geodata_wait\" -lt 100 ] || exit 1\n" + download;
     let run = type(runner) == "function" ? runner : system;

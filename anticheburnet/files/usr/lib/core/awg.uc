@@ -84,6 +84,57 @@ function prepare_text(text) {
     return { device: join("\n", device) + "\n", addresses, mtu };
 }
 
+// Resolve native AWG endpoints before awg setconf, independently of dnsmasq and
+// the main sing-box instance. Use only the user's configured bootstrap servers.
+function prepare_runtime(text, settings, execute) {
+    let result = prepare_text(text);
+    let dns = require("singbox.dns"), url = require("core.url");
+    let query = type(execute) == "function" ? execute : function(args) {
+        let quoted = [];
+        for (let arg in args) push(quoted, "'" + replace(arg, /'/g, "'\\''") + "'");
+        let pipe = fs.popen(join(" ", quoted) + " 2>/dev/null", "r");
+        if (!pipe) return "";
+        let output = pipe.read("all");
+        return pipe.close() == 0 ? output : "";
+    };
+    let resolved = {}, lines = [];
+    for (let line in split(result.device, "\n")) {
+        let endpoint = match(line, /^Endpoint = (\[[^\]]+\]|[^:]+):([0-9]+)$/);
+        if (endpoint == null) {
+            if (index(line, "Endpoint = ") == 0) die("Invalid AWG endpoint\n");
+            push(lines, line); continue;
+        }
+        let host = endpoint[1], port = int(endpoint[2]);
+        if (port < 1 || port > 65535) die("Invalid AWG endpoint port\n");
+        if (substr(host, 0, 1) == "[") host = substr(host, 1, length(host) - 2);
+        if (ip.valid_ip(host)) { push(lines, line); continue; }
+        if (!match(host, /^[A-Za-z0-9][A-Za-z0-9.-]*$/) || length(host) > 253)
+            die("Invalid AWG endpoint hostname\n");
+        if (resolved[host] == null) {
+            let address = "";
+            for (let server in dns.server_list(settings || {}, "bootstrap_dns_server", "77.88.8.8")) {
+                let resolver = url.host(server), resolver_port = url.port(server) || "53";
+                if (!ip.valid_ip(resolver) || !match(resolver_port, /^[0-9]+$/) ||
+                    int(resolver_port) < 1 || int(resolver_port) > 65535) continue;
+                for (let family in [ "A", "AAAA" ]) {
+                    let output = query([ "dig", "+short", "@" + resolver, "-p", resolver_port, host, family,
+                        "+time=2", "+tries=1" ]);
+                    for (let value in split(output || "", "\n"))
+                        if (ip.valid_ip(trim(value))) { address = trim(value); break; }
+                    if (address != "") break;
+                }
+                if (address != "") break;
+            }
+            if (address == "") die("Unable to resolve AWG endpoint through configured bootstrap DNS\n");
+            resolved[host] = address;
+        }
+        let address = resolved[host];
+        push(lines, "Endpoint = " + (index(address, ":") >= 0 ? "[" + address + "]" : address) + ":" + endpoint[2]);
+    }
+    result.device = join("\n", lines);
+    return result;
+}
+
 function prepare(path) { return prepare_text(fs.readfile(path)); }
 
 // This provider's vpn:// links contain a plain INI profile in base64, rather
@@ -123,10 +174,11 @@ function parse_link(link) {
 }
 
 if (sourcepath(1) != null && sourcepath(1) != "")
-    return { prepare, prepare_text, parse_link };
+    return { prepare, prepare_text, prepare_runtime, parse_link };
 
-if (ARGV[0] == "prepare") {
-    let result = prepare(ARGV[1]);
+if (ARGV[0] == "prepare" || ARGV[0] == "prepare-runtime") {
+    let result = ARGV[0] == "prepare-runtime" ?
+        prepare_runtime(fs.readfile(ARGV[1]), require("core.uci").get_all("anticheburnet", "settings")) : prepare(ARGV[1]);
     if (ARGV[2]) {
         if (fs.writefile(ARGV[2], result.device) == null) die("Unable to write AWG device config\n");
         fs.chmod(ARGV[2], 0600);
@@ -134,4 +186,4 @@ if (ARGV[0] == "prepare") {
     delete result.device;
     print(sprintf("%J\n", result));
 }
-else die("Usage: awg.uc prepare INPUT [DEVICE_OUTPUT]\n");
+else die("Usage: awg.uc prepare|prepare-runtime INPUT [DEVICE_OUTPUT]\n");

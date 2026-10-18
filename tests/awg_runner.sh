@@ -48,7 +48,7 @@ for runner in \
                     esac
                 elif [[ $4 == extract ]]; then
                     printf 'profile\n' > "$7"
-                elif [[ $4 == prepare ]]; then
+                elif [[ $4 == prepare* ]]; then
                     printf 'device\n' > "$6"
                     printf '{}\n'
                 else

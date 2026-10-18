@@ -4655,6 +4655,12 @@ function getAnticheburNETLogNotification(line) {
   };
 }
 function getLogNotificationKey(line) {
+  const pendingApply = line.match(
+    /\banticheburnet:\s+(\[error\] Subscription routing changed; Apply configuration is required\. Running services were preserved)\s*$/
+  );
+  if (pendingApply) {
+    return `anticheburnet: ${pendingApply[1]}`;
+  }
   return line.trim();
 }
 var LogNotificationDeduper = class {

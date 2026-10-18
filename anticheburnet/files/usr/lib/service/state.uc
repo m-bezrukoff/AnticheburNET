@@ -1395,6 +1395,8 @@ function sing_box_signature_body(settings, sections, servers, mwan3_active) {
     settings = object_or_empty(settings);
     let body = "";
 
+    body = signature_add_value(body, "settings.routing_strategy", require("routing.strategy").mode(settings));
+    body = signature_add_value(body, "settings.routing_section", option(settings, "routing_section", ""));
     body = signature_add_value(body, "settings.dns_type", option(settings, "dns_type", "doh"));
     body = signature_add_value(body, "settings.dns_strategy", option(settings, "dns_strategy", "prefer_ipv4"));
     for (let value in list_option(settings, "dns_server", "77.88.8.8"))

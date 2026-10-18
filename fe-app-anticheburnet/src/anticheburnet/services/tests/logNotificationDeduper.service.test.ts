@@ -60,7 +60,9 @@ describe('LogNotificationDeduper', () => {
       component: 'zapret2',
       version: 'v1.2.3',
     });
-    expect(getAnticheburNETLogNotification('anticheburnet: [info] ok')).toBeNull();
+    expect(
+      getAnticheburNETLogNotification('anticheburnet: [info] ok'),
+    ).toBeNull();
   });
 
   it('dedupes already shown log lines through session storage', () => {
@@ -69,22 +71,56 @@ describe('LogNotificationDeduper', () => {
 
     expect(first.shouldNotify('anticheburnet: [error] failed')).toBe(true);
     expect(first.shouldNotify('anticheburnet: [error] failed')).toBe(false);
-    expect(first.shouldNotify('anticheburnet: [error] another failure')).toBe(true);
+    expect(first.shouldNotify('anticheburnet: [error] another failure')).toBe(
+      true,
+    );
     expect(
-      first.shouldNotify('anticheburnet: [info] [component-update] anticheburnet 1.2.3'),
+      first.shouldNotify(
+        'anticheburnet: [info] [component-update] anticheburnet 1.2.3',
+      ),
     ).toBe(true);
 
     const afterReload = new LogNotificationDeduper(storage);
 
-    expect(afterReload.shouldNotify('anticheburnet: [error] failed')).toBe(false);
-    expect(afterReload.shouldNotify('anticheburnet: [fatal] fatal failure')).toBe(
-      true,
+    expect(afterReload.shouldNotify('anticheburnet: [error] failed')).toBe(
+      false,
     );
+    expect(
+      afterReload.shouldNotify('anticheburnet: [fatal] fatal failure'),
+    ).toBe(true);
   });
 
   it('keeps the full log line as the replay key', () => {
-    expect(getLogNotificationKey('  Jun 06 anticheburnet: [error] failed  ')).toBe(
-      'Jun 06 anticheburnet: [error] failed',
-    );
+    expect(
+      getLogNotificationKey('  Jun 06 anticheburnet: [error] failed  '),
+    ).toBe('Jun 06 anticheburnet: [error] failed');
+  });
+
+  it('shows a pending routing Apply once across hourly retries and page reloads', () => {
+    const storage = new MemoryStorage();
+    const message =
+      'anticheburnet: [error] Subscription routing changed; Apply configuration is required. Running services were preserved';
+    const first = new LogNotificationDeduper(storage);
+    expect(
+      first.shouldNotify(`Sun Oct 18 01:00:01 2026 user.notice ${message}`),
+    ).toBe(true);
+    expect(
+      first.shouldNotify(`Sun Oct 18 02:00:01 2026 user.notice ${message}`),
+    ).toBe(false);
+    expect(
+      new LogNotificationDeduper(storage).shouldNotify(
+        `Sun Oct 18 03:00:01 2026 user.notice ${message}`,
+      ),
+    ).toBe(false);
+    expect(
+      first.shouldNotify(
+        'Sun Oct 18 01:00:01 2026 anticheburnet: [error] provider failed',
+      ),
+    ).toBe(true);
+    expect(
+      first.shouldNotify(
+        'Sun Oct 18 02:00:01 2026 anticheburnet: [error] provider failed',
+      ),
+    ).toBe(true);
   });
 });

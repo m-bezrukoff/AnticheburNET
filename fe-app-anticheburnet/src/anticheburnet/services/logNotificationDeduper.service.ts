@@ -1,4 +1,5 @@
-const LOG_NOTIFICATION_STORAGE_KEY = 'anticheburnet:shown-log-error-notifications:v1';
+const LOG_NOTIFICATION_STORAGE_KEY =
+  'anticheburnet:shown-log-error-notifications:v1';
 const MAX_STORED_LOG_NOTIFICATIONS = 500;
 
 export type AnticheburNETLogNotification =
@@ -90,6 +91,14 @@ export function getAnticheburNETLogNotification(
 }
 
 export function getLogNotificationKey(line: string) {
+  // A pending Apply is one persistent condition, even when cron logs it hourly.
+  const pendingApply = line.match(
+    /\banticheburnet:\s+(\[error\] Subscription routing changed; Apply configuration is required\. Running services were preserved)\s*$/,
+  );
+  if (pendingApply) {
+    return `anticheburnet: ${pendingApply[1]}`;
+  }
+
   return line.trim();
 }
 

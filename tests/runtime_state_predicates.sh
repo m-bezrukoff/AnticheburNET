@@ -560,6 +560,10 @@ cat >"$WORK_DIR/sing-box-signature.json" <<'JSON'
 JSON
 
 cat >"$WORK_DIR/sing-box-signature.expected" <<'EOF_SING_BOX_SIG'
+[settings.routing_strategy]
+selected
+[settings.routing_section]
+
 [settings.dns_type]
 tcp
 [settings.dns_strategy]

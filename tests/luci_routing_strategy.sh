@@ -20,7 +20,9 @@ const context = {
     { '.name': 'legacy', action: 'proxy' },
   ].forEach(callback) },
 };
-const strategyNode = { querySelector: () => ({ removeAttribute: key => assert.equal(key, 'id') }) };
+const happNode = {};
+const strategyNode = { querySelector: selector => selector === '.ac-happ-field'
+  ? happNode : ({ removeAttribute: key => assert.equal(key, 'id') }) };
 const section = {
   render: async () => strategyNode,
   option: (_type, key, _title, description) => options[key] = {
@@ -32,9 +34,19 @@ const section = {
 };
 const map = { section: (...args) => { registered.push(args); return section; } };
 let inserted = 0;
-const rules = { render: async () => ({ firstChild: 'table', insertBefore(node, before) {
-  assert.equal(node, strategyNode); assert.equal(before, 'table'); inserted++;
-} }) };
+const rules = { render: async () => {
+  const children = ['table', 'add-section'];
+  return {
+    get firstChild() { return children[0]; },
+    appendChild(node) { assert.equal(node, happNode); children.push(node); },
+    insertBefore(node, before) {
+      assert.equal(node, strategyNode); assert.equal(before, 'table');
+      children.splice(children.indexOf(before), 0, node);
+      assert.deepEqual(children, [strategyNode, 'table', 'add-section', happNode]);
+      inserted++;
+    },
+  };
+} };
 vm.runInNewContext(code, context);
 context.addRoutingStrategy(map, rules);
 assert.equal(registered.length, 1);

@@ -176,6 +176,8 @@ function addRoutingStrategy(map, rulesSection) {
           '[data-section-id="settings"]',
         );
         if (settingsNode) settingsNode.removeAttribute("id");
+        const happNode = options.querySelector(".ac-happ-field");
+        if (happNode) rules.appendChild(happNode);
         rules.insertBefore(options, rules.firstChild);
         return rules;
       },

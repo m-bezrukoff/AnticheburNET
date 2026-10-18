@@ -1,6 +1,9 @@
-import { insertIf } from '../../../../helpers';
+import { insertIf } from '../../../../helpers/insertIf';
 import { DIAGNOSTICS_CHECKS_MAP } from './contstants';
-import { AnticheburNETShellMethods, RemoteFakeIPMethods } from '../../../methods';
+import {
+  AnticheburNETShellMethods,
+  RemoteFakeIPMethods,
+} from '../../../methods';
 import type { IDiagnosticsChecksItem } from '../../../services';
 import { updateCheckStore } from './updateCheckStore';
 import { getMeta } from '../helpers/getMeta';
@@ -30,7 +33,11 @@ export async function runFakeIPCheck() {
       routerFakeIPResponse.success && routerFakeIPResponse.data.fakeip,
     browserFakeIP:
       checkFakeIPResponse.success && checkFakeIPResponse.data.fakeip,
-    canComparePublicIP: checkFakeIPResponse.success && checkIPResponse.success,
+    canComparePublicIP:
+      checkFakeIPResponse.success &&
+      checkIPResponse.success &&
+      !!checkFakeIPResponse.data.IP?.trim() &&
+      !!checkIPResponse.data.IP?.trim(),
     differentIP:
       checkFakeIPResponse.success &&
       checkIPResponse.success &&
@@ -38,8 +45,15 @@ export async function runFakeIPCheck() {
   };
 
   const fakeIPWorks = checks.singBoxFakeIP && checks.browserFakeIP;
+  const expectedSharedIP =
+    checks.canComparePublicIP &&
+    !checks.differentIP &&
+    routerFakeIPResponse.success &&
+    routerFakeIPResponse.data.shared_public_ip_expected === true;
+  const publicIPCheckPassed =
+    checks.canComparePublicIP && (checks.differentIP || expectedSharedIP);
   const { state, description } = fakeIPWorks
-    ? checks.differentIP
+    ? publicIPCheckPassed
       ? { state: 'success' as const, description: _('Checks passed') }
       : {
           state: 'warning' as const,
@@ -84,12 +98,14 @@ export async function runFakeIPCheck() {
       },
       ...insertIf<IDiagnosticsChecksItem>(checks.browserFakeIP, [
         {
-          state: checks.differentIP ? 'success' : 'warning',
+          state: publicIPCheckPassed ? 'success' : 'warning',
           key: !checks.canComparePublicIP
             ? _('Could not compare FakeIP and control public IPs')
             : checks.differentIP
               ? _('FakeIP and control checks use different public IPs')
-              : _('FakeIP and control checks use the same public IP'),
+              : expectedSharedIP
+                ? _('Matching public IPs are expected with tunnel routing')
+                : _('FakeIP and control checks use the same public IP'),
           value: '',
         },
       ]),

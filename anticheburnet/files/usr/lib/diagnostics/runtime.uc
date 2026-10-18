@@ -1564,7 +1564,9 @@ function check_fakeip() {
         fakeip: match(fakeip_address, /^198\.(18|19)\./) != null || match(fakeip6_address, /^fc[0-3][0-9a-f]:/) != null,
         IP: fakeip_address != "" ? fakeip_address : fakeip6_address,
         IPv4: fakeip_address,
-        IPv6: fakeip6_address
+        IPv6: fakeip6_address,
+        shared_public_ip_expected: require("diagnostics.fakeip").shared_public_ip_expected(
+            read_json_file(option(settings(), "config_path", "")))
     });
     return 0;
 }

@@ -1223,6 +1223,9 @@ msgstr "Совпадение по IP-адресам или подсетям на
 msgid "Match destination ports. Use a single port or a range"
 msgstr "Совпадение по портам назначения. Используйте одиночный порт или диапазон"
 
+msgid "Matching public IPs are expected with tunnel routing"
+msgstr "Совпадение внешних IP ожидаемо при маршрутизации через туннель"
+
 msgid "Maximum time to wait for example.com to resolve during a DNS health check."
 msgstr "Максимальное время ожидания разрешения example.com при проверке доступности DNS."
 

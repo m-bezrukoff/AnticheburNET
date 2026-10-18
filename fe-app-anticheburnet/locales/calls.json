@@ -43,6 +43,13 @@
     ]
   },
   {
+    "call": "Matching public IPs are expected with tunnel routing",
+    "key": "Matching public IPs are expected with tunnel routing",
+    "places": [
+      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:107"
+    ]
+  },
+  {
     "call": "Update subscriptions daily at 03:00 (router time)",
     "key": "Update subscriptions daily at 03:00 (router time)",
     "places": [

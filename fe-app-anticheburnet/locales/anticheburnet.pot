@@ -1766,6 +1766,10 @@ msgstr ""
 msgid "Match destination ports. Use a single port or a range"
 msgstr ""
 
+#: src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:107
+msgid "Matching public IPs are expected with tunnel routing"
+msgstr ""
+
 #: ../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/settings.js:213
 msgid "Maximum time to wait for example.com to resolve during a DNS health check."
 msgstr ""

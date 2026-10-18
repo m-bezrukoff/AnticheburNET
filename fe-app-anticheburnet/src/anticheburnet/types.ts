@@ -452,6 +452,7 @@ export namespace AnticheburNET {
   export interface FakeIPCheckResult {
     fakeip: boolean;
     IP: string;
+    shared_public_ip_expected?: boolean;
   }
 
   export interface GetStatus {

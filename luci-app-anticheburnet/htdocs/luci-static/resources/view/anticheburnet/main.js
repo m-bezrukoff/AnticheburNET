@@ -8320,11 +8320,13 @@ async function runFakeIPCheck() {
   const checks = {
     singBoxFakeIP: routerFakeIPResponse.success && routerFakeIPResponse.data.fakeip,
     browserFakeIP: checkFakeIPResponse.success && checkFakeIPResponse.data.fakeip,
-    canComparePublicIP: checkFakeIPResponse.success && checkIPResponse.success,
+    canComparePublicIP: checkFakeIPResponse.success && checkIPResponse.success && !!checkFakeIPResponse.data.IP?.trim() && !!checkIPResponse.data.IP?.trim(),
     differentIP: checkFakeIPResponse.success && checkIPResponse.success && checkFakeIPResponse.data.IP !== checkIPResponse.data.IP
   };
   const fakeIPWorks = checks.singBoxFakeIP && checks.browserFakeIP;
-  const { state, description } = fakeIPWorks ? checks.differentIP ? { state: "success", description: _("Checks passed") } : {
+  const expectedSharedIP = checks.canComparePublicIP && !checks.differentIP && routerFakeIPResponse.success && routerFakeIPResponse.data.shared_public_ip_expected === true;
+  const publicIPCheckPassed = checks.canComparePublicIP && (checks.differentIP || expectedSharedIP);
+  const { state, description } = fakeIPWorks ? publicIPCheckPassed ? { state: "success", description: _("Checks passed") } : {
     state: "warning",
     description: _("FakeIP works; public IP comparison is inconclusive")
   } : browserFakeIPCheckUnavailable && checks.singBoxFakeIP ? {
@@ -8353,8 +8355,8 @@ async function runFakeIPCheck() {
       },
       ...insertIf(checks.browserFakeIP, [
         {
-          state: checks.differentIP ? "success" : "warning",
-          key: !checks.canComparePublicIP ? _("Could not compare FakeIP and control public IPs") : checks.differentIP ? _("FakeIP and control checks use different public IPs") : _("FakeIP and control checks use the same public IP"),
+          state: publicIPCheckPassed ? "success" : "warning",
+          key: !checks.canComparePublicIP ? _("Could not compare FakeIP and control public IPs") : checks.differentIP ? _("FakeIP and control checks use different public IPs") : expectedSharedIP ? _("Matching public IPs are expected with tunnel routing") : _("FakeIP and control checks use the same public IP"),
           value: ""
         }
       ])

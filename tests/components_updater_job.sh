@@ -354,8 +354,9 @@ assert_eq "1.13.14-extended-2.5.0" \
 
 component_actions_dir="$WORK_DIR/component-actions"
 fake_lib="$WORK_DIR/lib"
-mkdir -p "$fake_lib/components" "$fake_lib/config" "$fake_lib/core"
+mkdir -p "$fake_lib/components" "$fake_lib/config" "$fake_lib/core" "$fake_lib/routing"
 cp "$UPDATES_UC" "$fake_lib/components/updates.uc"
+cp "$ANTICHEBURNET_LIB/routing/strategy.uc" "$fake_lib/routing/strategy.uc"
 printf 'return {};\n' >"$fake_lib/config/connections.uc"
 cp "$ANTICHEBURNET_LIB/core/uci.uc" "$fake_lib/core/uci.uc"
 cp "$ANTICHEBURNET_LIB/core/common.uc" "$fake_lib/core/common.uc"

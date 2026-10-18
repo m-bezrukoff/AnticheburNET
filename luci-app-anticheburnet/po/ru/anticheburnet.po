@@ -2503,3 +2503,39 @@ msgstr "Обновить"
 
 msgid "Cache expired"
 msgstr "Кэш устарел"
+
+msgid "Not yet"
+msgstr "Ещё нет"
+
+msgid "Proxy"
+msgstr "Прокси"
+
+msgid "Block"
+msgstr "Блокировка"
+
+msgid "No source"
+msgstr "Источник не указан"
+
+msgid "Saved configuration"
+msgstr "Сохранённая конфигурация"
+
+msgid "No rules"
+msgstr "Нет правил"
+
+msgid "rules"
+msgstr "правил"
+
+msgid "This action has no rules in the received profile."
+msgstr "В полученном профиле нет правил для этого действия."
+
+msgid "domain rules"
+msgstr "доменных правил"
+
+msgid "Resources"
+msgstr "Ресурсы"
+
+msgid "Received subscription rules and saved runtime configuration."
+msgstr "Полученные правила подписки и сохранённая конфигурация."
+
+msgid "Apply changes to update the configured zones."
+msgstr "Примените изменения, чтобы обновить используемые зоны."

@@ -886,10 +886,10 @@ function ensureConnectionsDynamicListStyles() {
 
 .fkp-connections-dynlist > .item > .fkp-dynlist-settings:hover,
 .fkp-connections-dynlist > .item > .fkp-dynlist-settings:focus {
-  --focus-color-rgb: 82, 168, 236;
-  outline: 0;
-  border-color: rgba(var(--focus-color-rgb), 0.8) !important;
-  box-shadow: inset 0 1px 3px hsla(var(--border-color-low-hsl), .01), 0 0 8px rgba(var(--focus-color-rgb), 0.6);
+  outline: 2px solid var(--ac-accent, var(--link-color, #007ea8));
+  outline-offset: 2px;
+  border-color: var(--ac-accent, var(--link-color, #007ea8)) !important;
+  box-shadow: none;
   text-decoration: none;
 }
 
@@ -938,12 +938,12 @@ function ensureConnectionsDynamicListStyles() {
 
 .fkp-button-add-dynlist > .add-item > .cbi-button-add {
   align-items: center !important;
-  background: linear-gradient(var(--background-color-high, var(--primary, ButtonFace)) 0%, var(--border-color-low, var(--primary, ButtonFace)) 100%) !important;
+  background: var(--background-color-high, var(--primary, ButtonFace)) !important;
   border: 1px solid var(--border-color-high, var(--primary, currentColor)) !important;
-  border-radius: 3px !important;
-  box-shadow: inset 0 1px 3px hsla(var(--border-color-low-hsl, 0, 0%, 0%), .01) !important;
+  border-radius: var(--ac-radius, 5px) !important;
+  box-shadow: none !important;
   box-sizing: border-box !important;
-  color: var(--text-color-medium, var(--white, ButtonText)) !important;
+  color: var(--text-color-high, var(--white, ButtonText)) !important;
   cursor: pointer !important;
   display: flex !important;
   font-size: 13px !important;
@@ -956,16 +956,17 @@ function ensureConnectionsDynamicListStyles() {
   overflow: hidden !important;
   padding: 0 4px !important;
   text-overflow: ellipsis !important;
-  transition: border linear .2s, box-shadow linear .2s !important;
+  transition: none !important;
   white-space: nowrap !important;
   width: 100% !important;
 }
 
 .fkp-button-add-dynlist > .add-item > .cbi-button-add:hover,
 .fkp-button-add-dynlist > .add-item > .cbi-button-add:focus {
-  border-color: rgba(82, 168, 236, .8) !important;
-  box-shadow: inset 0 1px 3px hsla(var(--border-color-low-hsl, 0, 0%, 0%), .01), 0 0 8px rgba(82, 168, 236, .6) !important;
-  outline: 0;
+  border-color: var(--ac-accent, var(--link-color, #007ea8)) !important;
+  box-shadow: none !important;
+  outline: 2px solid var(--ac-accent, var(--link-color, #007ea8));
+  outline-offset: 2px;
 }
 
 body.modal-overlay-active > #modal_overlay > .modal.cbi-modal > .cbi-map.flash {

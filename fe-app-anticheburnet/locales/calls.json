@@ -5990,5 +5990,91 @@
     "places": [
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:14"
     ]
+  },
+  {
+    "call": "Not yet",
+    "key": "Not yet",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:181"
+    ]
+  },
+  {
+    "call": "Proxy",
+    "key": "Proxy",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:196"
+    ]
+  },
+  {
+    "call": "Block",
+    "key": "Block",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:196"
+    ]
+  },
+  {
+    "call": "No source",
+    "key": "No source",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:218"
+    ]
+  },
+  {
+    "call": "Saved configuration",
+    "key": "Saved configuration",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:232"
+    ]
+  },
+  {
+    "call": "No rules",
+    "key": "No rules",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:271",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:279"
+    ]
+  },
+  {
+    "call": "rules",
+    "key": "rules",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:272"
+    ]
+  },
+  {
+    "call": "This action has no rules in the received profile.",
+    "key": "This action has no rules in the received profile.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:281"
+    ]
+  },
+  {
+    "call": "domain rules",
+    "key": "domain rules",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:310"
+    ]
+  },
+  {
+    "call": "Resources",
+    "key": "Resources",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:313",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:314"
+    ]
+  },
+  {
+    "call": "Received subscription rules and saved runtime configuration.",
+    "key": "Received subscription rules and saved runtime configuration.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:321"
+    ]
+  },
+  {
+    "call": "Apply changes to update the configured zones.",
+    "key": "Apply changes to update the configured zones.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:322"
+    ]
   }
 ]

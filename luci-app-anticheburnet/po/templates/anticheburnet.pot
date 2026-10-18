@@ -3545,3 +3545,39 @@ msgstr ""
 
 msgid "Cache expired"
 msgstr ""
+
+msgid "Not yet"
+msgstr ""
+
+msgid "Proxy"
+msgstr ""
+
+msgid "Block"
+msgstr ""
+
+msgid "No source"
+msgstr ""
+
+msgid "Saved configuration"
+msgstr ""
+
+msgid "No rules"
+msgstr ""
+
+msgid "rules"
+msgstr ""
+
+msgid "This action has no rules in the received profile."
+msgstr ""
+
+msgid "domain rules"
+msgstr ""
+
+msgid "Resources"
+msgstr ""
+
+msgid "Received subscription rules and saved runtime configuration."
+msgstr ""
+
+msgid "Apply changes to update the configured zones."
+msgstr ""

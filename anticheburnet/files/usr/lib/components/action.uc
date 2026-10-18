@@ -593,11 +593,11 @@ function http_get_once(url, output_path, proxy_address, timeout) {
     timeout = as_string(timeout || "30");
 
     if (command_exists("curl")) {
-        let args = [ "curl", "--connect-timeout", "5", "--speed-limit", "1024", "--speed-time", "30", "-m", timeout, "-fsSL" ];
-        if (proxy_address != "") {
-            push(args, "-x");
-            push(args, "http://" + proxy_address);
-        }
+        // Release metadata and assets are idempotent reads. Allow brief
+        // connection-refused or upstream failures while the service settles.
+        let args = [ "curl", "-q", "--connect-timeout", "5", "--speed-limit", "1024", "--speed-time", "30", "-m", timeout,
+            "--retry", "2", "--retry-delay", "1", "--retry-connrefused", "--retry-max-time", "10", "-fsSL",
+            "--noproxy", "", "--proxy", proxy_address != "" ? "http://" + proxy_address : "" ];
         push(args, url);
         push(args, "-o");
         push(args, output_path);

@@ -903,7 +903,7 @@ function validate_dns_settings(settings, sections, context) {
     if (!contains([ "udp", "dot", "doh" ], dns_type))
         fail_validation("Unsupported DNS protocol type '" + dns_type + "'. Use udp, dot, or doh. Aborted.");
 
-    let dns_strategy = option(settings, "dns_strategy", "prefer_ipv4");
+    let dns_strategy = option(settings, "dns_strategy", "ipv4_only");
     if (!contains([ "prefer_ipv4", "ipv4_only", "prefer_ipv6", "ipv6_only" ], dns_strategy))
         fail_validation("Unsupported DNS strategy '" + dns_strategy + "'. Use prefer_ipv4, ipv4_only, prefer_ipv6, or ipv6_only. Aborted.");
 

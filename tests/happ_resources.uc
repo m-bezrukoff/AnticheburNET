@@ -24,6 +24,8 @@ geo.source_path("https://one.test/geoip.dat", work, "geoip", options);
 check(length(requests) == 1 && index(requests[0], "--proxy 'http://127.0.0.1:4534'") >= 0 &&
     index(requests[0], "--noproxy ''") >= 0 && index(requests[0], "curl -q") >= 0,
     "Geodata must pin explicit proxy routing and ignore ambient curl/proxy settings");
+check(index(requests[0], "--retry 2 --retry-delay 2 --retry-connrefused --retry-max-time 30") >= 0,
+    "Cold-start geodata reads must allow bounded transient retries through the selected proxy");
 let saved = json(fs.readfile(work + "/geoip.status.json"));
 check(saved.status == "downloaded" && saved.proxy_section == "chosen" && saved.bytes == 2, "Successful download status missing");
 geo.source_path("https://one.test/geoip.dat", work, "geoip", options);
@@ -32,7 +34,8 @@ fail = true; rejected = false;
 try { geo.source_path("https://two.test/geoip.dat", work, "geoip", options); } catch (e) { rejected = true; }
 check(rejected && length(requests) == 2, "Failed proxy must not retry directly");
 saved = json(fs.readfile(work + "/geoip.status.json"));
-check(saved.status == "error" && saved.url == "https://two.test/geoip.dat", "Failed resource status must identify requested URL");
+check(saved.status == "error" && saved.url == "https://two.test/geoip.dat" && saved.download_exit_code == 1,
+    "Failed resource status must identify requested URL and download exit code");
 check(fs.readfile(work + "/geoip.dat.url") == "https://one.test/geoip.dat" && fs.readfile(work + "/geoip.dat") == chr(10) + chr(0), "Failure must preserve the last good database");
 fail = false; invalid = true; rejected = false;
 try { geo.source_path("https://two.test/geoip.dat", work, "geoip", options); } catch (e) { rejected = true; }

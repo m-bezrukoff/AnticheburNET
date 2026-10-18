@@ -144,7 +144,9 @@ function source_path(url, directory, kind, options) {
     let execute = type(options.execute) == "function" ? options.execute : system;
     let status;
     try {
-        status = execute("umask 077; curl -q --fail --silent --show-error --location --proto '=http,https' --proto-redir '=http,https' --connect-timeout 10 --max-time 180 --max-filesize 33554432 --noproxy '' --proxy " + quote(options.proxy || "") + " -o " + quote(temp) + " -- " + quote(url));
+        // Cold boot can race DNS and the selected connection becoming usable.
+        // Retry transient reads through the same connection, without direct fallback.
+        status = execute("umask 077; curl -q --fail --silent --show-error --location --proto '=http,https' --proto-redir '=http,https' --connect-timeout 10 --max-time 180 --retry 2 --retry-delay 2 --retry-connrefused --retry-max-time 30 --max-filesize 33554432 --noproxy '' --proxy " + quote(options.proxy || "") + " -o " + quote(temp) + " -- " + quote(url));
     }
     catch (error) {
         fs.unlink(temp);
@@ -160,8 +162,9 @@ function source_path(url, directory, kind, options) {
         fs.unlink(temp);
         state.status = "error";
         state.error = options.proxy ? "proxy_download_failed" : "download_failed";
+        state.download_exit_code = status > 255 ? int(status / 256) : status;
         resource_status(directory, kind, state);
-        die("Happ geodata download failed; retaining the previous runtime configuration\n");
+        die("Happ geodata download failed (exit " + state.download_exit_code + "); retaining the previous runtime configuration\n");
     }
     // Validate protobuf before atomically replacing the last good download.
     try { fields(data, function(field, wire, value) {}); }

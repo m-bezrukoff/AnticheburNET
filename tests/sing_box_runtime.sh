@@ -1260,7 +1260,7 @@ assert(route_rule(disabled, r => r.action == "resolve" && r.server == "dns-serve
 
 let defaults = cfg("default");
 assert(first_remote_ruleset(defaults).update_interval == "1d", "default list update interval");
-assert(defaults.dns.strategy == "prefer_ipv4", "missing DNS strategy keeps the prefer_ipv4 default");
+assert(defaults.dns.strategy == "ipv4_only", "missing DNS strategy defaults to IPv4 only");
 assert(dns_server(defaults, r => r.tag == "dnsmasq-server") == null, "source-aware DNS server is omitted without device filters");
 
 let server = cfg("server");

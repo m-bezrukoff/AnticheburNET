@@ -155,6 +155,13 @@ function addRoutingStrategy(map, rulesSection) {
   const happDetails = strategySection.option(form.DummyValue, "_happ_status", _("HAPP rules and resources"));
   happDetails.depends("routing_strategy", "happ");
   happDetails.renderWidget = () => happ.createWidget();
+  const renderHappDetails = happDetails.render;
+  happDetails.render = function (...args) {
+    return Promise.resolve(renderHappDetails.apply(this, args)).then((node) => {
+      node.classList.add("ac-happ-field");
+      return node;
+    });
+  };
 
   // Keep the normal form load/save lifecycle, but render these global options
   // inside the Sections tab on every refresh instead of creating another tab.
@@ -561,6 +568,7 @@ const EntryPoint = {
     await loadUiCapabilities().catch(() => null);
 
     const rendered = await anticheburnetMap.render();
+    rendered.classList.add("ac-app");
     main.coreService({
       waitForLogWatcherStart: loadUiCapabilities,
       logWatcherStartDelayMs: 5000,

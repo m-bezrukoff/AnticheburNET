@@ -513,7 +513,7 @@ function base_config(settings, service_address, runtime_context) {
             servers: dns_servers,
             rules: dns_rules,
             final: runtime_constants.DNS_SERVER_TAG,
-            strategy: option(settings, "dns_strategy", "prefer_ipv4")
+            strategy: option(settings, "dns_strategy", "ipv4_only")
         },
         ntp: {},
         certificate: {},

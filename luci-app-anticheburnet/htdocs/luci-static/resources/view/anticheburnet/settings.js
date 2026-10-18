@@ -269,7 +269,7 @@ function createSettingsContent(section, capabilities) {
   o.value("ipv4_only", _("IPv4 only"));
   o.value("prefer_ipv6", _("Prefer IPv6"));
   o.value("ipv6_only", _("IPv6 only"));
-  o.default = "prefer_ipv4";
+  o.default = "ipv4_only";
   o.rmempty = false;
 
   o = section.option(

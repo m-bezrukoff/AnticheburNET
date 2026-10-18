@@ -2,8 +2,23 @@
 import { ANTICHEBURNET_UCI_PACKAGE as ANTICHEBURNET_CBI_PREFIX } from '../../../constants';
 
 export const styles = `
-#cbi-${ANTICHEBURNET_CBI_PREFIX}-updates-_mount_node > div {
+#cbi-${ANTICHEBURNET_CBI_PREFIX}-updates-_mount_node {
+    display: block;
+    margin: 0;
+    padding: 0;
+}
+
+#cbi-${ANTICHEBURNET_CBI_PREFIX}-updates-_mount_node > .cbi-value-title {
+    display: none;
+}
+
+#cbi-${ANTICHEBURNET_CBI_PREFIX}-updates-_mount_node > .cbi-value-field {
+    display: block;
+    float: none;
+    margin-left: 0;
     width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 #cbi-${ANTICHEBURNET_CBI_PREFIX}-updates > h3 {
@@ -40,8 +55,15 @@ export const styles = `
 }
 
 .fkp_updates-page__components-optional > .fkp_updates-page__component {
-    width: 220px;
-    flex: 0 0 220px;
+    width: max-content;
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.fkp_updates-page__components-optional .fkp_updates-page__component__header,
+.fkp_updates-page__components-optional .fkp_updates-page__component__actions-main,
+.fkp_updates-page__components-optional .fkp_updates-page__component__info-value--latest {
+    flex-wrap: nowrap;
 }
 
 .fkp_updates-page__component {

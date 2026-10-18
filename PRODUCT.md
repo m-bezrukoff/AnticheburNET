@@ -8,4 +8,4 @@ The primary audience is the router administrator. This is an Operate surface: ma
 
 Preserve LuCI's form validation, dependency visibility, save/apply lifecycle, keyboard interaction, localization and active theme. Display backend state faithfully. A saved HAPP configuration or a prepared geodata resource does not by itself prove that changes are applied to the live router.
 
-The October 2026 visual update was approved first as a HAPP mockup and then extended by the user to every application section. It changes presentation; it does not authorize changing router configuration, installing a release or restarting services.
+The application retains its original LuCI design. The Sections tab keeps the HAPP rule/resource visualization while inheriting the active theme's system font.

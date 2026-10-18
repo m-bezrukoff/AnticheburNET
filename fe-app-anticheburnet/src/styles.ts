@@ -4,7 +4,6 @@ import { DiagnosticTab } from './anticheburnet/tabs/diagnostic';
 import { MonitoringTab } from './anticheburnet/tabs/monitoring';
 import { UpdatesTab } from './anticheburnet/tabs/updates';
 import { PartialStyles } from './partials';
-import { InterfaceStyles } from './interfaceStyles';
 import { ANTICHEBURNET_UCI_PACKAGE as ANTICHEBURNET_CBI_PREFIX } from './constants';
 
 export const GlobalStyles = `
@@ -14,6 +13,13 @@ ${MonitoringTab.styles}
 ${UpdatesTab.styles}
 ${PartialStyles}
 
+/* Align help icons with the first text line, including multiline descriptions. */
+:is(#cbi-${ANTICHEBURNET_CBI_PREFIX}, [id^="cbi-${ANTICHEBURNET_CBI_PREFIX}-"]) .cbi-value-description:not(:empty)::before {
+    width: calc(1em - 2px);
+    height: calc(1em - 2px);
+    top: .5lh;
+    transform: translateY(-50%);
+}
 
 /* Hide extra H3 for settings tab */
 #cbi-${ANTICHEBURNET_CBI_PREFIX}-settings > h3 {
@@ -23,6 +29,15 @@ ${PartialStyles}
 /* Hide extra H3 for rules tab */
 #cbi-${ANTICHEBURNET_CBI_PREFIX}-section > h3:nth-child(1) {
     display: none;
+}
+
+/* Keep the complete routing strategy label visible at the theme's font size. */
+#cbi-${ANTICHEBURNET_CBI_PREFIX}-settings-routing_strategy select,
+#cbi-${ANTICHEBURNET_CBI_PREFIX}-settings-routing_strategy .cbi-dropdown {
+    width: max-content !important;
+    min-width: min(100%, 64ch) !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
 }
 
 /* Vertical align for remove rule action button */
@@ -164,5 +179,4 @@ ${PartialStyles}
     opacity: 1;
     transform: translateY(0);
 }
-${InterfaceStyles}
 `;

@@ -15,7 +15,7 @@ const styles = `
   --happ-warning: var(--ac-warning, var(--warn-color-medium, #a56700));
   --happ-link: var(--ac-accent, var(--link-color, #007ea8));
   color: var(--text-color-high, inherit);
-  width: 100%; min-width: 0; font-size: 14px; line-height: 1.5;
+  width: 100%; min-width: 0; font: inherit;
   container-type: inline-size;
 }
 .ac-happ, .ac-happ * { box-sizing: border-box; }
@@ -81,7 +81,7 @@ const styles = `
 .ac-happ__rule-column h4 { font-size: 14px; font-weight: 500; margin-bottom: 6px; color: var(--happ-muted); }
 .ac-happ .ac-happ__rule-list {
   padding: 0; margin: 0; border: 0; border-radius: 0; box-shadow: none;
-  background: transparent; color: inherit; font: 13px/1.65 ui-monospace, SFMono-Regular, Consolas, monospace;
+  background: transparent; color: inherit; font: inherit; line-height: 1.65;
   white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal; max-height: 24rem; overflow-y: auto;
   scrollbar-color: var(--happ-border) transparent;
 }

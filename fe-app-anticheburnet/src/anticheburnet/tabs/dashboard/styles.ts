@@ -18,17 +18,27 @@ export const styles = `
     unicode-range: U+1F1E6-1F1FF, U+1F3F4, U+E0062-E0063, U+E0065, U+E0067, U+E006C, U+E006E, U+E0073-E0074, U+E0077, U+E007F;
 }
 
+#cbi-${ANTICHEBURNET_CBI_PREFIX}-dashboard-_mount_node {
+    display: block;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 #cbi-${ANTICHEBURNET_CBI_PREFIX}-dashboard-_mount_node > .cbi-value-title {
     display: none;
 }
 
 #cbi-${ANTICHEBURNET_CBI_PREFIX}-dashboard-_mount_node > .cbi-value-field {
+    display: block;
+    float: none;
     margin-left: 0;
     width: 100%;
-}
-
-#cbi-${ANTICHEBURNET_CBI_PREFIX}-dashboard-_mount_node > div {
-    width: 100%;
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 #cbi-${ANTICHEBURNET_CBI_PREFIX}-dashboard > h3 {

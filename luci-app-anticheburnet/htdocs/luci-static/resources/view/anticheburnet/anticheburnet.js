@@ -568,7 +568,6 @@ const EntryPoint = {
     await loadUiCapabilities().catch(() => null);
 
     const rendered = await anticheburnetMap.render();
-    rendered.classList.add("ac-app");
     main.coreService({
       waitForLogWatcherStart: loadUiCapabilities,
       logWatcherStartDelayMs: 5000,

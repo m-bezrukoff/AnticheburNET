@@ -3425,3 +3425,6 @@ msgstr ""
 
 msgid "First enabled connection"
 msgstr ""
+
+msgid "Update subscriptions daily at 03:00 (router time)"
+msgstr ""

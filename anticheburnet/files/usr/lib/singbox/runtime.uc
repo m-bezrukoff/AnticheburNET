@@ -6,6 +6,7 @@ let common = require("core.common");
 let read_json_file = common.read_json_file;
 let runtime_dns = require("singbox.dns");
 let runtime_awg = require("singbox.awg");
+let selection = require("singbox.selection");
 let core_version = require("singbox.version");
 
 const CONFIG_NAME = getenv("ANTICHEBURNET_CONFIG_NAME") || "anticheburnet";
@@ -988,6 +989,13 @@ function update_providers(only_if_pending) {
     }
     // The provider validates constructors, references, cycles and startup in an
     // isolated graph before atomically publishing it. No external check/reload.
+    let selected_profiles = selection.capture();
+    if (selected_profiles == null) {
+        runtime_awg.rollback_update(manifest_path, awg_plan);
+        remove_provider_stage(candidate_path);
+        log_message("Unable to capture selected connection profiles; provider update remains pending", "error");
+        return false;
+    }
     if (!save_config_file(candidate_provider_path, provider.path)) {
         if (!runtime_awg.rollback_update(manifest_path, awg_plan))
             log_message("Native AWG cleanup remains pending after provider file failure", "error");
@@ -1006,13 +1014,17 @@ function update_providers(only_if_pending) {
         let restored = module_success([ LIB_DIR + "/diagnostics/runtime.uc", "clash-api", "update_provider", provider.tag, old_revision ]);
         // With an uncertain API outcome either graph may still be live. Keep
         // both sets of native interfaces until a retry confirms the provider.
+        if (restored && !selection.restore(selected_profiles))
+            log_message("Previous provider restored but connection selection could not be restored", "error");
         if (restored && !runtime_awg.rollback_update(manifest_path, awg_plan))
             log_message("Previous provider confirmed but native AWG cleanup remains pending", "error");
         log_message(restored ? "Dynamic provider update failed; previous graph restored and confirmed" : "Dynamic provider update could not be confirmed; previous file restored and retry remains pending", "error");
         remove_provider_stage(candidate_path);
         return false;
     }
-    let ok = runtime_awg.commit_update(manifest_path, awg_plan);
+    let ok = selection.restore(selected_profiles);
+    if (!ok) log_message("Provider applied but selected connection profiles could not be restored", "error");
+    if (!runtime_awg.commit_update(manifest_path, awg_plan)) ok = false;
     if (!ok) log_message("Provider applied but native AWG cleanup remains pending", "error");
     for (let path in fs.glob(stage_dir + "/*.json"))
         if (!fs.rename(path, SECTION_CACHE_DIR + "/" + split(path, "/")[-1])) ok = false;

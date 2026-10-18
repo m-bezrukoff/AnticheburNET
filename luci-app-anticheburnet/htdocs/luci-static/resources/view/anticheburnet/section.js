@@ -2284,29 +2284,6 @@ function addSubscriptionUrlItemOptions(itemSection, options = {}) {
 
   let o = itemSection.option(
     form.Flag,
-    "subscription_update_enabled",
-    _("Subscription auto update"),
-    _("Update this subscription automatically"),
-  );
-  o.default = "1";
-  o.rmempty = false;
-
-  o = itemSection.option(
-    form.Value,
-    "subscription_update_interval",
-    _("Subscription update interval"),
-    _("Use sing-box duration format like 1d, 12h or 30m"),
-  );
-  o.depends("subscription_update_enabled", "1");
-  o.placeholder = "1h";
-  o.validate = function (itemId, value) {
-    return optionMapValue(this, itemId, "subscription_update_enabled") === "1"
-      ? validateRequiredSingBoxDuration(value)
-      : validateOptionalSingBoxDuration(value);
-  };
-
-  o = itemSection.option(
-    form.Flag,
     "download_via_proxy_enabled",
     _("Download subscription through a section"),
     _("Download subscriptions via the selected section"),

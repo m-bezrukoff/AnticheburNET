@@ -2226,6 +2226,7 @@ function render() {
           "AnticheburNET service is stopped. Start the service to display the dashboard."
         )
       ),
+      E("div", { id: "dashboard-subscription-auto-update-settings" }),
       E("div", { class: "fkp_dashboard-page__content" }, [
         // Widgets section
         E("div", { class: "fkp_dashboard-page__widgets-section" }, [
@@ -2426,6 +2427,7 @@ var AnticheburNET;
     AvailableMethods2["COMPONENT_ACTION_STATUS"] = "component_action_status";
     AvailableMethods2["COMPONENT_UPDATE_CHECK_CACHE"] = "component_update_check_cache";
     AvailableMethods2["RELEASE_AUTO_UPDATE"] = "release_auto_update";
+    AvailableMethods2["SUBSCRIPTION_AUTO_UPDATE"] = "subscription_auto_update";
     AvailableMethods2["SUBSCRIPTION_UPDATE_ASYNC"] = "subscription_update_async";
     AvailableMethods2["SUBSCRIPTION_UPDATE_STATUS"] = "subscription_update_status";
   })(AvailableMethods = AnticheburNET2.AvailableMethods || (AnticheburNET2.AvailableMethods = {}));
@@ -2893,6 +2895,10 @@ var AnticheburNETShellMethods = {
   },
   componentUpdateCheckCache: async () => callBaseMethod(
     AnticheburNET.AvailableMethods.COMPONENT_UPDATE_CHECK_CACHE
+  ),
+  subscriptionAutoUpdate: async (enabled) => callBaseMethod(
+    AnticheburNET.AvailableMethods.SUBSCRIPTION_AUTO_UPDATE,
+    enabled === void 0 ? [] : [enabled ? "1" : "0"]
   ),
   releaseAutoUpdate: async (enabled) => callBaseMethod(
     AnticheburNET.AvailableMethods.RELEASE_AUTO_UPDATE,
@@ -5583,7 +5589,64 @@ function getSubscriptionLatencyTest(section) {
   };
 }
 
+// src/anticheburnet/tabs/dashboard/subscriptionAutoUpdate.ts
+function mountSubscriptionAutoUpdate(container) {
+  let active = true;
+  let enabled = false;
+  const checkbox = E("input", {
+    type: "checkbox",
+    id: "dashboard-subscription-auto-update"
+  });
+  checkbox.disabled = true;
+  container.replaceChildren(
+    E("label", { class: "fkp_dashboard-page__subscription-auto-update" }, [
+      checkbox,
+      E("span", {}, _("Update subscriptions daily at 03:00 (router time)"))
+    ])
+  );
+  async function load() {
+    try {
+      const response = await AnticheburNETShellMethods.subscriptionAutoUpdate();
+      if (!active) return;
+      if (!response.success || typeof response.data?.enabled !== "boolean") {
+        throw new Error("settings unavailable");
+      }
+      enabled = response.data.enabled;
+      checkbox.checked = enabled;
+      checkbox.disabled = false;
+    } catch {
+      if (active)
+        showToast(_("Failed to load automatic update settings"), "error");
+    }
+  }
+  checkbox.addEventListener("change", async () => {
+    if (checkbox.disabled) return;
+    const requested = checkbox.checked;
+    checkbox.disabled = true;
+    try {
+      const response = await AnticheburNETShellMethods.subscriptionAutoUpdate(requested);
+      if (!response.success || typeof response.data?.enabled !== "boolean") {
+        throw new Error("settings not saved");
+      }
+      enabled = response.data.enabled;
+    } catch {
+      if (active)
+        showToast(_("Failed to save automatic update settings"), "error");
+    } finally {
+      if (active) {
+        checkbox.checked = enabled;
+        checkbox.disabled = false;
+      }
+    }
+  });
+  void load();
+  return () => {
+    active = false;
+  };
+}
+
 // src/anticheburnet/tabs/dashboard/initController.ts
+var unmountSubscriptionAutoUpdate = null;
 var SECTIONS_REFRESH_INTERVAL_MS = 1e4;
 var LATENCY_TEST_BUTTON_CLASS = "dashboard-sections-grid-item-test-latency";
 var LATENCY_TEST_BUTTON_LABEL_CLASS = "dashboard-sections-grid-item-test-latency__label";
@@ -6966,6 +7029,11 @@ async function onStoreUpdate(next, prev, diff) {
 async function onPageMount() {
   onPageUnmount();
   dashboardMounted = true;
+  const settingsContainer = document.getElementById(
+    "dashboard-subscription-auto-update-settings"
+  );
+  if (settingsContainer)
+    unmountSubscriptionAutoUpdate = mountSubscriptionAutoUpdate(settingsContainer);
   dashboardMountId += 1;
   const mountId = dashboardMountId;
   const hasRuntimeSnapshot = Boolean(getCachedRuntimeUiState());
@@ -6991,6 +7059,8 @@ async function onPageMount() {
   }
 }
 function onPageUnmount() {
+  unmountSubscriptionAutoUpdate?.();
+  unmountSubscriptionAutoUpdate = null;
   dashboardMounted = false;
   dashboardMountId += 1;
   stopDashboardDataUpdates();
@@ -7050,6 +7120,13 @@ async function initController() {
 
 // src/anticheburnet/tabs/dashboard/styles.ts
 var styles = `
+.fkp_dashboard-page__subscription-auto-update {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0;
+}
+
 @font-face {
     font-family: "Twemoji Country Flags";
     src: url("/luci-static/resources/view/anticheburnet/fonts/TwemojiCountryFlags.woff2") format("woff2");

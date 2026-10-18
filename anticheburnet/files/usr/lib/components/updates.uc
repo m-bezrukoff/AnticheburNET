@@ -36,6 +36,7 @@ const COMPONENT_JOB_DIR = getenv("UPDATES_JOB_DIR") || getenv("ANTICHEBURNET_UI_
 const COMPONENT_UPDATE_CHECK_CACHE_DIR = getenv("ANTICHEBURNET_COMPONENT_UPDATE_CHECK_CACHE_DIR") || RUNTIME_STATE_DIR + "/component-update-checks";
 const COMPONENT_UPDATE_CHECK_STATE_FILE = getenv("ANTICHEBURNET_COMPONENT_UPDATE_CHECK_STATE_FILE") || RUNTIME_STATE_DIR + "/component-update-check.timestamp";
 const COMPONENT_UPDATE_CHECK_LOCK_DIR = getenv("ANTICHEBURNET_COMPONENT_UPDATE_CHECK_LOCK_DIR") || RUNTIME_STATE_DIR + "/component-update-check.lock";
+const SUBSCRIPTION_UPDATE_CRON_MARKER = getenv("ANTICHEBURNET_SUBSCRIPTION_UPDATE_CRON_MARKER") || "# anticheburnet-subscription-update";
 const RELEASE_AUTO_UPDATE_CRON_MARKER = "# anticheburnet-release-auto-update";
 const RELEASE_AUTO_UPDATE_STATE_FILE = getenv("ANTICHEBURNET_RELEASE_AUTO_UPDATE_STATE_FILE") || "/etc/anticheburnet/release-auto-update.day";
 const RELEASE_AUTO_UPDATE_RESULT_FILE = getenv("ANTICHEBURNET_RELEASE_AUTO_UPDATE_RESULT_FILE") || "/etc/anticheburnet/release-auto-update.json";
@@ -702,33 +703,12 @@ function cron_refresh_plan_rows(settings, sections, bin, list_marker, subscripti
         }
     }
 
-    let min_interval = 0;
-    let subscription_source_count = 0;
-    for (let section in sections) {
-        section = object_or_empty(section);
-        if (!section_is_subscription_proxy(section))
-            continue;
-
-        let interval = section_subscription_update_interval(section);
-        if (interval == "")
-            continue;
-
-        subscription_source_count++;
-        let seconds = duration_to_seconds_value(interval);
-        if (seconds == null) {
-            push(rows, "subscription-error\t" + section_name(section) + "\t" + as_string(interval));
-            continue;
-        }
-
-        if (min_interval == 0 || seconds < min_interval)
-            min_interval = seconds;
-    }
-
-    if (subscription_source_count > 0) {
-        if (min_interval <= 0)
-            status = 1;
-        else
-            push(rows, "subscription\t" + due_check_cron_schedule_text(min_interval) + " " + as_string(bin) + " subscription_update_if_due " + as_string(subscription_marker));
+    if (bool_option(settings, "subscription_auto_update_enabled", true)) {
+        let has_subscriptions = false;
+        for (let section in sections)
+            if (section_is_subscription_proxy(object_or_empty(section))) has_subscriptions = true;
+        if (has_subscriptions)
+            push(rows, "subscription\t0 3 * * * " + as_string(bin) + " subscription_update_daily " + as_string(subscription_marker));
     }
 
     let component_interval = settings_component_update_check_interval(settings);
@@ -2971,6 +2951,42 @@ function subscription_update_worker(state_file, output_file, section, source_ind
     finish_subscription_job(state_file, status, output_file);
 }
 
+function refresh_subscription_auto_update_cron(enabled) {
+    let cron = filter_cron_markers_text(command_output_from_args([ "crontab", "-l" ]), [ SUBSCRIPTION_UPDATE_CRON_MARKER ]);
+    if (enabled) cron += "0 3 * * * " + BIN_PATH + " subscription_update_daily " + SUBSCRIPTION_UPDATE_CRON_MARKER + "\n";
+    return write_crontab_text(cron);
+}
+
+function subscription_auto_update_settings(value) {
+    let settings = uci_settings();
+    let enabled = bool_option(settings, "subscription_auto_update_enabled", true);
+    if (as_string(value) == "") {
+        write_json({ enabled });
+        return true;
+    }
+    if (value != "0" && value != "1") return false;
+    if (!acquire_runtime_lock(SUBSCRIPTION_UPDATE_LOCK_DIR, false)) return false;
+    let path = CONFIG_NAME + ".settings.subscription_auto_update_enabled";
+    let previous = uci_core.get(path);
+    let ok = uci_core.set(path, value) && uci_core.commit(CONFIG_NAME);
+    if (ok) ok = refresh_subscription_auto_update_cron(value == "1");
+    if (!ok) {
+        if (previous == null || previous == "") uci_core.delete(path);
+        else uci_core.set(path, previous);
+        uci_core.commit(CONFIG_NAME);
+        refresh_subscription_auto_update_cron(enabled);
+    }
+    release_runtime_lock(SUBSCRIPTION_UPDATE_LOCK_DIR);
+    if (ok) write_json({ enabled: value == "1" });
+    return ok;
+}
+
+function subscription_update_daily() {
+    if (!bool_option(uci_settings(), "subscription_auto_update_enabled", true)) return;
+    log_message("Starting daily subscription update", "info");
+    exit(subscription_update_common(true, "", ""));
+}
+
 function subscription_update_if_due() {
     log_message("Starting due subscription update", "info");
     exit(subscription_update_common(false, "", ""));
@@ -3157,6 +3173,10 @@ else if (mode == "subscription-update-worker")
     subscription_update_worker(ARGV[1], ARGV[2], ARGV[3], ARGV[4]);
 else if (mode == "subscription-update")
     subscription_update(ARGV[1], ARGV[2]);
+else if (mode == "subscription-auto-update-settings")
+    exit(subscription_auto_update_settings(ARGV[1]) ? 0 : 1);
+else if (mode == "subscription-update-daily")
+    subscription_update_daily();
 else if (mode == "subscription-update-if-due")
     subscription_update_if_due();
 else if (mode == "subscription-update-async")

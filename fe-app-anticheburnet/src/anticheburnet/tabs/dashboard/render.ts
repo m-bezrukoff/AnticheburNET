@@ -18,6 +18,7 @@ export function render() {
           'AnticheburNET service is stopped. Start the service to display the dashboard.',
         ),
       ),
+      E('div', { id: 'dashboard-subscription-auto-update-settings' }),
       E('div', { class: 'fkp_dashboard-page__content' }, [
         // Widgets section
         E('div', { class: 'fkp_dashboard-page__widgets-section' }, [

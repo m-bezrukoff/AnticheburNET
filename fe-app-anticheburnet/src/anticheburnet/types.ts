@@ -88,6 +88,7 @@ export namespace AnticheburNET {
     COMPONENT_ACTION_STATUS = 'component_action_status',
     COMPONENT_UPDATE_CHECK_CACHE = 'component_update_check_cache',
     RELEASE_AUTO_UPDATE = 'release_auto_update',
+    SUBSCRIPTION_AUTO_UPDATE = 'subscription_auto_update',
     SUBSCRIPTION_UPDATE_ASYNC = 'subscription_update_async',
     SUBSCRIPTION_UPDATE_STATUS = 'subscription_update_status',
   }

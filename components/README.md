@@ -62,7 +62,7 @@ Services and user configuration are documented in [the OpenWrt 25.12 guide](../d
 
 ## Dynamic subscription providers
 
-Component `sing-box-extended` 1.14.1-r3 (`anticheburnet.3`) includes the managed
+Component `sing-box-extended` 1.14.1-r4 (`anticheburnet.4`) includes the managed
 provider installed by `prepare-providers.py`. Build this component together with
 the backend; older component APKs do not implement its atomic update API.
 After installing both, Apply configuration once to migrate an existing flat
@@ -74,7 +74,10 @@ The backend writes a private provider file and explicitly updates it through
 revision before publishing dashboard metadata. Constructors, dependencies and
 startup are validated in isolation; a rejected update retains the previous graph.
 Unchanged nodes are reused, changed credentials rebuild dependent groups, and
-selected nodes are retained when still present. Ordinary downloads use the last
+selected nodes are retained when still present. Revision 4 transfers the live
+selector choice before publishing replacement groups, including when the disk
+cache is disabled or unavailable. Adding or reordering subscription nodes preserves
+existing connections. Ordinary downloads use the last
 working request profile first, run up to eight sources concurrently, and have no
 retry sleeps. Manual updates share a two-second request budget per source across
 compatibility profiles; bootstrap downloads have a separate fifteen-second budget.

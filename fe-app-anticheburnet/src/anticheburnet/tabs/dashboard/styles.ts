@@ -2,6 +2,13 @@
 import { ANTICHEBURNET_UCI_PACKAGE as ANTICHEBURNET_CBI_PREFIX } from '../../../constants';
 
 export const styles = `
+.fkp_dashboard-page__subscription-auto-update {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0;
+}
+
 @font-face {
     font-family: "Twemoji Country Flags";
     src: url("/luci-static/resources/view/anticheburnet/fonts/TwemojiCountryFlags.woff2") format("woff2");

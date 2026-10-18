@@ -162,7 +162,7 @@ cat >"$WORK_DIR/cron-plan.json" <<'JSON'
 }
 JSON
 
-assert_eq $'list\t*/30 * * * * /usr/bin/anticheburnet list_update_if_due # list\nsubscription-error\tbad_sub\tbad\nsubscription\t*/45 * * * * /usr/bin/anticheburnet subscription_update_if_due # subscription\ncomponent\t0 */2 * * * /usr/bin/anticheburnet component_updates_if_due # component' \
+assert_eq $'list\t*/30 * * * * /usr/bin/anticheburnet list_update_if_due # list\nsubscription\t0 3 * * * /usr/bin/anticheburnet subscription_update_daily # subscription\ncomponent\t0 */2 * * * /usr/bin/anticheburnet component_updates_if_due # component' \
   "$(updates_ucode cron-refresh-plan-fixture "$WORK_DIR/cron-plan.json" /usr/bin/anticheburnet '# list' '# subscription' '# component')" \
   "cron refresh plan"
 
@@ -226,7 +226,7 @@ const value = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const expected = [
   "0 1 * * * /bin/true # keep",
   "*/30 * * * * /usr/bin/anticheburnet list_update_if_due # list",
-  "*/45 * * * * /usr/bin/anticheburnet subscription_update_if_due # subscription",
+  "0 3 * * * /usr/bin/anticheburnet subscription_update_daily # subscription",
   "0 */2 * * * /usr/bin/anticheburnet component_updates_if_due # component",
   ""
 ].join("\n");
@@ -237,7 +237,7 @@ if (value.crontab !== expected) {
 const messages = value.logs.map(item => item.message);
 if (!messages.includes("The cron job removed") ||
     !messages.includes("The cron job has been created: */30 * * * * /usr/bin/anticheburnet list_update_if_due # list") ||
-    !messages.includes("The subscription cron job has been created: */45 * * * * /usr/bin/anticheburnet subscription_update_if_due # subscription") ||
+    !messages.includes("The subscription cron job has been created: 0 3 * * * /usr/bin/anticheburnet subscription_update_daily # subscription") ||
     !messages.includes("The component update check cron job has been created: 0 */2 * * * /usr/bin/anticheburnet component_updates_if_due # component")) {
   console.error("unexpected cron apply logs", JSON.stringify(value.logs));
   process.exit(1);

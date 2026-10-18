@@ -100,4 +100,6 @@ restore_calls="$(grep -Fc 'restore_selector_state(selector_state);' "$LIFECYCLE_
 [ "$restore_calls" -ge 2 ] ||
   fail "full restart paths should restore selector state after runtime start"
 
+ANTICHEBURNET_SELECTOR_STATE_FILE="$WORK_DIR/selector-state.json" \
+    ucode -L "$ANTICHEBURNET_LIB" "$ROOT_DIR/tests/selection_state.uc"
 printf 'selector state checks passed\n'

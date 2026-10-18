@@ -52,7 +52,13 @@ module_success = function(args) {
     if (scenario == "uncertain") return false;
     return scenario != "rejected" || confirmations > 1;
 };
-for (let name in [ "success", "cleanup-failure", "readiness-failure", "file-failure", "rejected", "uncertain", "routing-change" ]) {
+selection.capture = function() { return scenario == "capture-failure" ? null : { "main-out": "old" }; };
+selection.restore = function(snapshot) {
+    check(snapshot["main-out"] == "old", "Active connection must survive new AWG profiles");
+    push(events, "selection");
+    return scenario != "selection-failure";
+};
+for (let name in [ "capture-failure", "selection-failure", "success", "cleanup-failure", "readiness-failure", "file-failure", "rejected", "uncertain", "routing-change" ]) {
     scenario = name; events = []; confirmations = 0;
     fs.writefile(current_path, sprintf("%J", current_config));
     fs.writefile(candidate_path, sprintf("%J", candidate_config));
@@ -65,13 +71,13 @@ for (let name in [ "success", "cleanup-failure", "readiness-failure", "file-fail
         fs.writefile(candidate_path + ".providers.json", sprintf("%J", changed));
     }
     check(update_providers(false) == (name == "success"), "Provider outcome must match native/API confirmation");
-    let expected = (name == "success" || name == "cleanup-failure") ? ["prepare", "publish", "confirm1", "commit"] :
-        name == "readiness-failure" ? ["prepare"] : name == "file-failure" ? ["prepare", "publish", "rollback"] :
-        name == "routing-change" ? [] : name == "rejected" ? ["prepare", "publish", "confirm1", "confirm2", "rollback"] :
+    let expected = (name == "success" || name == "cleanup-failure" || name == "selection-failure") ? ["prepare", "publish", "confirm1", "selection", "commit"] :
+        name == "capture-failure" ? ["prepare", "rollback"] : name == "readiness-failure" ? ["prepare"] : name == "file-failure" ? ["prepare", "publish", "rollback"] :
+        name == "routing-change" ? [] : name == "rejected" ? ["prepare", "publish", "confirm1", "confirm2", "selection", "rollback"] :
         ["prepare", "publish", "confirm1", "confirm2"];
     check(sprintf("%J", events) == sprintf("%J", expected), "AWG cleanup must follow definitive provider confirmation");
     check((fs.stat(current_path + ".providers.pending") != null) == (name != "success"), "Unconfirmed updates must remain pending");
-    if (name != "success" && name != "cleanup-failure")
+    if (name != "success" && name != "cleanup-failure" && name != "selection-failure")
         check(sprintf("%J", read_json_file(current_path + ".providers.json")) == sprintf("%J", old),
             "Failed publication must preserve or restore the previous provider file");
 }

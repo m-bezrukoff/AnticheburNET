@@ -588,6 +588,11 @@ export const AnticheburNETShellMethods = {
     callBaseMethod<AnticheburNET.ComponentUpdateCheckCache>(
       AnticheburNET.AvailableMethods.COMPONENT_UPDATE_CHECK_CACHE,
     ),
+  subscriptionAutoUpdate: async (enabled?: boolean) =>
+    callBaseMethod<{ enabled: boolean }>(
+      AnticheburNET.AvailableMethods.SUBSCRIPTION_AUTO_UPDATE,
+      enabled === undefined ? [] : [enabled ? '1' : '0'],
+    ),
   releaseAutoUpdate: async (enabled?: boolean) =>
     callBaseMethod<AnticheburNET.ReleaseAutoUpdateSettings>(
       AnticheburNET.AvailableMethods.RELEASE_AUTO_UPDATE,

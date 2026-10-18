@@ -139,6 +139,26 @@ func (m *Manager) ReplaceProvider(ctx context.Context, router adapter.Router, fa
 			}
 		}
 	}
+	// Membership changes rebuild selectors. Transfer the live user choice before
+	// publishing the graph, even when the disk cache is disabled or unavailable.
+	// This also avoids a brief detour through the new selector's default profile.
+	for tag, ob := range created {
+		selector, ok := ob.(interface {
+			adapter.OutboundGroup
+			SelectOutbound(string) bool
+		})
+		if !ok || ob.Type() != "selector" {
+			continue
+		}
+		previous, ok := old[tag].(adapter.OutboundGroup)
+		if !ok {
+			continue
+		}
+		selected := previous.Now()
+		if common.Contains(selector.All(), selected) && !selector.SelectOutbound(selected) {
+			return fmt.Errorf("restore provider selector %s: %s", tag, selected)
+		}
+	}
 	dependencies := make(map[string][]string)
 	for _, ob := range ordered {
 		for _, dependency := range ob.Dependencies() {

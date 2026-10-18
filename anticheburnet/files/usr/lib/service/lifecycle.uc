@@ -1,6 +1,7 @@
 #!/usr/bin/env ucode
 
 let fs = require("fs");
+let selection = require("singbox.selection");
 let constants = require("core.constants");
 let uci_core = require("core.uci");
 
@@ -222,18 +223,6 @@ function array_or_empty(value) {
     return type(value) == "array" ? value : [];
 }
 
-function string_array_contains(values, needle) {
-    needle = as_string(needle);
-    if (needle == "")
-        return false;
-
-    for (let item in array_or_empty(values))
-        if (as_string(item) == needle)
-            return true;
-
-    return false;
-}
-
 function write_file(path, value) {
     return fs.writefile(as_string(path), as_string(value));
 }
@@ -364,75 +353,29 @@ function module_output(module_path, args) {
 }
 
 function selector_state_from_proxies_payload(payload) {
-    let result = {};
-    let proxies = object_or_empty(object_or_empty(payload).proxies);
-
-    for (let tag, proxy in proxies) {
-        proxy = object_or_empty(proxy);
-        let proxy_type = lc(as_string(proxy.type || ""));
-        let selected = as_string(proxy.now || "");
-
-        if (proxy_type == "selector" && string_array_contains(proxy.all, selected))
-            result[as_string(tag)] = selected;
-    }
-
-    return result;
+    return selection.from_proxies(payload);
 }
 
 function selector_restore_pairs(snapshot, payload) {
-    let result = [];
-    snapshot = object_or_empty(snapshot);
-    let proxies = object_or_empty(object_or_empty(payload).proxies);
-
-    for (let group, selected in snapshot) {
-        group = as_string(group);
-        selected = as_string(selected);
-
-        if (group == "" || selected == "")
-            continue;
-
-        let proxy = object_or_empty(proxies[group]);
-        if (lc(as_string(proxy.type || "")) != "selector")
-            continue;
-        if (!string_array_contains(proxy.all, selected))
-            continue;
-        if (as_string(proxy.now || "") == selected)
-            continue;
-
-        push(result, { group, proxy: selected });
-    }
-
-    return result;
-}
-
-function clash_api_json(action, arg1, arg2, arg3) {
-    let result = module_capture(DIAGNOSTICS_UC, [
-        "clash-api",
-        action,
-        as_string(arg1 || ""),
-        as_string(arg2 || ""),
-        as_string(arg3 || "")
-    ]);
-    if (result.status != 0)
-        return null;
-
-    try {
-        return json(result.output);
-    }
-    catch (e) {
-        return null;
-    }
+    return selection.restore_pairs(snapshot, payload);
 }
 
 function capture_selector_state() {
-    return selector_state_from_proxies_payload(clash_api_json("get_proxies"));
+    return selection.capture();
 }
 
 function restore_selector_state(snapshot) {
-    let pairs = selector_restore_pairs(snapshot, clash_api_json("get_proxies"));
+    if (!selection.restore(snapshot))
+        log_message("Failed to restore selected connection profiles", "error");
+}
 
-    for (let pair in pairs)
-        module_success(DIAGNOSTICS_UC, [ "clash-api", "set_group_proxy", pair.group, pair.proxy, "" ]);
+function restore_saved_selector_state() {
+    if (selection.restore(selection.read())) {
+        // The handoff is consumed. A later cold boot must use sing-box's latest
+        // cache rather than replay an older choice from a previous update.
+        if (!selection.clear()) log_message("Failed to clear saved connection selection", "error");
+    }
+    else log_message("Failed to restore saved connection profiles", "error");
 }
 
 function module_background(module_path, args) {
@@ -741,6 +684,7 @@ function start_main() {
         return status;
     }
 
+    restore_saved_selector_state();
     status = module_status(PRIORITY_UC, [ "start-runtime" ]);
     if (status != 0) {
         log_message("Failed to start Priority runtime. Aborted.", "fatal");
@@ -801,9 +745,11 @@ function start_impl() {
     return 0;
 }
 
-function stop_main() {
+function stop_main(preserve_selection) {
     let status = 0;
 
+    if (preserve_selection !== false && !selection.save(capture_selector_state()))
+        log_message("Failed to save selected connection profiles", "error");
     log_message("Stopping AnticheburNET", "info");
     module_success(DNS_FAILOVER_UC, [ "stop-runtime" ]);
     module_success(PRIORITY_UC, [ "stop-runtime" ]);
@@ -842,7 +788,7 @@ function cleanup_failed_runtime() {
 
     log_message("Cleaning up AnticheburNET runtime after failed start/reload", "info");
 
-    let stop_status = stop_main();
+    let stop_status = stop_main(false);
     if (stop_status != 0)
         status = stop_status;
 
@@ -1222,6 +1168,8 @@ function reload(reason) {
     }
 
     if (plan.needs_sing_box_reload == 1) {
+        if (!selection.save(capture_selector_state()))
+            log_message("Failed to save selected connection profiles before reload", "error");
         module_success(DNS_FAILOVER_UC, [ "stop-runtime" ]);
         module_success(PRIORITY_UC, [ "stop-runtime" ]);
         status = module_status(SINGBOX_UC, [ "configure-service" ]);
@@ -1258,6 +1206,7 @@ function reload(reason) {
             cleanup_failed_runtime();
             return status;
         }
+        restore_saved_selector_state();
         status = module_status(PRIORITY_UC, [ "start-runtime" ]);
         if (status != 0) {
             log_message("Failed to start Priority runtime after sing-box reload", "fatal");

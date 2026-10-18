@@ -45,6 +45,9 @@ import {
   preserveSubscriptionLatency,
 } from './subscriptionLatency';
 
+import { mountSubscriptionAutoUpdate } from './subscriptionAutoUpdate';
+
+let unmountSubscriptionAutoUpdate: (() => void) | null = null;
 const SECTIONS_REFRESH_INTERVAL_MS = 10000;
 const LATENCY_TEST_BUTTON_CLASS = 'dashboard-sections-grid-item-test-latency';
 const LATENCY_TEST_BUTTON_LABEL_CLASS =
@@ -1813,6 +1816,12 @@ async function onPageMount() {
   onPageUnmount();
 
   dashboardMounted = true;
+  const settingsContainer = document.getElementById(
+    'dashboard-subscription-auto-update-settings',
+  );
+  if (settingsContainer)
+    unmountSubscriptionAutoUpdate =
+      mountSubscriptionAutoUpdate(settingsContainer);
   dashboardMountId += 1;
   const mountId = dashboardMountId;
   const hasRuntimeSnapshot = Boolean(getCachedRuntimeUiState());
@@ -1845,6 +1854,8 @@ async function onPageMount() {
 }
 
 function onPageUnmount() {
+  unmountSubscriptionAutoUpdate?.();
+  unmountSubscriptionAutoUpdate = null;
   dashboardMounted = false;
   dashboardMountId += 1;
 

@@ -89,7 +89,7 @@ def main():
             temporary.replace(path)
 
         write(payload([node()]))
-        config = {"log": {"level": "error"}, "inbounds": [{"type": "http", "listen": "127.0.0.1", "listen_port": mixed_port}], "providers": [{"type": "anticheburnet", "tag": "anticheburnet-subscriptions", "path": str(path)}], "route": {"final": "proxy-main"}, "experimental": {"clash_api": {"external_controller": f"127.0.0.1:{api_port}", "secret": "local-provider-test"}, "cache_file": {"enabled": True, "path": str(work / "cache.db")}}}
+        config = {"log": {"level": "error"}, "inbounds": [{"type": "http", "listen": "127.0.0.1", "listen_port": mixed_port}], "providers": [{"type": "anticheburnet", "tag": "anticheburnet-subscriptions", "path": str(path)}], "route": {"final": "proxy-main"}, "experimental": {"clash_api": {"external_controller": f"127.0.0.1:{api_port}", "secret": "local-provider-test"}, "cache_file": {"enabled": False, "path": str(work / "cache.db")}}}
         config_path = work / "config.json"
         config_path.write_text(json.dumps(config), encoding="utf-8")
         base = f"http://127.0.0.1:{api_port}"
@@ -185,8 +185,20 @@ def main():
                 update(payload([node(target=1), node("node-b", target=0, password="new")]))
                 api("/proxies/proxy-main", "PUT", {"name": "node-b"})
                 assert traffic() == "A-new"
-                update(payload([node(target=1), node("node-b", target=0, password="new"), node("node-c", target=1)]))
+                # Add/reorder nodes while the chosen profile has a live stream.
+                # With no disk cache, the provider must transfer the live choice
+                # before publication and preserve established connections.
+                servers[0].stream_started.clear()
+                servers[0].stream_release.clear()
+                addition_stream = []
+                addition_thread = threading.Thread(target=lambda: addition_stream.append(traffic("stream")), daemon=True)
+                addition_thread.start()
+                assert servers[0].stream_started.wait(3)
+                update(payload([node("node-c", target=1), node(target=1), node("node-b", target=0, password="new")]))
                 assert api("/proxies/proxy-main")["now"] == "node-b"
+                servers[0].stream_release.set()
+                addition_thread.join(timeout=3)
+                assert addition_stream == ["A-new"], "new subscription node interrupted the active connection"
                 assert traffic() == "A-new"
                 update(payload([node(target=1)]))
                 proxies = api("/proxies")["proxies"]
@@ -210,7 +222,7 @@ def main():
                 stop.set()
                 monitor_thread.join(timeout=3)
                 assert samples and not failures, failures
-                result = {"success": True, "pid_before": pid, "pid_after": process.pid, "apply_ms": timings, "availability_samples": len(samples), "availability_failures": failures, "traffic": ["A", "A-new", "B", "A-new", "B"], "existing_connection_preserved": pending_stream == ["A-new"], "rollback_cases": len(invalid_values), "main_config_unchanged": json.loads(config_path.read_text()) == config}
+                result = {"success": True, "pid_before": pid, "pid_after": process.pid, "apply_ms": timings, "availability_samples": len(samples), "availability_failures": failures, "traffic": ["A", "A-new", "B", "A-new", "B"], "existing_connection_preserved": pending_stream == ["A-new"], "addition_connection_preserved": addition_stream == ["A-new"], "selection_preserved_without_cache": True, "rollback_cases": len(invalid_values), "main_config_unchanged": json.loads(config_path.read_text()) == config}
                 print(json.dumps(result))
                 if args.evidence:
                     Path(args.evidence).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")

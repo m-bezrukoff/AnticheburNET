@@ -2383,3 +2383,6 @@ msgstr "В стратегиях Happ и «Всё в туннель» услов�
 
 msgid "First enabled connection"
 msgstr "Первое включённое подключение"
+
+msgid "Update subscriptions daily at 03:00 (router time)"
+msgstr "Обновлять подписки ежедневно в 03:00 (по времени роутера)"

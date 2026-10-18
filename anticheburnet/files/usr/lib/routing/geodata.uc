@@ -2,6 +2,26 @@
 // entries become native sing-box matchers; no Python/Go helper is installed.
 let fs = require("fs");
 let ip = require("core.ip");
+let common = require("core.common");
+
+function download_options(settings) {
+    if (!common.bool_option(settings, "download_lists_via_proxy", false))
+        return { proxy: "", section: "" };
+    let section = common.option(settings, "download_lists_via_proxy_section", "");
+    if (section == "") die("Select a connection for geodata downloads through proxy\n");
+    return { proxy: "http://" + (getenv("SB_SERVICE_MIXED_INBOUND_ADDRESS") || "127.0.0.1") + ":" +
+        (getenv("SB_SERVICE_MIXED_INBOUND_PORT") || "4534"), section };
+}
+
+function resource_status(directory, kind, value) {
+    let stamp = clock();
+    let temporary = directory + "/" + kind + ".status." + stamp[0] + "." + stamp[1] + ".next";
+    let file = fs.open(temporary, "w", 0600);
+    if (!file) return;
+    file.write(sprintf("%J\n", value));
+    file.close();
+    if (!fs.rename(temporary, directory + "/" + kind + ".status.json")) fs.unlink(temporary);
+}
 
 function varint(reader) {
     let result = 0, factor = 1;
@@ -100,31 +120,68 @@ function convert(data, kind, code) {
 
 function quote(value) { return "'" + replace(value, /'/g, "'\\''") + "'"; }
 
-function source_path(url, directory, kind) {
+function source_path(url, directory, kind, options) {
     if (type(url) != "string" || !match(url, /^https?:\/\//) || match(url, /[\r\n]/) || index(url, chr(0)) >= 0)
         die("Geodata URL must use HTTP(S)\n");
     // The cache is under /tmp; URL identity prevents reuse of another provider's DAT.
     fs.mkdir(directory, 0700);
     let path = directory + "/" + kind + ".dat", identity = path + ".url";
     let stat = fs.stat(path);
-    if (stat != null && time() - stat.mtime < 604800 && fs.readfile(identity) == url)
+    options = common.object_or_empty(options);
+    let state = { url, status: "downloading", checked_at: time(), proxy_section: options.section || "",
+        via_proxy: (options.proxy || "") != "", downloaded_at: 0, bytes: 0 };
+    if (stat != null && fs.readfile(identity) == url) {
+        state.downloaded_at = stat.mtime;
+        state.bytes = stat.size;
+    }
+    if (stat != null && time() - stat.mtime < 604800 && fs.readfile(identity) == url) {
+        state.status = "cached";
+        resource_status(directory, kind, state);
         return path;
+    }
+    resource_status(directory, kind, state);
     let temp = path + ".download";
-    let status = system("umask 077; curl --fail --silent --show-error --location --proto '=http,https' --proto-redir '=http,https' --connect-timeout 10 --max-time 180 --max-filesize 33554432 -o " + quote(temp) + " -- " + quote(url));
+    let execute = type(options.execute) == "function" ? options.execute : system;
+    let status;
+    try {
+        status = execute("umask 077; curl -q --fail --silent --show-error --location --proto '=http,https' --proto-redir '=http,https' --connect-timeout 10 --max-time 180 --max-filesize 33554432 --noproxy '' --proxy " + quote(options.proxy || "") + " -o " + quote(temp) + " -- " + quote(url));
+    }
+    catch (error) {
+        fs.unlink(temp);
+        state.status = "error"; state.error = "proxy_unavailable";
+        resource_status(directory, kind, state);
+        die("Unable to prepare selected connection for Happ geodata download\n");
+    }
+    state.checked_at = time();
     let data = fs.readfile(temp);
     if (status != 0 || data == null || !length(data) || length(data) > 33554432) {
         fs.unlink(temp);
+        state.status = "error";
+        state.error = options.proxy ? "proxy_download_failed" : "download_failed";
+        resource_status(directory, kind, state);
         die("Happ geodata download failed; retaining the previous runtime configuration\n");
     }
     // Validate protobuf before atomically replacing the last good download.
-    fields(data, function(field, wire, value) {});
-    if (!fs.rename(temp, path)) die("Unable to save RAM geodata cache\n");
+    try { fields(data, function(field, wire, value) {}); }
+    catch (error) {
+        fs.unlink(temp);
+        state.status = "error"; state.error = "invalid_file";
+        resource_status(directory, kind, state);
+        die("Invalid Happ geodata file; retaining the previous runtime configuration\n");
+    }
+    if (!fs.rename(temp, path)) {
+        state.status = "error"; state.error = "cache_write_failed";
+        resource_status(directory, kind, state);
+        die("Unable to save RAM geodata cache\n");
+    }
     fs.writefile(identity, url);
+    state.status = "downloaded"; state.downloaded_at = time(); state.bytes = length(data);
+    resource_status(directory, kind, state);
     return path;
 }
 
-function load(url, directory, kind) {
-    return fs.readfile(source_path(url, directory, kind));
+function load(url, directory, kind, options) {
+    return fs.readfile(source_path(url, directory, kind, options));
 }
 
-return { convert, load, source_path, quote };
+return { convert, load, source_path, quote, download_options, resource_status };

@@ -1641,7 +1641,9 @@ function has_remote_sing_box_ruleset_sources_from_sections(sections) {
     return false;
 }
 
-function has_list_update_sources_from_sections(sections) {
+function has_list_update_sources_from_sections(sections, settings) {
+    if (require("routing.strategy").global_tunnel(settings))
+        return false;
     for (let section in sections)
         if (rule_has_list_update_source(
             bool_option(section, "enabled", true),
@@ -1657,7 +1659,9 @@ function has_list_update_sources_from_sections(sections) {
     return false;
 }
 
-function has_nft_list_update_sources_from_sections(sections) {
+function has_nft_list_update_sources_from_sections(sections, settings) {
+    if (require("routing.strategy").global_tunnel(settings))
+        return false;
     for (let section in sections)
         if (rule_has_nft_list_update_source(
             bool_option(section, "enabled", true),
@@ -2019,17 +2023,17 @@ else if (mode == "has-remote-sing-box-ruleset-sources")
 else if (mode == "has-remote-sing-box-ruleset-sources-fixture")
     exit(has_remote_sing_box_ruleset_sources_from_sections(fixture_sections(ARGV[1])) ? 0 : 1);
 else if (mode == "has-list-update-sources")
-    exit(has_list_update_sources_from_sections(uci_sections("section")) ? 0 : 1);
+    exit(has_list_update_sources_from_sections(uci_sections("section"), uci_settings()) ? 0 : 1);
 else if (mode == "has-list-update-sources-fixture")
-    exit(has_list_update_sources_from_sections(fixture_sections(ARGV[1])) ? 0 : 1);
+    exit(has_list_update_sources_from_sections(fixture_sections(ARGV[1]), fixture_settings(fixture_data(ARGV[1]))) ? 0 : 1);
 else if (mode == "has-subscription-update-sources")
     exit(has_subscription_update_sources_from_sections(uci_sections("section")) ? 0 : 1);
 else if (mode == "has-subscription-update-sources-fixture")
     exit(has_subscription_update_sources_from_sections(fixture_sections(ARGV[1])) ? 0 : 1);
 else if (mode == "has-nft-list-update-sources")
-    exit(has_nft_list_update_sources_from_sections(uci_sections("section")) ? 0 : 1);
+    exit(has_nft_list_update_sources_from_sections(uci_sections("section"), uci_settings()) ? 0 : 1);
 else if (mode == "has-nft-list-update-sources-fixture")
-    exit(has_nft_list_update_sources_from_sections(fixture_sections(ARGV[1])) ? 0 : 1);
+    exit(has_nft_list_update_sources_from_sections(fixture_sections(ARGV[1]), fixture_settings(fixture_data(ARGV[1]))) ? 0 : 1);
 else {
     warn("Usage: service/state.uc <operation> ...\n");
     exit(1);

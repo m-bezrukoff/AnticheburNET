@@ -45,7 +45,7 @@ function geo_match(config, profile, directory, data, kind, code, tag) {
     if (!match(code, /^[A-Za-z0-9_@.-]+$/)) die("Unsupported Happ geodata tag\n");
     let key = kind + ":" + lc(code);
     if (data[key] != null) return { rule_set: [ data[key] ] };
-    if (data[kind + "_path"] == null) data[kind + "_path"] = geodata.source_path(profile[kind + "_url"], directory, kind);
+    if (data[kind + "_path"] == null) data[kind + "_path"] = geodata.source_path(profile[kind + "_url"], directory, kind, data.download_options);
     if (data[kind + "_digest"] == null) data[kind + "_digest"] = file_digest(data[kind + "_path"]);
     let source_digest = data[kind + "_digest"];
     if (source_digest == "") die("Cannot identify Happ geodata source\n");
@@ -56,7 +56,13 @@ function geo_match(config, profile, directory, data, kind, code, tag) {
     let target = cached_ruleset(cache_path, directory, source_url, source_digest, key);
     if (target == null) {
         if (data[kind] == null) data[kind] = fs.readfile(data[kind + "_path"]);
-        let converted = geodata.convert(data[kind], kind, code);
+        let converted;
+        try { converted = geodata.convert(data[kind], kind, code); }
+        catch (error) {
+            geodata.resource_status(directory, "converted-" + kind + "-" + cache_key,
+                { status: "error", url: source_url, code, checked_at: time(), error: "zone_invalid" });
+            die("Happ geodata zone " + kind + ":" + code + " is missing or invalid\n");
+        }
         let stamp = clock();
         let path = directory + "/converted." + stamp[0] + "." + stamp[1] + ".json";
         let output = fs.open(path, "w", 0600);
@@ -71,6 +77,8 @@ function geo_match(config, profile, directory, data, kind, code, tag) {
         remember_ruleset(cache_path, source_url, source_digest, digest, key);
     }
     push(config.route.rule_set, { type: "local", tag: name, format: "source", path: target });
+    geodata.resource_status(directory, "converted-" + kind + "-" + cache_key,
+        { status: "ready", url: source_url, code, checked_at: time(), path: target });
     data[key] = name;
     return { rule_set: [ name ] };
 }
@@ -103,12 +111,12 @@ function matchers(config, group, profile, directory, data, tag) {
     return { sites, ips };
 }
 
-function prepared(config, profile, tag, directory) {
+function prepared(config, profile, tag, directory, download_options) {
     if (profile.fake_dns) die("Happ FakeDNS profiles currently require FakeDNS=false\n");
     // Transparent router traffic arrives as IP packets. Keep the domain learned
     // by our DNS so domain rules also work when FakeDNS is disabled.
     config.dns.reverse_mapping = true;
-    let groups = {}, data = {};
+    let groups = {}, data = { download_options };
     for (let kind in [ "block", "proxy", "direct" ]) groups[kind] = matchers(config, profile.rules[kind], profile, directory, data, tag);
     let predefined = {}, hosts = tag + "-happ-hosts", host_names = [];
     for (let name, value in profile.hosts) {
@@ -153,8 +161,13 @@ function route_action(kind, tag) {
     return kind == "block" ? { action: "reject" } : { action: "route", outbound: kind == "direct" ? constants.DIRECT_OUTBOUND_TAG : tag };
 }
 
-function append_routes(config, policy, scope, tag) {
+function append_routes(config, policy, scope, tag, direct_domains) {
     let profile = policy.profile, order = split(profile.order, "-");
+    if (type(direct_domains) == "object" && length(keys(direct_domains))) {
+        // Explicit local exclusions take priority over subscription policy.
+        push(config.route.rules, scoped(scope, direct_domains, { action: "resolve" }));
+        push(config.route.rules, scoped(scope, direct_domains, route_action("direct", tag)));
+    }
     if (profile.strategy == "IPOnDemand")
         push(config.route.rules, scoped(scope, {}, { action: "resolve" }));
     for (let kind in order) {
@@ -183,11 +196,13 @@ function append_routes(config, policy, scope, tag) {
     push(config.route.rules, scoped(scope, {}, route_action(profile.global_proxy ? "proxy" : "direct", tag)));
 }
 
-function append_dns(config, policy, scope) {
+function append_dns(config, policy, scope, direct_domains) {
     // Resolve DNS hosts locally, direct domains with DomesticDNS, and all other
     // domains with RemoteDNS through the section's selected proxy. GeoIP governs
     // traffic after resolution; it is not used as a DNS response filter.
     if (length(policy.host_names)) push(config.dns.rules, scoped(scope, { domain: policy.host_names }, { action: "route", server: policy.hosts }));
+    if (type(direct_domains) == "object" && length(keys(direct_domains)))
+        push(config.dns.rules, scoped(scope, direct_domains, { action: "route", server: policy.domestic }));
     for (let kind in split(policy.profile.order, "-")) {
         let sites = policy.groups[kind].sites;
         if (!length(keys(sites))) continue;

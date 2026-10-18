@@ -5704,8 +5704,8 @@
     ]
   },
   {
-    "call": "Global tunnel strategies ignore section conditions. Recognized BitTorrent remains direct.",
-    "key": "Global tunnel strategies ignore section conditions. Recognized BitTorrent remains direct.",
+    "call": "Global tunnel strategies ignore section lists. In HAPP mode, manual domains of the tunnel connection bypass the tunnel.",
+    "key": "Global tunnel strategies ignore section lists. In HAPP mode, manual domains of the tunnel connection bypass the tunnel.",
     "places": [
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:132"
     ]
@@ -5716,6 +5716,279 @@
     "places": [
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:135",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:142"
+    ]
+  },
+  {
+    "call": "Torrent traffic always goes directly.",
+    "key": "Torrent traffic always goes directly.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:114"
+    ]
+  },
+  {
+    "call": "Not downloaded",
+    "key": "Not downloaded",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:8"
+    ]
+  },
+  {
+    "call": "Not required",
+    "key": "Not required",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:9"
+    ]
+  },
+  {
+    "call": "Downloading",
+    "key": "Downloading",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:10"
+    ]
+  },
+  {
+    "call": "Cached",
+    "key": "Cached",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:12"
+    ]
+  },
+  {
+    "call": "Ready",
+    "key": "Ready",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:13"
+    ]
+  },
+  {
+    "call": "Not prepared",
+    "key": "Not prepared",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:14"
+    ]
+  },
+  {
+    "call": "Download interrupted",
+    "key": "Download interrupted",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:15"
+    ]
+  },
+  {
+    "call": "Error",
+    "key": "Error",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:16"
+    ]
+  },
+  {
+    "call": "Unknown",
+    "key": "Unknown",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:17"
+    ]
+  },
+  {
+    "call": "The selected connection could not be prepared.",
+    "key": "The selected connection could not be prepared.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:26"
+    ]
+  },
+  {
+    "call": "Download through the selected connection failed. Direct fallback is disabled.",
+    "key": "Download through the selected connection failed. Direct fallback is disabled.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:27"
+    ]
+  },
+  {
+    "call": "Download failed.",
+    "key": "Download failed.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:28"
+    ]
+  },
+  {
+    "call": "The downloaded database is invalid.",
+    "key": "The downloaded database is invalid.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:29"
+    ]
+  },
+  {
+    "call": "Unable to save the database cache.",
+    "key": "Unable to save the database cache.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:30"
+    ]
+  },
+  {
+    "call": "The requested zone is missing or invalid in this database.",
+    "key": "The requested zone is missing or invalid in this database.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:31"
+    ]
+  },
+  {
+    "call": "Last successful download",
+    "key": "Last successful download",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:53"
+    ]
+  },
+  {
+    "call": "Last check",
+    "key": "Last check",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:54"
+    ]
+  },
+  {
+    "call": "Zone",
+    "key": "Zone",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:59"
+    ]
+  },
+  {
+    "call": "Rule groups",
+    "key": "Rule groups",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:59"
+    ]
+  },
+  {
+    "call": "In saved runtime configuration",
+    "key": "In saved runtime configuration",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:60"
+    ]
+  },
+  {
+    "call": "Preparation",
+    "key": "Preparation",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:60"
+    ]
+  },
+  {
+    "call": "This profile does not reference zones in this resource.",
+    "key": "This profile does not reference zones in this resource.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:62"
+    ]
+  },
+  {
+    "call": "Not selected",
+    "key": "Not selected",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:77"
+    ]
+  },
+  {
+    "call": "Rule order",
+    "key": "Rule order",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:78"
+    ]
+  },
+  {
+    "call": "Domain strategy",
+    "key": "Domain strategy",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:78"
+    ]
+  },
+  {
+    "call": "HAPP routing is disabled in this subscription.",
+    "key": "HAPP routing is disabled in this subscription.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:79"
+    ]
+  },
+  {
+    "call": "Cached normalized rules are shown. Refresh the subscription to show exactly which rules were received.",
+    "key": "Cached normalized rules are shown. Refresh the subscription to show exactly which rules were received.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:80"
+    ]
+  },
+  {
+    "call": "Domain rules",
+    "key": "Domain rules",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:82"
+    ]
+  },
+  {
+    "call": "IP rules",
+    "key": "IP rules",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:82"
+    ]
+  },
+  {
+    "call": "Received subscription rules and saved runtime configuration. Apply changes to update the configured zones.",
+    "key": "Received subscription rules and saved runtime configuration. Apply changes to update the configured zones.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:89"
+    ]
+  },
+  {
+    "call": "Download route",
+    "key": "Download route",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:90"
+    ]
+  },
+  {
+    "call": "No connection selected",
+    "key": "No connection selected",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:90"
+    ]
+  },
+  {
+    "call": "No HAPP routing profile is available in the current subscription cache.",
+    "key": "No HAPP routing profile is available in the current subscription cache.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:92"
+    ]
+  },
+  {
+    "call": "Loading…",
+    "key": "Loading…",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:97"
+    ]
+  },
+  {
+    "call": "Unable to load HAPP rules and resources.",
+    "key": "Unable to load HAPP rules and resources.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:104"
+    ]
+  },
+  {
+    "call": "Refresh",
+    "key": "Refresh",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:114"
+    ]
+  },
+  {
+    "call": "HAPP rules and resources",
+    "key": "HAPP rules and resources",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:155"
+    ]
+  },
+  {
+    "call": "Cache expired",
+    "key": "Cache expired",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:14"
     ]
   }
 ]

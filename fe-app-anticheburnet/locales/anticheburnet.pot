@@ -3420,11 +3420,128 @@ msgstr ""
 msgid "Tunnel connection"
 msgstr ""
 
-msgid "Global tunnel strategies ignore section conditions. Recognized BitTorrent remains direct."
+msgid "Global tunnel strategies ignore section lists. In HAPP mode, manual domains of the tunnel connection bypass the tunnel."
 msgstr ""
 
 msgid "First enabled connection"
 msgstr ""
 
 msgid "Update subscriptions daily at 03:00 (router time)"
+msgstr ""
+
+msgid "Torrent traffic always goes directly."
+msgstr ""
+
+msgid "HAPP rules and resources"
+msgstr ""
+
+msgid "Not downloaded"
+msgstr ""
+
+msgid "Not required"
+msgstr ""
+
+msgid "Downloading"
+msgstr ""
+
+msgid "Cached"
+msgstr ""
+
+msgid "Ready"
+msgstr ""
+
+msgid "Not prepared"
+msgstr ""
+
+msgid "Download interrupted"
+msgstr ""
+
+msgid "Error"
+msgstr ""
+
+msgid "Unknown"
+msgstr ""
+
+msgid "The selected connection could not be prepared."
+msgstr ""
+
+msgid "Download through the selected connection failed. Direct fallback is disabled."
+msgstr ""
+
+msgid "Download failed."
+msgstr ""
+
+msgid "The downloaded database is invalid."
+msgstr ""
+
+msgid "Unable to save the database cache."
+msgstr ""
+
+msgid "The requested zone is missing or invalid in this database."
+msgstr ""
+
+msgid "Last successful download"
+msgstr ""
+
+msgid "Last check"
+msgstr ""
+
+msgid "Zone"
+msgstr ""
+
+msgid "Rule groups"
+msgstr ""
+
+msgid "In saved runtime configuration"
+msgstr ""
+
+msgid "Preparation"
+msgstr ""
+
+msgid "This profile does not reference zones in this resource."
+msgstr ""
+
+msgid "Not selected"
+msgstr ""
+
+msgid "Rule order"
+msgstr ""
+
+msgid "Domain strategy"
+msgstr ""
+
+msgid "HAPP routing is disabled in this subscription."
+msgstr ""
+
+msgid "Cached normalized rules are shown. Refresh the subscription to show exactly which rules were received."
+msgstr ""
+
+msgid "Domain rules"
+msgstr ""
+
+msgid "IP rules"
+msgstr ""
+
+msgid "Received subscription rules and saved runtime configuration. Apply changes to update the configured zones."
+msgstr ""
+
+msgid "Download route"
+msgstr ""
+
+msgid "No connection selected"
+msgstr ""
+
+msgid "No HAPP routing profile is available in the current subscription cache."
+msgstr ""
+
+msgid "Loading…"
+msgstr ""
+
+msgid "Unable to load HAPP rules and resources."
+msgstr ""
+
+msgid "Refresh"
+msgstr ""
+
+msgid "Cache expired"
 msgstr ""

@@ -17,6 +17,7 @@ let routing_strategy = require("routing.strategy");
 let runtime_happ_profiles = {};
 let runtime_happ_policies = {};
 let runtime_happ_section = "";
+let inline_domain_matchers = null;
 let runtime_url = require("core.url");
 let runtime_urltest = require("singbox.urltest");
 let source_rulesets = require("routing.rulesets");
@@ -1598,8 +1599,9 @@ function add_mixed_proxy_for_section(config, section, service_address) {
     // here could replace a previously learned domain with an IP Host header.
     config.route.rules = [ { action: "sniff", inbound: inbound.tag, sniffer: [ "bittorrent" ] }, ...config.route.rules ];
     if (runtime_happ_policies[section[".name"]] != null) {
-        runtime_happ.append_routes(config, runtime_happ_policies[section[".name"]], { inbound: inbound.tag }, runtime_constants.outbound_tag(section[".name"]));
-        runtime_happ.append_dns(config, runtime_happ_policies[section[".name"]], { inbound: inbound.tag });
+        let exclusions = inline_domain_matchers(section);
+        runtime_happ.append_routes(config, runtime_happ_policies[section[".name"]], { inbound: inbound.tag }, runtime_constants.outbound_tag(section[".name"]), exclusions);
+        runtime_happ.append_dns(config, runtime_happ_policies[section[".name"]], { inbound: inbound.tag }, exclusions);
     }
     push(config.route.rules, {
         action: "route",
@@ -2569,6 +2571,13 @@ function add_domain_array(rule, key, values) {
         rule[key] = values;
 }
 
+inline_domain_matchers = function(section) {
+    let result = {};
+    for (let key, values in domain_conditions(section))
+        add_domain_array(result, key, values);
+    return result;
+};
+
 function push_dns_matcher_rule(config, rule) {
     push(config.dns.rules, rule);
 }
@@ -3172,7 +3181,15 @@ function generate_config(output_path, service_address, mwan3_active, supports_xh
             // This strategy explicitly selects tunnel-by-default while
             // preserving the subscription's ordered exceptions and DNS.
             runtime_happ_profiles[name].global_proxy = true;
-            runtime_happ_policies[name] = runtime_happ.prepared(config, runtime_happ_profiles[name], outbound_tag(name), "/tmp/anticheburnet-happ-" + name);
+            let geodata_options = require("routing.geodata").download_options(settings);
+            let directory = "/tmp/anticheburnet-happ-" + name;
+            if (geodata_options.proxy != "") {
+                let proxy_address = geodata_options.proxy, download_section = geodata_options.section;
+                geodata_options.execute = function(command) {
+                    return require("routing.geodata_proxy").execute(command, proxy_address, config, settings, download_section, directory, runtime_sing_box_version);
+                };
+            }
+            runtime_happ_policies[name] = runtime_happ.prepared(config, runtime_happ_profiles[name], outbound_tag(name), directory, geodata_options);
         }
     }
     add_service_route_rules(config, strategy == "selected" ? sections : [ tunnel ]);
@@ -3181,8 +3198,11 @@ function generate_config(output_path, service_address, mwan3_active, supports_xh
             add_route_for_section(config, section);
     }
     else if (strategy == "happ") {
-        runtime_happ.append_routes(config, runtime_happ_policies[tunnel[".name"]], { inbound: tproxy_inbound_matcher() }, outbound_tag(tunnel[".name"]));
-        runtime_happ.append_dns(config, runtime_happ_policies[tunnel[".name"]], {});
+        // Only inline domains on the selected connection extend HAPP exclusions.
+        // Saved list, device, IP and port conditions belong to selected routing.
+        let exclusions = inline_domain_matchers(tunnel);
+        runtime_happ.append_routes(config, runtime_happ_policies[tunnel[".name"]], { inbound: tproxy_inbound_matcher() }, outbound_tag(tunnel[".name"]), exclusions);
+        runtime_happ.append_dns(config, runtime_happ_policies[tunnel[".name"]], {}, exclusions);
     }
     else {
         push(config.route.rules, { action: "route", inbound: tproxy_inbound_matcher(), outbound: outbound_tag(tunnel[".name"]) });

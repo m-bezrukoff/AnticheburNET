@@ -17,5 +17,13 @@ if(s.tunnel_section({routing_section:"two"},sections)[".name"]!="two")die("Expli
 for(let name in ["disabled","bypass","missing"])
  if(s.tunnel_section({routing_section:name},sections)!=null)die("Invalid tunnel must not fall back\n");
 if(s.tunnel_section({},[])!=null)die("Empty connections must not pick a tunnel\n");
+let route=require("singbox.route");
+for(let mode in ["selected","happ","tunnel"]){
+ let config=route.config({routing_strategy:mode},{}), matches=[];
+ for(let rule in config.rules)
+  if(rule.protocol=="bittorrent")push(matches,rule);
+ if(length(matches)!=1||matches[0].action!="route"||matches[0].outbound!="direct-out")
+  die("Torrent traffic must remain direct in every routing strategy\n");
+}
 print("Routing strategy selection checks passed\n");
 '

@@ -25,7 +25,7 @@ function normalize(profile) {
         last_updated: profile.LastUpdated || "",
         geoip_url: profile.Geoipurl || "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat",
         geosite_url: profile.Geositeurl || "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat",
-        hosts: profile.DnsHosts || { "cloudflare-dns.com": "1.1.1.1", "dns.google": "8.8.8.8" }, rules: {} };
+        hosts: profile.DnsHosts || { "cloudflare-dns.com": "1.1.1.1", "dns.google": "8.8.8.8" }, rules: {}, received_rules: {} };
     if (!match(result.order, /^(block-proxy-direct|block-direct-proxy|proxy-block-direct|proxy-direct-block|direct-block-proxy|direct-proxy-block)$/))
         die("Unsupported Happ RouteOrder\n");
     if (index([ "AsIs", "IPIfNonMatch", "IPOnDemand" ], result.strategy) < 0)
@@ -39,6 +39,7 @@ function normalize(profile) {
                 if (type(item) != "string" || length(item) > 2048 || match(item, /[\r\n]/)) die("Invalid Happ rule\n");
         }
         result.rules[lc(kind)] = group;
+        result.received_rules[lc(kind)] = { sites: profile[kind + "Sites"] || [], ips: profile[kind + "Ip"] || [] };
     }
     if (type(result.hosts) != "object") die("Invalid Happ DNS hosts\n");
     for (let kind in [ "Remote", "Domestic" ])

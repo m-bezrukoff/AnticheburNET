@@ -152,6 +152,35 @@ function dependsOnRoutingAction(option) {
   return option;
 }
 
+function optionRoutingStrategy(option) {
+  // Section modals use cloned maps. Read an unsaved selection on their parent.
+  for (let map = option.map; map; map = map.parent) {
+    const entry = map.lookupOption(
+      `${UCI_PACKAGE}.settings.routing_strategy`,
+      "settings",
+    );
+    const value = entry && entry[0].formvalue(entry[1]);
+    if (value) return value;
+  }
+  return uci.get(UCI_PACKAGE, "settings", "routing_strategy") || "selected";
+}
+
+function hideInRoutingModes(option, modes) {
+  const checkDepends = option.checkDepends;
+  option.retain = true;
+  option.checkDepends = function (sectionId) {
+    return (
+      !modes.includes(optionRoutingStrategy(this)) &&
+      checkDepends.call(this, sectionId)
+    );
+  };
+  return option;
+}
+
+function hideInFullTunnel(option) {
+  return hideInRoutingModes(option, ["tunnel"]);
+}
+
 function dependsOnRuleConditions(option) {
   const routingConditions = [
     "domain",
@@ -7719,7 +7748,7 @@ function createSectionContent(section) {
     return getRuleResolvedAction(section_id) === "byedpi" ? "1" : "0";
   };
 
-  addTextConditionField(section, {
+  const domainConditionOption = addTextConditionField(section, {
     key: "domain_suffix",
     optionName: "domain",
     legacyTextOptionName: "domain_suffix_text",
@@ -7907,6 +7936,16 @@ function createSectionContent(section) {
     dynamicValidate: validatePortCondition,
   });
   dependsOnRoutingAction(portsOption);
+
+  [
+    domainConditionOption,
+    builtInRulesetOption,
+    ruleSetOption,
+    dnsRuleSetOption,
+    domainIpListsOption,
+    dnsDomainListsOption,
+  ].forEach(hideInFullTunnel);
+  hideInRoutingModes(builtInRulesetOption, ["happ"]);
 
   addDashboardServerFilterOptions(section);
 }

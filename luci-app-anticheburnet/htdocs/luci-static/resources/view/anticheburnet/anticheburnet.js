@@ -11,6 +11,7 @@
 
 // Sections
 "require view.anticheburnet.section as section";
+"require view.anticheburnet.happ as happ";
 
 // Server
 "require view.anticheburnet.server as server";
@@ -111,6 +112,7 @@ function addRoutingStrategy(map, rulesSection) {
     form.ListValue,
     "routing_strategy",
     _("Select routing strategy"),
+    _("Torrent traffic always goes directly."),
   );
   strategy.value(
     "happ",
@@ -129,7 +131,7 @@ function addRoutingStrategy(map, rulesSection) {
     "routing_section",
     _("Tunnel connection"),
     _(
-      "Global tunnel strategies ignore section conditions. Recognized BitTorrent remains direct.",
+      "Global tunnel strategies ignore section lists. In HAPP mode, manual domains of the tunnel connection bypass the tunnel.",
     ),
   );
   target.value("", _("First enabled connection"));
@@ -149,6 +151,10 @@ function addRoutingStrategy(map, rulesSection) {
     });
     return form.ListValue.prototype.load.call(this, sectionId);
   };
+
+  const happDetails = strategySection.option(form.DummyValue, "_happ_status", _("HAPP rules and resources"));
+  happDetails.depends("routing_strategy", "happ");
+  happDetails.renderWidget = () => happ.createWidget();
 
   // Keep the normal form load/save lifecycle, but render these global options
   // inside the Sections tab on every refresh instead of creating another tab.

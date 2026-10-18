@@ -6,6 +6,7 @@ let core_ip = require("core.ip");
 let uci_core = require("core.uci");
 let runtime_dns = require("singbox.dns");
 let netstat = require("core.netstat");
+let happ_status = require("routing.happ_status");
 
 const CONFIG_NAME = getenv("ANTICHEBURNET_CONFIG_NAME") || constants.ANTICHEBURNET_CONFIG_NAME || "anticheburnet";
 const LIB_DIR = getenv("ANTICHEBURNET_LIB") || "/usr/lib/anticheburnet";
@@ -1998,6 +1999,10 @@ else if (mode == "get-outbound-metadata")
     exit(get_outbound_metadata(ARGV[1]));
 else if (mode == "get-subscription-metadata")
     exit(get_subscription_metadata(ARGV[1]));
+else if (mode == "get-happ-status") {
+    let configured = settings();
+    write_json(happ_status.snapshot(configured, uci_sections("section"), read_json_file(option(configured, "config_path", ""))));
+}
 else if (mode == "get-sing-box-status")
     exit(get_sing_box_status());
 else if (mode == "get-zapret-status")

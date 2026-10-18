@@ -64,6 +64,10 @@ show_version_out="$(ANTICHEBURNET_LIB="$fake_lib" ucode "$ANTICHEBURNET_BIN" sho
 [ "$show_version_out" = $'diagnostics\tshow-version\t\t\t' ] ||
   fail "show_version must dispatch through diagnostics/runtime.uc"
 
+happ_status_out="$(ANTICHEBURNET_LIB="$fake_lib" ucode "$ANTICHEBURNET_BIN" get_happ_status)"
+[ "$happ_status_out" = $'diagnostics\tget-happ-status\t\t\t' ] ||
+  fail "get_happ_status must dispatch through read-only HAPP diagnostics"
+
 subscription_out="$(ANTICHEBURNET_LIB="$fake_lib" ucode "$ANTICHEBURNET_BIN" subscription_update proxy 2)"
 [ "$subscription_out" = $'updates\tsubscription-update\tproxy\t2' ] ||
   fail "subscription_update must dispatch through components/updates.uc with arguments"

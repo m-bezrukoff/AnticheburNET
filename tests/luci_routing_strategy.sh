@@ -23,7 +23,8 @@ const context = {
 const strategyNode = { querySelector: () => ({ removeAttribute: key => assert.equal(key, 'id') }) };
 const section = {
   render: async () => strategyNode,
-  option: (_type, key) => options[key] = {
+  option: (_type, key, _title, description) => options[key] = {
+    description,
     keylist: [], vallist: [], dependencies: [],
     value(k, v) { this.keylist.push(k); this.vallist.push(v); },
     depends(k, v) { this.dependencies.push([k, v]); },
@@ -41,6 +42,10 @@ assert.equal(registered[0][1], 'settings');
 assert.deepEqual(options.routing_strategy.keylist, ['happ', 'selected', 'tunnel']);
 assert.equal(options.routing_strategy.default, 'selected');
 assert.equal(options.routing_strategy.rmempty, false);
+assert.equal(options.routing_strategy.description, 'Torrent traffic always goes directly.');
+assert.equal(options.routing_strategy.dependencies.length, 0, 'Torrent notice must remain visible for every strategy');
+assert.deepEqual(options._happ_status.dependencies.map(row => Array.from(row)), [['routing_strategy','happ']]);
+assert.equal(typeof options._happ_status.renderWidget, 'function');
 assert.equal(options.routing_section.load('settings'), 'saved-target');
 assert.deepEqual(Array.from(options.routing_section.keylist), ['', 'main', 'legacy']);
 (async () => {
@@ -50,3 +55,4 @@ assert.deepEqual(Array.from(options.routing_section.keylist), ['', 'main', 'lega
   console.log('Routing strategy choices, connection filtering and Sections placement passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });
 JS
+node "$root/tests/luci_routing_conditions.cjs" "$root"

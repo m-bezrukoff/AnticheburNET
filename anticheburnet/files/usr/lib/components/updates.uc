@@ -3,6 +3,7 @@
 let fs = require("fs");
 let uci_core = require("core.uci");
 let connections = require("config.connections");
+let routing_strategy = require("routing.strategy");
 const CONFIG_NAME = getenv("ANTICHEBURNET_CONFIG_NAME") || "anticheburnet";
 const LIB_DIR = getenv("ANTICHEBURNET_LIB") || "/usr/lib/anticheburnet";
 const BIN_PATH = getenv("ANTICHEBURNET_BIN") || "/usr/bin/anticheburnet";
@@ -602,7 +603,7 @@ function has_list_update_sources(sections) {
 function settings_update_interval(settings) {
     settings = object_or_empty(settings);
 
-    if (!bool_option(settings, "list_update_enabled", true))
+    if (routing_strategy.global_tunnel(settings) || !bool_option(settings, "list_update_enabled", true))
         return "";
 
     let value = option(settings, "update_interval", "1d");
@@ -686,7 +687,7 @@ function cron_refresh_plan_rows(settings, sections, bin, list_marker, subscripti
     let status = 0;
     let rows = [];
 
-    if (has_list_update_sources(sections)) {
+    if (!routing_strategy.global_tunnel(settings) && has_list_update_sources(sections)) {
         let interval = settings_update_interval(settings);
         if (interval == "") {
             push(rows, "list-disabled");
@@ -2683,11 +2684,16 @@ function write_list_update_timestamp(timestamp) {
 }
 
 function list_update() {
+    let settings = uci_settings();
+    if (routing_strategy.global_tunnel(settings)) {
+        log_message("Section lists are ignored by the global tunnel routing strategy", "info");
+        exit(0);
+    }
+
     log_message("Starting lists update", "info");
     if (!list_update_pid_begin())
         exit(0);
 
-    let settings = uci_settings();
     let proxy_address = service_proxy_address(settings, "lists");
     if (!dns_probe_passed(proxy_address)) {
         list_update_pid_end();

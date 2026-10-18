@@ -2378,11 +2378,128 @@ msgstr "Всё в туннель"
 msgid "Tunnel connection"
 msgstr "Подключение для туннеля"
 
-msgid "Global tunnel strategies ignore section conditions. Recognized BitTorrent remains direct."
-msgstr "В стратегиях Happ и «Всё в туннель» условия секций не применяются. Распознанный BitTorrent идёт напрямую."
+msgid "Global tunnel strategies ignore section lists. In HAPP mode, manual domains of the tunnel connection bypass the tunnel."
+msgstr "В глобальных стратегиях списки секций не применяются. В режиме HAPP ручные домены выбранного подключения идут напрямую."
 
 msgid "First enabled connection"
 msgstr "Первое включённое подключение"
 
 msgid "Update subscriptions daily at 03:00 (router time)"
 msgstr "Обновлять подписки ежедневно в 03:00 (по времени роутера)"
+
+msgid "Torrent traffic always goes directly."
+msgstr "Торрент-трафик всегда идёт напрямую."
+
+msgid "HAPP rules and resources"
+msgstr "Правила и ресурсы HAPP"
+
+msgid "Not downloaded"
+msgstr "Не скачан"
+
+msgid "Not required"
+msgstr "Не требуется"
+
+msgid "Downloading"
+msgstr "Загрузка"
+
+msgid "Cached"
+msgstr "Из кэша"
+
+msgid "Ready"
+msgstr "Готово"
+
+msgid "Not prepared"
+msgstr "Не подготовлено"
+
+msgid "Download interrupted"
+msgstr "Загрузка прервана"
+
+msgid "Error"
+msgstr "Ошибка"
+
+msgid "Unknown"
+msgstr "Неизвестно"
+
+msgid "The selected connection could not be prepared."
+msgstr "Не удалось подготовить выбранное подключение."
+
+msgid "Download through the selected connection failed. Direct fallback is disabled."
+msgstr "Загрузка через выбранное подключение не удалась. Прямой обход отключён."
+
+msgid "Download failed."
+msgstr "Загрузка не удалась."
+
+msgid "The downloaded database is invalid."
+msgstr "Скачанная база некорректна."
+
+msgid "Unable to save the database cache."
+msgstr "Не удалось сохранить кэш базы."
+
+msgid "The requested zone is missing or invalid in this database."
+msgstr "Запрошенная зона отсутствует или некорректна в этой базе."
+
+msgid "Last successful download"
+msgstr "Последняя успешная загрузка"
+
+msgid "Last check"
+msgstr "Последняя проверка"
+
+msgid "Zone"
+msgstr "Зона"
+
+msgid "Rule groups"
+msgstr "Группы правил"
+
+msgid "In saved runtime configuration"
+msgstr "В сохранённой конфигурации"
+
+msgid "Preparation"
+msgstr "Подготовка"
+
+msgid "This profile does not reference zones in this resource."
+msgstr "В профиле нет ссылок на зоны этого ресурса."
+
+msgid "Not selected"
+msgstr "Не выбран"
+
+msgid "Rule order"
+msgstr "Порядок правил"
+
+msgid "Domain strategy"
+msgstr "Обработка доменов"
+
+msgid "HAPP routing is disabled in this subscription."
+msgstr "Маршрутизация HAPP отключена в этой подписке."
+
+msgid "Cached normalized rules are shown. Refresh the subscription to show exactly which rules were received."
+msgstr "Показаны обработанные правила из кэша. Обновите подписку, чтобы увидеть точный список полученных правил."
+
+msgid "Domain rules"
+msgstr "Доменные правила"
+
+msgid "IP rules"
+msgstr "Правила IP"
+
+msgid "Received subscription rules and saved runtime configuration. Apply changes to update the configured zones."
+msgstr "Полученные правила подписки и сохранённая конфигурация. Примените изменения, чтобы обновить используемые зоны."
+
+msgid "Download route"
+msgstr "Путь загрузки"
+
+msgid "No connection selected"
+msgstr "Подключение не выбрано"
+
+msgid "No HAPP routing profile is available in the current subscription cache."
+msgstr "В текущем кэше подписок нет профиля маршрутизации HAPP."
+
+msgid "Loading…"
+msgstr "Загрузка…"
+
+msgid "Unable to load HAPP rules and resources."
+msgstr "Не удалось загрузить правила и ресурсы HAPP."
+
+msgid "Refresh"
+msgstr "Обновить"
+
+msgid "Cache expired"
+msgstr "Кэш устарел"

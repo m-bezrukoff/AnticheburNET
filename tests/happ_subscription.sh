@@ -137,7 +137,9 @@ assert len(catchall)==1
 assert 'happ_test' in catchall[0]['outbound'], catchall
 assert all(r['outbound']==catchall[0]['outbound'] for r in routes)
 assert next(s for s in c['dns']['servers'] if s['tag']=='dns-server')['detour']==catchall[0]['outbound']
-assert any(r.get('protocol')=='bittorrent' and r.get('outbound')=='direct-out' for r in c['route']['rules'])
+bt=next(i for i,r in enumerate(c['route']['rules']) if r.get('protocol')=='bittorrent')
+assert c['route']['rules'][bt]['outbound']=='direct-out', 'BitTorrent must remain direct in full tunnel'
+assert bt < c['route']['rules'].index(catchall[0]), 'BitTorrent must bypass before the tunnel catch-all'
 PY
 mv "$work/saved-profile" "$work/subscriptions/happ_test-subscription-1.json"
 ucode -L "$lib" -e '
@@ -153,13 +155,25 @@ for(let order in ["block-proxy-direct","block-direct-proxy","proxy-block-direct"
   if(strategy=="IPOnDemand"&&c.route.rules[0].action!="resolve")die("IPOnDemand must resolve before matching\n");
   if(strategy=="AsIs"&&c.route.rules[length(c.route.rules)-2].action!="resolve")die("AsIs must resolve after selecting the default exit\n");
   for(let rule in c.route.rules)if(rule.action=="resolve"&&rule.server!=null)die("Profile DNS must decide the resolver\n");
+  let local={route:{rules:[]},dns:{rules:[]}};
+  let policy={profile:{order,strategy,global_proxy:true},groups,host_names:["host.test"],hosts:"hosts",domestic:"domestic",remote:"remote"};
+  let exclusions={domain_suffix:["manual.test"]}, scope={inbound:["test"]};
+  h.append_routes(local,policy,scope,"proxy-test",exclusions);
+  h.append_dns(local,policy,{},exclusions);
+  if(local.route.rules[0].action!="resolve"||local.route.rules[1].outbound!="direct-out")die("Manual domains must resolve and bypass before profile rules\n");
+  if(local.route.rules[1].rules[0].inbound[0]!="test"||local.route.rules[1].rules[1].domain_suffix[0]!="manual.test")die("Manual exclusions lost their scope or matcher\n");
+  if(local.dns.rules[0].server!="hosts"||local.dns.rules[1].server!="domestic")die("Manual exclusions must retain hosts and use direct DNS\n");
+  if(scope.inbound[0]!="test"||exclusions.action!=null||exclusions.server!=null)die("Policy generation must not mutate its matchers\n");
  }
 }
 '
 python3 - "$work/fixture" "$work/subscriptions/happ_test-subscription-1.json" <<'PY'
 import json,sys
 p=sys.argv[1];v=json.load(open(p));s=v['section'][0]
-s.update(source_ip_cidr=['192.0.2.20/32'],fully_routed_ips=['192.0.2.21/32'],ports=['80'],domain_suffix=['selected-only.example'],ip_cidr=['203.0.113.0/24'])
+s.update(source_ip_cidr=['192.0.2.20/32'],fully_routed_ips=['192.0.2.21/32'],ports=['80'],domain_suffix=['manual-direct.example','full:exact-direct.example','keyword:manual-keyword','regex:^manual[.]example$'],ip_cidr=['203.0.113.0/24'],community_lists=['ovh','discord'],rule_set=['https://example.com/ignored.srs'],domain_ip_lists=['https://example.com/ignored.lst'])
+s.update(mixed_proxy_enabled='1',mixed_proxy_port='1081')
+v['section'].insert(0,{'.name':'other','.type':'section','action':'connection','selector_proxy_links':['socks5://127.0.0.1:1080'],'domain_suffix':['other-only.example']})
+v['settings']['routing_section']='happ_test'
 open(p,'w').write(json.dumps(v))
 profile=json.load(open(sys.argv[2]));profile['happ_routing']['global_proxy']=False
 open(sys.argv[2],'w').write(json.dumps(profile))
@@ -177,7 +191,19 @@ def check(r):
  assert all(k not in r for k in ['port','port_range','ip_cidr']), 'DNS scope must not contain application matchers'
  for child in r.get('rules',[]):check(child)
 for r in happ:check(r)
-assert 'selected-only.example' not in json.dumps(c['route']['rules'])
+rules=c['route']['rules']
+manual=next((i,r) for i,r in enumerate(rules) if r.get('outbound')=='direct-out' and 'manual-direct.example' in json.dumps(r))
+assert manual[1]['rules'][0]['inbound']==['tproxy-in','tproxy6-in']
+match=manual[1]['rules'][1]
+assert match=={'domain_suffix':['manual-direct.example'],'domain':['exact-direct.example'],'domain_keyword':['manual-keyword'],'domain_regex':['^manual[.]example$']}, match
+assert manual[0] < next(i for i,r in enumerate(rules) if 'proxy.example' in json.dumps(r))
+assert rules[manual[0]-1]['action']=='resolve' and 'manual-direct.example' in json.dumps(rules[manual[0]-1])
+assert any(r.get('outbound')=='direct-out' and r.get('rules',[{}])[0].get('inbound')=='happ_test-mixed-in' and 'manual-direct.example' in json.dumps(r) for r in rules), 'Section listener must honor manual exclusions'
+dns=next((i,r) for i,r in enumerate(c['dns']['rules']) if 'manual-direct.example' in json.dumps(r))
+assert dns[1]['server'].endswith('-happ-domestic')
+assert dns[0] < next(i for i,r in enumerate(c['dns']['rules']) if 'proxy.example' in json.dumps(r))
+assert next(s for s in c['dns']['servers'] if s['tag']==dns[1]['server'])['detour']=='direct-out'
+assert not any(value in json.dumps(c) for value in ['ignored.srs','ignored.lst','ovh','discord','other-only.example'])
 assert '203.0.113.0/24' not in json.dumps(c['route']['rules'])
 assert not any(r.get('port')==[80] for r in c['route']['rules']), 'HAPP must own destination selection'
 catchall=[r for r in c['route']['rules'] if set(r)=={'action','inbound','outbound'} and r['inbound']==['tproxy-in','tproxy6-in']]

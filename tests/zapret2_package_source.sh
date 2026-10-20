@@ -64,8 +64,10 @@ assert_eq "1.0.3" "$(ucode "$UPDATER" updates-normalize-zapret-version v1.0.3)" 
 
 fake_lib="$WORK_DIR/lib"
 fake_bin="$WORK_DIR/bin"
-mkdir -p "$fake_lib/components" "$fake_lib/core" "$fake_lib/providers/zapret2" "$fake_bin"
+mkdir -p "$fake_lib/components" "$fake_lib/core" "$fake_lib/singbox" "$fake_lib/providers/zapret2" "$fake_bin"
 cp "$UPDATER" "$fake_lib/components/updater.uc"
+cp "$ANTICHEBURNET_LIB/singbox/selection.uc" "$fake_lib/singbox/selection.uc"
+cp "$ANTICHEBURNET_LIB/core/common.uc" "$fake_lib/core/common.uc"
 
 cat >"$fake_lib/core/constants.uc" <<'UCODE'
 function module_exports() {

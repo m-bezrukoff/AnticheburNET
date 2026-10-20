@@ -170,6 +170,8 @@ package_runtime_lib="$WORK_DIR/package-runtime-lib"
 package_runtime_bin="$WORK_DIR/package-runtime-bin"
 mkdir -p "$package_runtime_lib/components" "$package_runtime_lib/core" "$package_runtime_lib/singbox" "$package_runtime_bin"
 cp "$UPDATER" "$package_runtime_lib/components/updater.uc"
+cp "$ANTICHEBURNET_LIB/singbox/selection.uc" "$package_runtime_lib/singbox/selection.uc"
+cp "$ANTICHEBURNET_LIB/core/common.uc" "$package_runtime_lib/core/common.uc"
 cat >"$package_runtime_lib/core/constants.uc" <<'UCODE'
 function module_exports() {
   return {};

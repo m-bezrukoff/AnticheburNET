@@ -78,6 +78,13 @@ function restore(snapshot, api) {
     let payload = api("get_proxies");
     if (type(object_or_empty(payload).proxies) != "object") return false;
     let ok = true;
+    // A reachable API can still be loading provider groups. Do not consume the
+    // handoff until every saved group is present. Removed members of a present
+    // group may still fall back to that group's current default.
+    for (let group, selected in object_or_empty(snapshot)) {
+        if (lc(as_string(object_or_empty(payload.proxies[group]).type)) != "selector")
+            ok = false;
+    }
     for (let pair in restore_pairs(snapshot, payload)) {
         let result = api("set_group_proxy", pair.group, pair.proxy);
         if (!object_or_empty(result).success) ok = false;

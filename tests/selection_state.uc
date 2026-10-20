@@ -31,5 +31,10 @@ check(!selection.restore(snapshot, function(action) {
     return action == "get_proxies" ? updated : { success: false };
 }), "Failed restore must be reported");
 check(!selection.restore(snapshot, function(action) { return null; }), "Offline API must be reported");
+check(!selection.restore(snapshot, function(action) { return { proxies: {} }; }),
+    "API readiness without provider groups must not consume the saved selection");
+check(!selection.restore(snapshot, function(action) {
+    return { proxies: { main: updated.proxies.main } };
+}), "Partially loaded provider groups must leave restoration pending");
 check(selection.clear() && selection.read() == null, "Consumed handoff must not override newer choices on a later cold boot");
 print("Selection capture, persistence, new profiles, reordering, missing profiles and API failures passed\n");

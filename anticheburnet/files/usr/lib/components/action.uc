@@ -3,6 +3,7 @@
 let fs = require("fs");
 let constants = require("core.constants");
 let uci_core = require("core.uci");
+let selection = require("singbox.selection");
 
 const LIB_DIR = getenv("ANTICHEBURNET_LIB") || "/usr/lib/anticheburnet";
 const BIN_PATH = getenv("ANTICHEBURNET_BIN") || constants.ANTICHEBURNET_BIN || "/usr/bin/anticheburnet";
@@ -20,6 +21,7 @@ const SB_MANAGED_SERVICE_MARKER = getenv("SB_MANAGED_SERVICE_MARKER") || constan
 let tmp_dir = "";
 let lock_held = false;
 let anticheburnet_was_running = false;
+let selected_profiles_before_change = null;
 let anticheburnet_stopped_for_sing_box_change = false;
 let update_version = "";
 let suite_complete = false;
@@ -379,12 +381,30 @@ function updates_response(success, component, action, message, current_version, 
     });
 }
 
+function restore_component_selection() {
+    // Package hooks may already have restarted the engine. Use the selection
+    // captured before installation, never the defaults observed after it.
+    if (selected_profiles_before_change == null)
+        return;
+    if (!selection.save(selected_profiles_before_change))
+        updates_log("Failed to persist connection selection after component change", "error");
+    for (let attempt = 0; attempt < 5; attempt++) {
+        if (selection.restore(selected_profiles_before_change)) {
+            selection.clear();
+            return;
+        }
+        if (attempt < 4) system("sleep 1");
+    }
+    updates_log("Selected connection profiles are pending restoration after component change", "error");
+}
+
 function restart_anticheburnet_after_failed_sing_box_change() {
     if (!anticheburnet_stopped_for_sing_box_change || !anticheburnet_was_running || !file_exists(SERVICE_INIT))
         return;
     updates_log("Restarting AnticheburNET after failed sing-box component change");
     if (!command_success_from_args([ SERVICE_INIT, "start" ]))
         command_success_from_args([ SERVICE_INIT, "restart" ]);
+    restore_component_selection();
 }
 
 function action_success(component, action, message, current_version, latest_version, changed, status, release_url) {
@@ -822,6 +842,8 @@ function anticheburnet_status_running_with_timeout() {
 
 function capture_anticheburnet_running_state() {
     anticheburnet_was_running = file_exists(BIN_PATH) && anticheburnet_status_running_with_timeout();
+    if (anticheburnet_was_running)
+        selected_profiles_before_change = selection.capture();
 }
 
 function restart_anticheburnet_after_successful_change() {
@@ -833,6 +855,7 @@ function restart_anticheburnet_after_successful_change() {
         return;
     }
     run_logged("Restarting AnticheburNET after successful component change", command_from_args([ SERVICE_INIT, "restart" ]));
+    restore_component_selection();
 }
 
 function stop_anticheburnet_before_sing_box_change() {

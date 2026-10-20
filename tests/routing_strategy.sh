@@ -24,6 +24,18 @@ for(let mode in ["selected","happ","tunnel"]){
   if(rule.protocol=="bittorrent")push(matches,rule);
  if(length(matches)!=1||matches[0].action!="route"||matches[0].outbound!="direct-out")
   die("Torrent traffic must remain direct in every routing strategy\n");
+ let smtp=[];
+ for(let rule in config.rules)
+  if(rule.port!=null)push(smtp,rule);
+ if(mode=="happ"){
+  if(length(smtp)!=1||smtp[0].action!="route"||smtp[0].network!="tcp"||
+     smtp[0].outbound!="direct-out"||length(smtp[0].port)!=3||
+     smtp[0].port[0]!=25||smtp[0].port[1]!=465||smtp[0].port[2]!=587)
+   die("HAPP must route SMTP ports directly for IPv4 and IPv6\n");
+  if(smtp[0].ip_version!=null)
+   die("SMTP bypass must cover both IP versions\n");
+ }else if(length(smtp)!=0)
+  die("SMTP bypass must not change other routing strategies\n");
 }
 print("Routing strategy selection checks passed\n");
 '

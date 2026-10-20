@@ -51,6 +51,16 @@ function config(settings, runtime) {
         outbound: runtime_constants.DIRECT_OUTBOUND_TAG
     });
 
+    // SMTP (including implicit TLS and submission) bypasses HAPP policy.
+    // Match destination ports so encrypted SMTP does not depend on sniffing.
+    if (option(settings, "routing_strategy", "selected") == "happ")
+        push(result.rules, {
+            action: "route",
+            network: "tcp",
+            port: [ 25, 465, 587 ],
+            outbound: runtime_constants.DIRECT_OUTBOUND_TAG
+        });
+
     if (output_network_interface != "")
         result.default_interface = output_network_interface;
     if (bool_option(settings, "disable_quic", false))

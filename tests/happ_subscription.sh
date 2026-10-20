@@ -71,6 +71,9 @@ rules=c['route']['rules']; text=json.dumps(rules)
 bt=next(i for i,r in enumerate(rules) if r.get('protocol')=='bittorrent')
 assert rules[bt]['outbound']=='direct-out'
 assert bt < next(i for i,r in enumerate(rules) if 'example.ru' in json.dumps(r))
+smtp=next(i for i,r in enumerate(rules) if r.get('port')==[25,465,587])
+assert rules[smtp]=={'action':'route','network':'tcp','port':[25,465,587],'outbound':'direct-out'}
+assert smtp < next(i for i,r in enumerate(rules) if 'ads.example' in json.dumps(r)), 'SMTP must bypass even HAPP Block/Proxy rules'
 for rule in rules:
  if rule.get('type')=='logical' and rule.get('mode')=='and':
   assert rule['rules'][0].get('inbound'), 'Route scope must survive DNS generation'

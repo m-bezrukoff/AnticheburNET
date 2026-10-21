@@ -14,4 +14,6 @@ Keep section and server editors and the surrounding routing controls in their or
 
 Preserve validation, dependency visibility, localization and save/apply behavior. Keep saved, prepared and applied states distinct. Preserve disclosures, focus and rule-list scrolling across polling updates. Render subscription-provided values as text nodes. Resource links retain their full original destination.
 
+Use one shared compact status strip above the map content across all seven tabs for runtime start, stop, restart and configuration apply transitions. Inherit the active LuCI theme and system font with scoped styles. Show polite, nonblocking live status without fabricated percentages, hide the strip when the service is stable, and preserve it across map `renderContents` remounts.
+
 Verify local previews with synthetic data separately from live-router behavior.

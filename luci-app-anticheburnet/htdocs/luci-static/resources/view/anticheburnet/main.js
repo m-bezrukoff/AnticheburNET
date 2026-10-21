@@ -14377,6 +14377,41 @@ var UpdatesTab = {
   styles: styles6
 };
 
+// src/anticheburnet/partials/serviceTransitionBanner.styles.ts
+var serviceTransitionBannerStyles = `
+.ac-service-transition[hidden] { display: none; }
+.ac-service-transition {
+    display: flex;
+    align-items: flex-start;
+    gap: .75em;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0 0 1em;
+    padding: .85em 1em;
+    border: 1px solid var(--border-color-high, #cdd1d6);
+    border-radius: 4px;
+    background: var(--background-color-high, #f3f4f6);
+    color: inherit;
+    font: inherit;
+    line-height: 1.5;
+}
+.ac-service-transition__copy { min-width: 0; overflow-wrap: anywhere; }
+.ac-service-transition__copy strong { display: block; font-weight: 600; }
+.ac-service-transition__detail { display: block; margin-top: .15em; }
+.ac-service-transition__spinner {
+    flex: 0 0 auto;
+    width: 1.4em;
+    height: 1.4em;
+    margin-top: .1em;
+    color: var(--primary-color-high, #006582);
+    animation: ac-service-transition-spin 1s linear infinite;
+}
+@keyframes ac-service-transition-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .ac-service-transition__spinner { animation: none; }
+}
+`;
+
 // src/styles.ts
 var GlobalStyles = `
 ${DashboardTab.styles}
@@ -14384,6 +14419,7 @@ ${DiagnosticTab.styles}
 ${MonitoringTab.styles}
 ${UpdatesTab.styles}
 ${PartialStyles}
+${serviceTransitionBannerStyles}
 
 /* Align help icons with the first text line, including multiline descriptions. */
 :is(#cbi-${ANTICHEBURNET_UCI_PACKAGE}, [id^="cbi-${ANTICHEBURNET_UCI_PACKAGE}-"]) .cbi-value-description:not(:empty)::before {
@@ -14569,6 +14605,79 @@ function injectGlobalStyles() {
   );
 }
 
+// src/anticheburnet/partials/serviceTransitionBanner.state.ts
+function getServiceTransitionPhase(state) {
+  const status = state.servicesInfoWidget.data.anticheburnetStatus;
+  const actions = state.diagnosticsActions;
+  if (status === "reloading") return "reloading";
+  if (status === "restarting" || actions.restart.loading) return "restarting";
+  if (status === "starting" || actions.start.loading) return "starting";
+  if (status === "stopping" || actions.stop.loading) return "stopping";
+  if (Object.values(state.updatesActions).some(
+    (action) => action.loading && action.progress?.stage === "restarting"
+  )) {
+    return "restarting";
+  }
+  return null;
+}
+
+// src/anticheburnet/partials/serviceTransitionBanner.ts
+function transitionTitle(phase) {
+  switch (phase) {
+    case "starting":
+      return _("AnticheburNET is starting");
+    case "stopping":
+      return _("AnticheburNET is stopping");
+    case "reloading":
+      return _("AnticheburNET is applying configuration");
+    default:
+      return _("AnticheburNET is restarting");
+  }
+}
+var mountedBanners = /* @__PURE__ */ new WeakMap();
+function mountServiceTransitionBanner(root) {
+  mountedBanners.get(root)?.();
+  const title = E("strong");
+  const detail = E("span", { class: "ac-service-transition__detail" });
+  const icon = renderLoaderCircleIcon24();
+  icon.querySelector("animateTransform")?.remove();
+  icon.setAttribute("class", "ac-service-transition__spinner");
+  icon.setAttribute("aria-hidden", "true");
+  const banner = E(
+    "div",
+    {
+      class: "ac-service-transition",
+      role: "status",
+      hidden: true
+    },
+    [icon, E("div", { class: "ac-service-transition__copy" }, [title, detail])]
+  );
+  banner.setAttribute("aria-live", "polite");
+  banner.setAttribute("aria-atomic", "true");
+  root.insertBefore(banner, root.firstChild);
+  let previousPhase = null;
+  const unsubscribe = store.subscribe((state) => {
+    const phase = getServiceTransitionPhase(state);
+    if (phase === previousPhase) return;
+    previousPhase = phase;
+    banner.hidden = phase === null;
+    if (phase === null) {
+      title.textContent = "";
+      detail.textContent = "";
+      return;
+    }
+    title.textContent = transitionTitle(phase);
+    detail.textContent = phase === "stopping" ? _("Waiting for the service to stop.") : _("Please wait. Connections may be briefly interrupted.");
+  });
+  const dispose = () => {
+    unsubscribe();
+    banner.remove();
+    mountedBanners.delete(root);
+  };
+  mountedBanners.set(root, dispose);
+  return dispose;
+}
+
 // src/main.ts
 if (typeof structuredClone !== "function")
   globalThis.structuredClone = (obj) => JSON.parse(JSON.stringify(obj));
@@ -14591,6 +14700,7 @@ return baseclass.extend({
   getClashUIUrl,
   getProxyUrlName,
   injectGlobalStyles,
+  mountServiceTransitionBanner,
   parseValueList,
   showToast,
   store,

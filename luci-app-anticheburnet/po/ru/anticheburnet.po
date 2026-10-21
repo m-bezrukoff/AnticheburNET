@@ -2542,3 +2542,21 @@ msgstr "Полученные правила подписки и сохранён
 
 msgid "Apply changes to update the configured zones."
 msgstr "Примените изменения, чтобы обновить используемые зоны."
+
+msgid "AnticheburNET is starting"
+msgstr "AnticheburNET запускается"
+
+msgid "AnticheburNET is stopping"
+msgstr "AnticheburNET останавливается"
+
+msgid "AnticheburNET is applying configuration"
+msgstr "AnticheburNET применяет настройки"
+
+msgid "AnticheburNET is restarting"
+msgstr "AnticheburNET перезапускается"
+
+msgid "Waiting for the service to stop."
+msgstr "Ожидание остановки сервиса."
+
+msgid "Please wait. Connections may be briefly interrupted."
+msgstr "Подождите. Возможен кратковременный разрыв соединений."

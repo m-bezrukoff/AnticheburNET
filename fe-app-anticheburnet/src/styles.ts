@@ -4,6 +4,7 @@ import { DiagnosticTab } from './anticheburnet/tabs/diagnostic';
 import { MonitoringTab } from './anticheburnet/tabs/monitoring';
 import { UpdatesTab } from './anticheburnet/tabs/updates';
 import { PartialStyles } from './partials';
+import { serviceTransitionBannerStyles } from './anticheburnet/partials/serviceTransitionBanner.styles';
 import { ANTICHEBURNET_UCI_PACKAGE as ANTICHEBURNET_CBI_PREFIX } from './constants';
 
 export const GlobalStyles = `
@@ -12,6 +13,7 @@ ${DiagnosticTab.styles}
 ${MonitoringTab.styles}
 ${UpdatesTab.styles}
 ${PartialStyles}
+${serviceTransitionBannerStyles}
 
 /* Align help icons with the first text line, including multiline descriptions. */
 :is(#cbi-${ANTICHEBURNET_CBI_PREFIX}, [id^="cbi-${ANTICHEBURNET_CBI_PREFIX}-"]) .cbi-value-description:not(:empty)::before {

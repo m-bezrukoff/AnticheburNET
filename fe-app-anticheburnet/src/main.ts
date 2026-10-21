@@ -23,6 +23,7 @@ export { showToast } from './helpers/showToast';
 export { getClashUIUrl } from './helpers/getClashApiUrl';
 export { AnticheburNETShellMethods } from './anticheburnet/methods/shell';
 export { coreService } from './anticheburnet/services/core.service';
+export { mountServiceTransitionBanner } from './anticheburnet/partials/serviceTransitionBanner';
 export { store } from './anticheburnet/services/store.service';
 export { applyUiStateToStore } from './anticheburnet/services/uiState.service';
 export { DashboardTab } from './anticheburnet/tabs/dashboard';

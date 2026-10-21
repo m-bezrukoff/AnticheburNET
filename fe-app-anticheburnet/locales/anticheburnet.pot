@@ -3585,3 +3585,21 @@ msgstr ""
 
 msgid "Apply changes to update the configured zones."
 msgstr ""
+
+msgid "AnticheburNET is starting"
+msgstr ""
+
+msgid "AnticheburNET is stopping"
+msgstr ""
+
+msgid "AnticheburNET is applying configuration"
+msgstr ""
+
+msgid "AnticheburNET is restarting"
+msgstr ""
+
+msgid "Waiting for the service to stop."
+msgstr ""
+
+msgid "Please wait. Connections may be briefly interrupted."
+msgstr ""

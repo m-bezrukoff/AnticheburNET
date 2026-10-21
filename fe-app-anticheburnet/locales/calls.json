@@ -6083,5 +6083,47 @@
     "places": [
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:322"
     ]
+  },
+  {
+    "call": "AnticheburNET is applying configuration",
+    "key": "AnticheburNET is applying configuration",
+    "places": [
+      "src/anticheburnet/partials/serviceTransitionBanner.ts:12"
+    ]
+  },
+  {
+    "call": "AnticheburNET is restarting",
+    "key": "AnticheburNET is restarting",
+    "places": [
+      "src/anticheburnet/partials/serviceTransitionBanner.ts:14"
+    ]
+  },
+  {
+    "call": "AnticheburNET is starting",
+    "key": "AnticheburNET is starting",
+    "places": [
+      "src/anticheburnet/partials/serviceTransitionBanner.ts:8"
+    ]
+  },
+  {
+    "call": "AnticheburNET is stopping",
+    "key": "AnticheburNET is stopping",
+    "places": [
+      "src/anticheburnet/partials/serviceTransitionBanner.ts:10"
+    ]
+  },
+  {
+    "call": "Please wait. Connections may be briefly interrupted.",
+    "key": "Please wait. Connections may be briefly interrupted.",
+    "places": [
+      "src/anticheburnet/partials/serviceTransitionBanner.ts:57"
+    ]
+  },
+  {
+    "call": "Waiting for the service to stop.",
+    "key": "Waiting for the service to stop.",
+    "places": [
+      "src/anticheburnet/partials/serviceTransitionBanner.ts:56"
+    ]
   }
 ]

@@ -569,6 +569,15 @@ const EntryPoint = {
 
     await loadUiCapabilities().catch(() => null);
 
+    const renderMapContents = anticheburnetMap.renderContents;
+    anticheburnetMap.renderContents = function () {
+      return Promise.resolve(renderMapContents.apply(this, arguments)).then(
+        (node) => {
+          main.mountServiceTransitionBanner(node);
+          return node;
+        },
+      );
+    };
     const rendered = await anticheburnetMap.render();
     main.coreService({
       waitForLogWatcherStart: loadUiCapabilities,

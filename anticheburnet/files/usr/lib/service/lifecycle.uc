@@ -1025,6 +1025,18 @@ function dns_failover_apply(candidate_state_path) {
     let status = 0;
 
     if (changed) {
+        // DNS SIGHUP recreates the outbound graph too. Preserve the live choice
+        // explicitly, including the service-reload fallback and rollback below.
+        let snapshot = capture_selector_state();
+        if (snapshot == null || !selection.save(snapshot)) {
+            log_message("Unable to preserve connection selection; DNS reload cancelled", "error");
+            if (backup_path != "") {
+                module_success(SINGBOX_UC, [ "restore-dns-config", backup_path ]);
+                remove_file(backup_path);
+            }
+            release_reload_lock();
+            return 1;
+        }
         let sing_box_pid_before = sing_box_runtime_pid();
         status = module_status(STATE_UC, [ "hup-sing-box-runtime" ]);
         if (status == 0)
@@ -1046,6 +1058,23 @@ function dns_failover_apply(candidate_state_path) {
         if (module_success(SINGBOX_UC, [ "restore-dns-config", backup_path ])) {
             let sing_box_pid_before_restore = sing_box_runtime_pid();
             module_success(STATE_UC, [ "reload-sing-box-runtime", sing_box_pid_before_restore, "dns-failed", "dns-restored" ]);
+        }
+    }
+
+    if (changed) {
+        let restored = false;
+        for (let attempt = 0; attempt < 5; attempt++) {
+            if (selection.restore(selection.read())) {
+                restored = true;
+                if (!selection.clear())
+                    log_message("Failed to clear saved connection selection after DNS reload", "error");
+                break;
+            }
+            if (attempt < 4) command_success_from_args([ "sleep", "1" ]);
+        }
+        if (!restored) {
+            log_message("DNS reload could not restore selected connection profiles; saved selection retained", "error");
+            status = 1;
         }
     }
 

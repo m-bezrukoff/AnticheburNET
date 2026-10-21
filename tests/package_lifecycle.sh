@@ -157,7 +157,10 @@ cat >"$WORK_DIR/upgrade-init" <<'SH'
 #!/usr/bin/env bash
 case "$1" in
   status) exit "${ANTICHEBURNET_FAKE_STATUS:-0}" ;;
-  start) printf '%s\n' start >>"${ANTICHEBURNET_START_LOG:?}" ;;
+  enable|start)
+    printf '%s\n' "$1" >>"${ANTICHEBURNET_START_LOG:?}"
+    if [ "${ANTICHEBURNET_FAIL_ACTION:-}" = "$1" ]; then exit 1; fi
+    ;;
 esac
 SH
 chmod 0755 "$WORK_DIR/upgrade-init"
@@ -192,6 +195,27 @@ ANTICHEBURNET_RT_TABLES="$WORK_DIR/rt_tables_upgrade" \
 [ ! -e "$ANTICHEBURNET_PACKAGE_UPGRADE_STATE" ] ||
   fail "package pre-upgrade must not mark an already stopped service"
 
+# A new installation (no running-service marker) must enable before starting.
+: >"$WORK_DIR/upgrade-start.log"
+run_postinst() {
+  ANTICHEBURNET_PACKAGE_TEST_MODE=1 \
+  ANTICHEBURNET_UCI_STATE_FILE="$WORK_DIR/postinst-firewall.state" \
+  ANTICHEBURNET_FIREWALL_INCLUDE_FILE="$WORK_DIR/anticheburnet-input.nft" \
+  ANTICHEBURNET_INIT="$WORK_DIR/upgrade-init" \
+  ANTICHEBURNET_START_LOG="$WORK_DIR/upgrade-start.log" \
+    ucode -L "$ANTICHEBURNET_LIB" "$PACKAGE_UC" postinst
+}
+run_postinst
+[ "$(cat "$WORK_DIR/upgrade-start.log")" = "$(printf 'enable\nstart')" ] ||
+  fail "fresh install must enable autostart before starting the service"
+: >"$WORK_DIR/upgrade-start.log"
+IPKG_INSTROOT="$WORK_DIR/image" run_postinst
+[ ! -s "$WORK_DIR/upgrade-start.log" ] || fail "image build must not enable or start host services"
+ANTICHEBURNET_FAIL_ACTION=enable run_postinst && fail "enable failure must fail postinst"
+: >"$WORK_DIR/upgrade-start.log"
+ANTICHEBURNET_FAIL_ACTION=start run_postinst 2>"$WORK_DIR/start-warning"
+grep -Fq 'service startup failed' "$WORK_DIR/start-warning" || fail "startup failure must be reported"
+
 # Backend upgrade must preserve its separately managed sing-box runtime.
 printf '#!/bin/sh\n# AnticheburNET managed sing-box service for binary variants\nexit 0\n' > "$WORK_DIR/managed-sing-box-init"
 chmod 0755 "$WORK_DIR/managed-sing-box-init"
@@ -216,8 +240,9 @@ for defer_flag in ANTICHEBURNET_DEFER_PACKAGE_RESTART ANTICHEBURNET_UI_COMPONENT
     ANTICHEBURNET_UCI_STATE_FILE="$WORK_DIR/postinst-firewall.state" \
     ANTICHEBURNET_FIREWALL_INCLUDE_FILE="$WORK_DIR/tproxy-input.nft" \
     ANTICHEBURNET_INIT="$WORK_DIR/upgrade-init" \
+    ANTICHEBURNET_START_LOG="$WORK_DIR/upgrade-start.log" \
     ucode -L "$ANTICHEBURNET_LIB" "$PACKAGE_UC" postinst
-  [ ! -s "$WORK_DIR/upgrade-start.log" ] || fail "self-update restarted inside the package transaction"
+  [ "$(cat "$WORK_DIR/upgrade-start.log")" = enable ] || fail "self-update must enable autostart while deferring startup"
   [ ! -e "$ANTICHEBURNET_PACKAGE_UPGRADE_STATE" ] || fail "deferred restart left a stale upgrade marker"
 done
 

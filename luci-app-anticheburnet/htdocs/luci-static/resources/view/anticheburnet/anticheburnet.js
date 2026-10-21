@@ -123,7 +123,7 @@ function addRoutingStrategy(map, rulesSection) {
     _("Direct by default, exceptions through the tunnel"),
   );
   strategy.value("tunnel", _("All through the tunnel"));
-  strategy.default = "selected";
+  strategy.default = "tunnel";
   strategy.rmempty = false;
 
   const target = strategySection.option(

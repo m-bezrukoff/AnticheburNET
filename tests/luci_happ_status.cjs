@@ -54,7 +54,7 @@ assert.equal(profile.open, true, 'The selected profile opens initially');
 const groups = descendants(view).filter(node => node.attrs.class === 'ac-happ__group');
 assert.deepEqual(groups.map(node => node.open), [true, false, false], 'Nonempty rules open while empty actions stay compact');
 assert.match(text(view), /Block → Direct → Proxy/, 'The backend rule evaluation order must be preserved');
-assert.match(text(view), /Apply changes/, 'Saved configuration must not be presented as applied runtime state');
+assert.doesNotMatch(text(view), /Received subscription rules and saved runtime configuration\.|Apply changes to update the configured zones\./, 'Sections must not show the subscription configuration notice');
 const unsafeData = structuredClone(data);
 unsafeData.profiles[0].resources[0].url = 'javascript:alert(1)';
 assert.equal(descendants(app.renderStatus(unsafeData)).filter(node => node.tag === 'a').length, 0, 'Unsafe source protocols must stay plain text');

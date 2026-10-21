@@ -254,6 +254,9 @@ function postinst_restore() {
     if (!ensure_tproxy_firewall_include())
         return false;
 
+    if (!command_success_from_args([ INIT_PATH, "enable" ]))
+        return false;
+
     // The component worker restarts after APK releases its database lock.
     // The tracked flag also supports already installed one-click updaters.
     if (env("ANTICHEBURNET_DEFER_PACKAGE_RESTART", "") == "1" ||
@@ -265,11 +268,8 @@ function postinst_restore() {
         return true;
     }
 
-    if (!path_exists(PACKAGE_UPGRADE_STATE))
-        return true;
-
     if (!command_success_from_args([ INIT_PATH, "start" ]))
-        return false;
+        warn("AnticheburNET autostart enabled, but service startup failed. Add an enabled tunnel connection in LuCI and apply the configuration.\n");
 
     unlink_if_exists(PACKAGE_UPGRADE_STATE);
     return true;

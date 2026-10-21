@@ -585,8 +585,8 @@ ANTICHEBURNET_INSTALLER_SYSTEM_INFO_CACHE="$WORK_DIR/system-info.json" \
 ANTICHEBURNET_INSTALLER_SERVER_COUNTRY_CACHE="$WORK_DIR/server-country.json" \
 ANTICHEBURNET_INSTALLER_SING_BOX_VERSION_CACHE="$WORK_DIR/sing-box-version" \
 ANTICHEBURNET_INSTALLER_TMP_SYSTEM_INFO_CACHE="$WORK_DIR/tmp-system-info.json" \
-ANTICHEBURNET_WAS_ENABLED=1 \
-ANTICHEBURNET_WAS_RUNNING=1 \
+ANTICHEBURNET_WAS_ENABLED=0 \
+ANTICHEBURNET_WAS_RUNNING=0 \
 ANTICHEBURNET_INSTALLER_INIT_LOG="$WORK_DIR/init.log" \
   ucode "$helper" installer-post-install
 
@@ -594,9 +594,9 @@ if compgen -G "$WORK_DIR/luci-indexcache*" >/dev/null; then
   fail "installer post-install must clear LuCI caches through ucode owner"
 fi
 grep -Fxq 'enable' "$WORK_DIR/init.log" ||
-  fail "installer post-install must restore enabled state through ucode owner"
+  fail "installer post-install must enable autostart on fresh installation"
 grep -Fxq 'start' "$WORK_DIR/init.log" ||
-  fail "installer post-install must restore running state through ucode owner"
+  fail "installer post-install must start the service on fresh installation"
 
 # Exercise the real post-install helper with a UCI boundary that records the
 # persisted language and can reject writes or commits.

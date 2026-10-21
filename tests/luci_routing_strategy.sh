@@ -52,7 +52,7 @@ context.addRoutingStrategy(map, rules);
 assert.equal(registered.length, 1);
 assert.equal(registered[0][1], 'settings');
 assert.deepEqual(options.routing_strategy.keylist, ['happ', 'selected', 'tunnel']);
-assert.equal(options.routing_strategy.default, 'selected');
+assert.equal(options.routing_strategy.default, 'tunnel');
 assert.equal(options.routing_strategy.rmempty, false);
 assert.equal(options.routing_strategy.description, 'Torrent traffic always goes directly.');
 assert.equal(options.routing_strategy.dependencies.length, 0, 'Torrent notice must remain visible for every strategy');

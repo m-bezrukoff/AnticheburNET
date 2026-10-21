@@ -1294,13 +1294,12 @@ function installer_post_install() {
     if (path_executable(INSTALLER_RPCD_INIT))
         run_args([ INSTALLER_RPCD_INIT, "reload" ]);
 
-    if (env("ANTICHEBURNET_WAS_ENABLED", "0") == "1" && path_executable(INSTALLER_ANTICHEBURNET_INIT))
-        run_args([ INSTALLER_ANTICHEBURNET_INIT, "enable" ]);
-
-    if (env("ANTICHEBURNET_WAS_RUNNING", "0") == "1" && path_executable(INSTALLER_ANTICHEBURNET_INIT)) {
+    if (path_executable(INSTALLER_ANTICHEBURNET_INIT)) {
+        if (!run_args([ INSTALLER_ANTICHEBURNET_INIT, "enable" ]))
+            return false;
         if (!run_args([ INSTALLER_ANTICHEBURNET_INIT, "start" ]) &&
             !run_args([ INSTALLER_ANTICHEBURNET_INIT, "restart" ]))
-            warn("Failed to start AnticheburNET after upgrade.\n");
+            warn("AnticheburNET autostart enabled, but service startup failed. Add an enabled tunnel connection in LuCI and apply the configuration.\n");
     }
 
     return true;
@@ -2030,7 +2029,7 @@ install_full_suite() {
     FULL_INSTALL_COMPLETE=1
     msg "AnticheburNET $ANTICHEBURNET_PACKAGE_VERSION: AnticheburNET, LuCI ($INSTALLER_LANG), sing-box extended, Xray and AmneziaWG installed"
     msg "Source release: ${REPO_OWNER}/${REPO_NAME}@${ANTICHEBURNET_RELEASE_TAG}"
-    warn "Open LuCI, add your connections and apply routing settings before enabling AnticheburNET"
+    msg "AnticheburNET autostart enabled; service startup requested. Open LuCI to add connections if needed."
 }
 
 backup_full_suite_configuration() {
@@ -2443,7 +2442,7 @@ main() {
 
     msg "AnticheburNET $ANTICHEBURNET_PACKAGE_VERSION has been installed successfully"
     msg "Source release: ${REPO_OWNER}/${REPO_NAME}@${ANTICHEBURNET_RELEASE_TAG}"
-    warn "Open LuCI and review your rules before enabling AnticheburNET"
+    msg "AnticheburNET autostart enabled; service startup requested. Open LuCI to review your connections and routing settings."
 }
 
 main "$@"

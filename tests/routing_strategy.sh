@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+grep -Fq "option routing_strategy 'tunnel'" "$root/anticheburnet/files/etc/config/anticheburnet" || {
+ echo 'New installations must default to full tunnel' >&2; exit 1;
+}
 ucode -L "$root/anticheburnet/files/usr/lib" -e '
 let s=require("routing.strategy");
 let sections=[

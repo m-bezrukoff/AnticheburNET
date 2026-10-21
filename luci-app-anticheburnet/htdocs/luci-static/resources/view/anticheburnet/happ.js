@@ -36,13 +36,6 @@ const styles = `
 .ac-happ ::selection { background: var(--happ-link); color: Canvas; }
 .ac-happ__icon { width: 1em; height: 1em; flex: 0 0 1em; vertical-align: middle; }
 .ac-happ__muted, .ac-happ__count, .ac-happ__meta dt { color: var(--happ-muted); }
-.ac-happ__notice {
-  display: flex; align-items: baseline; flex-wrap: wrap; gap: .35em .75em;
-  padding: .5em .75em; margin-bottom: .5em; border: 1px solid var(--happ-warning);
-  border-radius: 5px; background: color-mix(in srgb, var(--happ-warning) 7%, transparent);
-}
-.ac-happ__notice > .ac-happ__icon { align-self: center; color: var(--happ-warning); }
-.ac-happ__notice strong { font-weight: 600; }
 .ac-happ__profile { margin: 0 0 .5em; border: 0; padding: 0; }
 .ac-happ__profile > summary, .ac-happ__group > summary { list-style: none; cursor: pointer; }
 .ac-happ__profile > summary::-webkit-details-marker, .ac-happ__group > summary::-webkit-details-marker { display: none; }
@@ -307,10 +300,6 @@ function renderStatus(data) {
     ]);
   });
   return el("div", { class: "ac-happ__content" }, [
-    el("div", { class: "ac-happ__notice" }, [
-      icon("info"), el("span", {}, _("Received subscription rules and saved runtime configuration.")),
-      el("strong", {}, _("Apply changes to update the configured zones.")),
-    ]),
     ...profiles,
     profiles.length ? "" : el("p", { class: "ac-happ__message ac-happ__muted" }, _("No HAPP routing profile is available in the current subscription cache.")),
   ]);

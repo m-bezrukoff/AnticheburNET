@@ -41,8 +41,8 @@ APP_DESCRIPTION="Rule-based AnticheburNET LuCI app with hybrid sing-box + zapret
 I18N_DESCRIPTION="Translation for luci-app-anticheburnet - Русский (Russian)"
 MAINTAINER="Max Bezrukov <73909358+m-bezrukoff@users.noreply.github.com>"
 PROJECT_URL="https://github.com/m-bezrukoff/AnticheburNET"
-BACKEND_DEPENDS_IPK="libc, ca-bundle, kmod-inet-diag, kmod-netlink-diag, kmod-tun, curl, ucode, ucode-mod-fs, ucode-mod-uci, kmod-nft-tproxy, coreutils-base64, bind-dig, nftables, kmod-nft-nat, ip-full"
-BACKEND_DEPENDS_APK="bind-dig ca-bundle coreutils-base64 curl ip-full kmod-inet-diag kmod-netlink-diag kmod-nft-nat kmod-nft-tproxy kmod-tun libc nftables ucode ucode-mod-fs ucode-mod-uci !https-dns-proxy !nextdns !luci-app-passwall !luci-app-passwall2"
+BACKEND_DEPENDS_IPK="libc, ca-bundle, kmod-inet-diag, kmod-netlink-diag, kmod-tun, curl, ucode, ucode-mod-fs, ucode-mod-uci, kmod-nft-tproxy, coreutils-base64, bind-dig, nftables, kmod-nft-nat, ip-full, libmaxminddb"
+BACKEND_DEPENDS_APK="bind-dig ca-bundle coreutils-base64 curl ip-full kmod-inet-diag kmod-netlink-diag kmod-nft-nat kmod-nft-tproxy kmod-tun libc libmaxminddb nftables ucode ucode-mod-fs ucode-mod-uci !https-dns-proxy !nextdns !luci-app-passwall !luci-app-passwall2"
 BACKEND_CONFLICTS_IPK="https-dns-proxy, nextdns, luci-app-passwall, luci-app-passwall2"
 BACKEND_REQUIRE_USER="anticheburnetbyedpi:anticheburnetbyedpi"
 APP_DEPENDS_IPK="libc, luci-base, anticheburnet"
@@ -175,6 +175,9 @@ build_backend_root() {
   install -m 0644 "$ROOT_DIR/anticheburnet/files/etc/config/anticheburnet" "$output_root/etc/config/anticheburnet"
   install -m 0755 "$ROOT_DIR/anticheburnet/files/usr/bin/anticheburnet" "$output_root/usr/bin/anticheburnet"
   install -m 0755 "$ROOT_DIR/anticheburnet/files/usr/bin/anticheburnet-awg-subscription-run" "$output_root/usr/bin/anticheburnet-awg-subscription-run"
+  install -m 0755 "$ROOT_DIR/anticheburnet/files/usr/bin/anticheburnet-geoip" "$output_root/usr/bin/anticheburnet-geoip"
+  make_dir "$output_root/usr/share/anticheburnet/geoip"
+  cp -a "$ROOT_DIR/anticheburnet/files/usr/share/anticheburnet/geoip/." "$output_root/usr/share/anticheburnet/geoip/"
   cp -a "$ROOT_DIR/anticheburnet/files/usr/lib/." "$output_root/usr/lib/anticheburnet/"
 
   sed -i -e "s/__COMPILED_VERSION_VARIABLE__/${RELEASE_VERSION}/g" \

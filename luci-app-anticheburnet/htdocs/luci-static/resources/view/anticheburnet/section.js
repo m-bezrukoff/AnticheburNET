@@ -1924,7 +1924,8 @@ function priorityLevelFilterModeChoices() {
 function serverCountryDetectionChoices() {
   return [
     { value: "flag_emoji", label: _("By flag emoji from name") },
-    { value: "country_is", label: _("Via country.is") },
+    // Keep the stored value compatible with existing country filters.
+    { value: "country_is", label: _("By local GeoIP database") },
   ];
 }
 
@@ -2649,6 +2650,7 @@ function addUrlTestItemOptions(itemSection, options = {}) {
   o.depends("filter_mode", "exclude");
   o.depends("filter_mode", "include");
   o.depends("filter_mode", "mixed");
+  o.description = '<a href="https://db-ip.com" target="_blank" rel="noopener noreferrer">IP Geolocation by DB-IP</a>';
   serverCountryDetectionChoices().forEach((choice) =>
     o.value(choice.value, choice.label),
   );
@@ -2858,6 +2860,7 @@ function addPriorityLevelItemOptions(itemSection, options = {}) {
   ["exclude", "include", "mixed"].forEach((mode) =>
     o.depends({ direct: "0", filter_mode: mode }),
   );
+  o.description = '<a href="https://db-ip.com" target="_blank" rel="noopener noreferrer">IP Geolocation by DB-IP</a>';
   serverCountryDetectionChoices().forEach((choice) =>
     o.value(choice.value, choice.label),
   );
@@ -3254,6 +3257,7 @@ function addDashboardServerFilterOptions(section) {
   ["exclude", "include", "mixed"].forEach((mode) =>
     o.depends({ action: "connection", dashboard_filter_mode: mode }),
   );
+  o.description = '<a href="https://db-ip.com" target="_blank" rel="noopener noreferrer">IP Geolocation by DB-IP</a>';
   serverCountryDetectionChoices().forEach((choice) =>
     o.value(choice.value, choice.label),
   );

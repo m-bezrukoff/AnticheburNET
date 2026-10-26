@@ -4,13 +4,12 @@ let plan_args = [];
 let root_url = "https://github.com/m-bezrukoff/AnticheburNET/releases/download/1.2.3/";
 let core_names = [
     "sing-box-extended_1.14.1-extended-2.7.2-anticheburnet.3_openwrt_aarch64_cortex-a53.apk",
-    "anticheburnet-xray_26.10.10-r1_aarch64_cortex-a53.apk",
     "anticheburnet-amneziawg_3.1.20260828-r4_aarch64_cortex-a53.apk"
 ];
 let plan_fields = [ "release", "anticheburnet_1.2.3.apk", root_url + "anticheburnet_1.2.3.apk",
     "luci-app-anticheburnet_1.2.3.apk", root_url + "luci-app-anticheburnet_1.2.3.apk", "", "" ];
 for (let name in core_names) push(plan_fields, name, root_url + name);
-let installed_versions = { "sing-box-extended": "1.14.1-r3", "anticheburnet-xray": "26.10.10-r1",
+let installed_versions = { "sing-box-extended": "1.14.1-r3", "anticheburnet-xray": null,
     "anticheburnet-amneziawg": "3.1.20260828-r4", anticheburnet: "1.2.3", "luci-app-anticheburnet": "1.2.3" };
 is_apk = function() { return true; };
 read_openwrt_release_value = function(key) { return key == "DISTRIB_ARCH" ? "aarch64_cortex-a53" : "mediatek/filogic"; };
@@ -21,7 +20,7 @@ compare_versions = function(a, b) { return a == b ? 0 : (a == "newer" ? 1 : -1);
 latest_anticheburnet_release_json = function() { return "release json"; };
 helper_output_input = function(input, mode, args) { plan_args = args; return join("\t", plan_fields) + "\n"; };
 let suite = resolve_anticheburnet_release("1.2.3");
-check(suite != null && length(suite.packages) == 5 && suite.cores_required, "English suite did not resolve");
+check(suite != null && length(suite.packages) == 4 && suite.cores_required, "English suite did not resolve");
 check(plan_args[3] == "aarch64_cortex-a53" && plan_args[4] == "1", "architecture or complete-suite requirement lost");
 check(!anticheburnet_cores_need_update(suite), "sing-box binary and APK version mismatch caused unnecessary update");
 check(!anticheburnet_suite_needs_update(suite, "1.2.3"), "current complete suite was considered outdated");
@@ -29,8 +28,8 @@ installed_versions["luci-app-anticheburnet"] = "old";
 check(anticheburnet_suite_needs_update(suite, "1.2.3"), "outdated LuCI was not detected");
 installed_versions["luci-app-anticheburnet"] = "1.2.3";
 installed_versions["anticheburnet-xray"] = "old";
-check(anticheburnet_cores_need_update(suite), "outdated Xray was not detected");
-installed_versions["anticheburnet-xray"] = "26.10.10-r1";
+check(anticheburnet_suite_needs_update(suite, "1.2.3"), "installed Xray did not trigger migration");
+installed_versions["anticheburnet-xray"] = null;
 installed_versions["anticheburnet-amneziawg"] = null;
 check(anticheburnet_suite_needs_update(suite, "1.2.3"), "missing core was not detected");
 installed_versions["anticheburnet-amneziawg"] = "newer";
@@ -128,7 +127,7 @@ installed_versions.anticheburnet = "old";
 installed_versions["luci-app-anticheburnet"] = "old";
 install_anticheburnet("1.2.3", suite);
 check(success, "complete-suite installation did not finish");
-check(index(events, "install") > index(events, "stop") && index(events, "stop") > index(events, "verify:" + core_names[2]), "engines changed before integrity verification");
+check(index(events, "install") > index(events, "stop") && index(events, "stop") > index(events, "verify:" + core_names[1]), "engines changed before integrity verification");
 for (let asset in suite.packages) check(index(installed_command, asset.file) >= 0, "release package missing from transaction");
 for (let name in [ "zapret", "zapret2", "byedpi" ]) {
     check(index(installed_command, name) < 0, "optional provider included in release transaction");
@@ -144,7 +143,7 @@ check(success && length(events) == 1 && events[0] == "progress:resolving", "seco
 reset(); download_failure = core_names[1]; expect_failure("download failure");
 check(index(events, "stop") < 0 && index(events, "install") < 0, "download failure changed services");
 download_failure = "";
-reset(); checksum_failure = core_names[2]; expect_failure("core checksum failure");
+reset(); checksum_failure = core_names[1]; expect_failure("core checksum failure");
 check(index(events, "stop") < 0 && index(events, "install") < 0, "checksum failure changed services");
 checksum_failure = "";
 reset(); backup_ok = false; expect_failure("backup failure");
@@ -174,7 +173,7 @@ check(called == "check", "unchanged complete suite was reinstalled");
 installed_versions["anticheburnet-xray"] = "old";
 check_and_update_anticheburnet();
 check(called == "install", "current app did not update its outdated core");
-installed_versions["anticheburnet-xray"] = "26.10.10-r1";
+installed_versions["anticheburnet-xray"] = null;
 called = ""; check_and_update_anticheburnet();
 check(called == "check", "outdated optional providers triggered release installation");
 comparison = "1"; called = ""; check_and_update_anticheburnet();

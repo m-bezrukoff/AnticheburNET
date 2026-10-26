@@ -68,7 +68,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="anticheburnet-provider-") as directory:
         work = Path(directory)
         servers = []
-        for label in ("A", "B"):
+        for label in ("A", "B", "C"):
             server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Proxy)
             server.password, server.label = "old", label
             server.stream_started, server.stream_release = threading.Event(), threading.Event()
@@ -77,11 +77,31 @@ def main():
         api_port, mixed_port = free_port(), free_port()
         path = work / "providers.json"
 
+        def ruleset(rule):
+            content = json.dumps({"version": 3, "rules": [rule]}).encode()
+            target = work / (hashlib.sha256(content).hexdigest() + ".json")
+            target.write_bytes(content)
+            return target.as_posix()
+
+        geoip_old = ruleset({"ip_cidr": ["203.0.113.0/24"]})
+        geoip_new = ruleset({"ip_cidr": ["198.51.100.0/24"]})
+        geosite_old = ruleset({"domain": ["oldsite.test"]})
+        geosite_new = ruleset({"domain": ["newsite.test"]})
+        geoip_tag, geosite_tag = "main-out-happ-geoip-cnU=", "main-out-happ-geosite-cnU="
+        provider_configuration = {"route": {
+            "final": "proxy-main",
+            "rule_set": [
+                {"type": "local", "tag": geoip_tag, "format": "source", "path": geoip_old},
+                {"type": "local", "tag": geosite_tag, "format": "source", "path": geosite_old},
+            ],
+            "rules": [{"rule_set": [geoip_tag, geosite_tag], "outbound": "ruleset-out"}],
+        }}
+
         def node(tag="node-a", target=0, password="old"):
             return {"type": "http", "tag": tag, "server": "127.0.0.1", "server_port": servers[target].server_port, "username": "test", "password": password}
 
-        def payload(nodes, members=None):
-            return {"outbounds": nodes + [{"type": "selector", "tag": "proxy-main", "outbounds": members or [item["tag"] for item in nodes], "default": "node-a"}], "configuration": {"route": {"final": "proxy-main"}}}
+        def payload(nodes, members=None, configuration=None):
+            return {"outbounds": nodes + [{"type": "selector", "tag": "proxy-main", "outbounds": members or [item["tag"] for item in nodes], "default": "node-a"}], "configuration": json.loads(json.dumps(configuration if configuration is not None else provider_configuration))}
 
         def write(value):
             temporary = path.with_suffix(".tmp")
@@ -89,7 +109,7 @@ def main():
             temporary.replace(path)
 
         write(payload([node()]))
-        config = {"log": {"level": "error"}, "inbounds": [{"type": "http", "listen": "127.0.0.1", "listen_port": mixed_port}], "providers": [{"type": "anticheburnet", "tag": "anticheburnet-subscriptions", "path": str(path)}], "route": {"final": "proxy-main"}, "experimental": {"clash_api": {"external_controller": f"127.0.0.1:{api_port}", "secret": "local-provider-test"}, "cache_file": {"enabled": False, "path": str(work / "cache.db")}}}
+        config = {"log": {"level": "error"}, "inbounds": [{"type": "http", "listen": "127.0.0.1", "listen_port": mixed_port}], "providers": [{"type": "anticheburnet", "tag": "anticheburnet-subscriptions", "path": str(path)}], "outbounds": [{"type": "http", "tag": "ruleset-out", "server": "127.0.0.1", "server_port": servers[2].server_port, "username": "test", "password": "old"}], "route": provider_configuration["route"], "experimental": {"clash_api": {"external_controller": f"127.0.0.1:{api_port}", "secret": "local-provider-test"}, "cache_file": {"enabled": False, "path": str(work / "cache.db")}}}
         config_path = work / "config.json"
         config_path.write_text(json.dumps(config), encoding="utf-8")
         base = f"http://127.0.0.1:{api_port}"
@@ -101,10 +121,10 @@ def main():
                 data = response.read()
                 return json.loads(data) if data else None
 
-        def traffic(endpoint="probe"):
+        def traffic(endpoint="probe", destination="runtime.test"):
             # A literal HTTP request avoids environment proxy/no_proxy settings.
             with socket.create_connection(("127.0.0.1", mixed_port), timeout=3) as sock:
-                sock.sendall(f"GET http://runtime.test/{endpoint} HTTP/1.1\r\nHost: runtime.test\r\nConnection: close\r\n\r\n".encode())
+                sock.sendall(f"GET http://{destination}/{endpoint} HTTP/1.1\r\nHost: {destination}\r\nConnection: close\r\n\r\n".encode())
                 chunks = []
                 while True:
                     try:
@@ -163,7 +183,8 @@ def main():
                     live = api(provider_url)
                     assert live["revision"] == hashlib.sha256(path.read_bytes()).hexdigest()
                     confirmation = api(provider_url + "?revision=true")
-                    assert set(confirmation) == {"name", "revision"}
+                    assert set(confirmation) == {"name", "revision", "capabilities"}
+                    assert "happ-ruleset-update-v1" in confirmation["capabilities"]
                     assert confirmation["revision"] == live["revision"]
                     assert process.poll() is None and process.pid == pid
                     return live
@@ -219,10 +240,75 @@ def main():
                 # Same payload is idempotent and leaves selected outbound alive.
                 update(payload([node(target=1)]))
                 assert traffic() == "B"
+                # Refresh immutable GeoIP/GeoSite files in the same running
+                # router. Actual routed traffic must change, not only API data.
+                assert traffic(destination="198.51.100.8") == "B"
+                assert traffic(destination="203.0.113.8") == "C"
+                assert traffic(destination="oldsite.test") == "C"
+                assert traffic(destination="newsite.test") == "B"
+                replacement = json.loads(json.dumps(provider_configuration))
+                replacement["route"]["rule_set"][0]["path"] = geoip_new
+                replacement["route"]["rule_set"][1]["path"] = geosite_new
+                original_files = {p: Path(p).read_bytes() for p in (geoip_old, geosite_old)}
+
+                def reject(value):
+                    revision = api(provider_url)["revision"]
+                    write(value)
+                    try:
+                        api(provider_url, "PUT")
+                    except urllib.error.HTTPError as error:
+                        assert error.code == 503
+                    else:
+                        raise AssertionError("incompatible rule-set update was accepted")
+                    assert api(provider_url)["revision"] == revision
+                    assert traffic(destination="198.51.100.8") == "B"
+                    assert traffic(destination="203.0.113.8") == "C"
+                    assert traffic(destination="oldsite.test") == "C"
+                    assert traffic(destination="newsite.test") == "B"
+
+                # A later failed set or outbound must not publish an already
+                # prepared GeoIP set, and abort must release every held lock.
+                incompatible = json.loads(json.dumps(replacement))
+                incompatible["route"]["rule_set"][1]["path"] = ruleset({"ip_cidr": ["192.0.2.0/24"]})
+                reject(payload([node(target=1)], configuration=incompatible))
+                malformed = work / ("0" * 64 + ".json")
+                malformed.write_text("invalid JSON")
+                incompatible["route"]["rule_set"][1]["path"] = malformed.as_posix()
+                reject(payload([node(target=1)], configuration=incompatible))
+                incompatible["route"]["rule_set"][1]["path"] = ruleset({"domain_regex": ["["]})
+                reject(payload([node(target=1)], configuration=incompatible))
+                reject(payload([node(target=1)], ["missing-node"], replacement))
+                incompatible = json.loads(json.dumps(replacement))
+                incompatible["route"]["final"] = "ruleset-out"
+                reject(payload([node(target=1)], configuration=incompatible))
+                incompatible = json.loads(json.dumps(replacement))
+                incompatible["dns"] = {"strategy": "prefer_ipv6"}
+                reject(payload([node(target=1)], configuration=incompatible))
+
+                servers[1].stream_started.clear()
+                servers[1].stream_release.clear()
+                rule_stream = []
+                rule_thread = threading.Thread(target=lambda: rule_stream.append(traffic("stream")), daemon=True)
+                rule_thread.start()
+                assert servers[1].stream_started.wait(3)
+                update(payload([node(target=1)], configuration=replacement))
+                assert traffic(destination="198.51.100.8") == "C"
+                assert traffic(destination="203.0.113.8") == "B"
+                assert traffic(destination="oldsite.test") == "B"
+                assert traffic(destination="newsite.test") == "C"
+                assert api("/proxies/proxy-main")["now"] == "node-a"
+                servers[1].stream_release.set()
+                rule_thread.join(timeout=3)
+                assert rule_stream == ["B"], "GeoIP refresh interrupted an established connection"
+                assert all(Path(p).read_bytes() == content for p, content in original_files.items())
+                # Backend rollback uses the same synchronous transaction.
+                update(payload([node(target=1)]))
+                assert traffic(destination="198.51.100.8") == "B"
+                assert traffic(destination="oldsite.test") == "C"
                 stop.set()
                 monitor_thread.join(timeout=3)
                 assert samples and not failures, failures
-                result = {"success": True, "pid_before": pid, "pid_after": process.pid, "apply_ms": timings, "availability_samples": len(samples), "availability_failures": failures, "traffic": ["A", "A-new", "B", "A-new", "B"], "existing_connection_preserved": pending_stream == ["A-new"], "addition_connection_preserved": addition_stream == ["A-new"], "selection_preserved_without_cache": True, "rollback_cases": len(invalid_values), "main_config_unchanged": json.loads(config_path.read_text()) == config}
+                result = {"success": True, "pid_before": pid, "pid_after": process.pid, "apply_ms": timings, "availability_samples": len(samples), "availability_failures": failures, "traffic": ["A", "A-new", "B", "A-new", "B"], "existing_connection_preserved": pending_stream == ["A-new"], "addition_connection_preserved": addition_stream == ["A-new"], "selection_preserved_without_cache": True, "rollback_cases": len(invalid_values) + 6, "geodata_updates_verified_by_traffic": True, "geodata_connection_preserved": rule_stream == ["B"], "immutable_rule_files_preserved": True, "main_config_unchanged": json.loads(config_path.read_text()) == config}
                 print(json.dumps(result))
                 if args.evidence:
                     Path(args.evidence).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")

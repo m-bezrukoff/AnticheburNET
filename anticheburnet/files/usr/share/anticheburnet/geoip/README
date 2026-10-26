@@ -1,0 +1,13 @@
+IP Geolocation by DB-IP: https://db-ip.com
+DB-IP Country Lite, October 2026, IPv4 and IPv6.
+Source: https://download.db-ip.com/free/dbip-country-lite-2026-10.mmdb.gz
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+Terms and attribution: https://db-ip.com/db/lite.php
+The database is redistributed unmodified. Lite data has reduced coverage and accuracy.
+Archive SHA256: 4cd44536ddfd40fec7eca94a233f7d19f38d470e6522e653cb8d27001f5fe177
+Uncompressed SHA256: dbd70ccfa2a13627eaf4913d19920a1a229f1b3c5439ac01c509995b6364202a
+
+No network access is performed for geolocation. Updates to this bundled snapshot
+are distributed with AnticheburNET package updates. The package stores 4,123,384
+compressed bytes on flash; lookup prepares 8,348,509 bytes in RAM on first use.

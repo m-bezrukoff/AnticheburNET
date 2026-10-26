@@ -27,8 +27,9 @@ JSON
 cat > "$test_dir/hy-client.json" <<'JSON'
 {"inbounds":[{"type":"socks","listen":"127.0.0.1","listen_port":10820}],"outbounds":[{"type":"hysteria2","server":"127.0.0.1","server_port":18443,"password":"local-runtime-test","tls":{"enabled":true,"server_name":"localhost","insecure":true}}]}
 JSON
+if [[ "${BUILD_XRAY:-0}" == 1 ]]; then
 cat > "$test_dir/xray-native.json" <<'JSON'
-{"outbounds":[{"tag":"direct","protocol":"freedom"}],"routing":{"rules":[{"type":"field","domain":["geosite:cn"],"outboundTag":"direct"},{"type":"field","ip":["geoip:private"],"outboundTag":"direct"}]}}
+{"outbounds":[{"tag":"direct","protocol":"freedom","settings":{"finalRules":[{"action":"allow","ip":["127.0.0.1"]}]}}],"routing":{"rules":[{"type":"field","domain":["geosite:cn"],"outboundTag":"direct"},{"type":"field","ip":["geoip:private"],"outboundTag":"direct"}]}}
 JSON
 ucode -L "$ANTICHEBURNET_LIB" "$root/components/xray/files/usr/lib/anticheburnet-components/xray.uc" prepare "$test_dir/xray-native.json" "$test_dir/xray.json"
 export ANTICHEBURNET_XRAY_ASSET_SOURCE="$work/anticheburnet-xray-root/usr/share/xray"
@@ -51,12 +52,18 @@ print("Full DAT GeoIP/GeoSite conversion passed\n");
 qemu-aarch64 "$work/xray/xray" run -test -config "$test_dir/xray.json"
 qemu-aarch64 "$work/xray/xray" run -config "$test_dir/xray.json" > "$test_dir/xray.log" 2>&1 &
 pids+=("$!")
+python3 "$root/tests/xray_compat_runtime.py" --runner qemu-aarch64 \
+  --binary "$work/sing-box.arm64" --xray "$work/xray/xray" \
+  --camouflage "$work/xray-camouflage" --work "$test_dir/compat"
+fi
 for role in server client; do
   qemu-aarch64 "$work/sing-box.arm64" check -c "$test_dir/hy-$role.json"
   qemu-aarch64 "$work/sing-box.arm64" run -c "$test_dir/hy-$role.json" > "$test_dir/hy-$role.log" 2>&1 &
   pids+=("$!")
 done
-for port in 10810 10820; do
+ports=(10820)
+[[ "${BUILD_XRAY:-0}" == 0 ]] || ports+=(10810)
+for port in "${ports[@]}"; do
   success=0
   for attempt in {1..20}; do
     if curl --noproxy '' -fsS --max-time 8 --socks5-hostname "127.0.0.1:$port" \

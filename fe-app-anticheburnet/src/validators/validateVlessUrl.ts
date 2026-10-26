@@ -1,6 +1,7 @@
 import { ValidationResult } from './types';
 import { parseQueryString } from '../helpers/parseQueryString';
 import { isValidPort, parseHostPort } from './hostPort';
+import { supportedV2RayTransports } from './v2rayTransport';
 
 export function validateVlessUrl(url: string): ValidationResult {
   try {
@@ -65,21 +66,10 @@ export function validateVlessUrl(url: string): ValidationResult {
 
     const params = parseQueryString(queryString);
 
-    const validTypes = [
-      'tcp',
-      'raw',
-      'udp',
-      'grpc',
-      'http',
-      'httpupgrade',
-      'xhttp',
-      'ws',
-      'kcp',
-    ];
     const validSecurities = ['tls', 'reality', 'none'];
     const transportType = params.type || 'tcp';
 
-    if (!validTypes.includes(transportType))
+    if (!supportedV2RayTransports.has(transportType))
       return {
         valid: false,
         message: 'Invalid VLESS URL: unsupported or missing type',
@@ -96,11 +86,6 @@ export function validateVlessUrl(url: string): ValidationResult {
         return {
           valid: false,
           message: 'Invalid VLESS URL: missing pbk for reality',
-        };
-      if (!params.fp)
-        return {
-          valid: false,
-          message: 'Invalid VLESS URL: missing fp for reality',
         };
     }
 

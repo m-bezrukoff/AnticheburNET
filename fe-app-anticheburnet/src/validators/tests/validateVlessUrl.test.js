@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { validateVlessUrl } from '../validateVlessUrl';
 
 const validUrls = [
+  [
+    'REALITY default fingerprint with ML-DSA',
+    'vless://00000000-0000-4000-8000-000000000001@example.com:443?type=raw&security=reality&pbk=key&pqv=verify',
+  ],
   // TCP
   [
     'tcp + none',
@@ -18,11 +22,6 @@ const validUrls = [
   [
     'tcp + tls',
     'vless://2e9e8288-060e-4da2-8b9f-a1c81826feb7@127.0.0.1:19316?type=tcp&encryption=none&security=tls&fp=chrome&alpn=h2%2Chttp%2F1.1&sni=google.com#vless-tcp-tls',
-  ],
-  // mKCP
-  [
-    'mKCP + none',
-    'vless://72e201d7-7841-4a32-b266-4aa3eb776d51@127.0.0.1:17270?type=kcp&encryption=none&headerType=none&seed=AirziWi4ng&security=none#vless-mKCP',
   ],
   // WebSocket
   [
@@ -63,6 +62,14 @@ const validUrls = [
 ];
 
 const invalidUrls = [
+  [
+    'Unsupported XDRIVE',
+    'vless://00000000-0000-4000-8000-000000000001@example.com:443?type=xdrive&security=tls',
+  ],
+  [
+    'mKCP + none',
+    'vless://72e201d7-7841-4a32-b266-4aa3eb776d51@127.0.0.1:17270?type=kcp&encryption=none&headerType=none&seed=AirziWi4ng&security=none#vless-mKCP',
+  ],
   ['No prefix', 'uuid@host:443?type=tcp&security=tls'],
   ['No uuid', 'vless://@127.0.0.1:443?type=tcp&security=tls'],
   ['No host', 'vless://uuid@:443?type=tcp&security=tls'],
@@ -78,10 +85,6 @@ const invalidUrls = [
   [
     'reality without pbk',
     'vless://uuid@127.0.0.1:443?type=tcp&security=reality&fp=chrome',
-  ],
-  [
-    'reality without fp',
-    'vless://uuid@127.0.0.1:443?type=tcp&security=reality&pbk=abc',
   ],
   [
     'tcp + reality + unexpected spaces',

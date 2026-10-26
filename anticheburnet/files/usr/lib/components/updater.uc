@@ -295,7 +295,7 @@ function anticheburnet_release_plan(latest_version, asset_ext, i18n_required, ar
     if (arg_bool(cores_required)) {
         if (match(as_string(arch), /^[A-Za-z0-9_-]+$/) == null)
             exit(1);
-        for (let package_name in [ "sing-box-extended", "anticheburnet-xray", "anticheburnet-amneziawg" ]) {
+        for (let package_name in [ "sing-box-extended", "anticheburnet-amneziawg" ]) {
             let asset = anticheburnet_core_asset_pair(release, package_name, arch, asset_ext);
             if (asset == null) exit(1);
             push(fields, asset.name, asset.url);

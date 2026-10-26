@@ -803,7 +803,20 @@ function canonical_value(value) {
     return result;
 }
 
-function provider_update_compatible(current, candidate) {
+function provider_configuration(value, allow_ruleset_updates) {
+    let result = canonical_value(value);
+    if (allow_ruleset_updates) {
+        for (let item in array_or_empty(object_or_empty(result.route).rule_set)) {
+            if (item.type == "local" && item.format == "source" &&
+                match(as_string(item.tag), /-happ-(geoip|geosite)-/) &&
+                match(as_string(item.path), /\/[a-f0-9]{64}\.json$/))
+                item.path = replace(item.path, /\/[a-f0-9]{64}\.json$/, "/<happ-content>.json");
+        }
+    }
+    return result;
+}
+
+function provider_update_compatible(current, candidate, strict) {
     if (managed_provider(current) == null || managed_provider(candidate) == null)
         return false;
     let old = read_json_file(managed_provider(current).path);
@@ -812,7 +825,8 @@ function provider_update_compatible(current, candidate) {
         type(old.configuration) != "object" || type(fresh.configuration) != "object" ||
         type(fresh.outbounds) != "array" || length(fresh.outbounds) == 0)
         return false;
-    return sprintf("%J", canonical_value(old.configuration)) == sprintf("%J", canonical_value(fresh.configuration));
+    return sprintf("%J", provider_configuration(old.configuration, !strict)) ==
+        sprintf("%J", provider_configuration(fresh.configuration, !strict));
 }
 
 function install_provider_file(temp_config, config_path) {
@@ -969,9 +983,18 @@ function update_providers(only_if_pending) {
         remove_provider_stage(candidate_path);
         return false;
     }
+    let ruleset_update = !provider_update_compatible(current, candidate, true);
+    if (ruleset_update && !module_success([
+        LIB_DIR + "/diagnostics/runtime.uc", "clash-api", "provider_supports_rulesets", provider.tag
+    ])) {
+        log_message("Automatic GeoIP/GeoSite updates require the current sing-box component. Running services were preserved", "error");
+        remove_provider_stage(candidate_path);
+        return false;
+    }
     let manifest_path = config_path + ".awg.json";
     let candidate_provider_path = managed_provider(candidate).path;
     let old_payload = fs.readfile(provider.path);
+    let old_config = ruleset_update ? fs.readfile(config_path) : null;
     let payload = read_json_file(candidate_provider_path);
     let awg_plan;
     try {
@@ -985,7 +1008,8 @@ function update_providers(only_if_pending) {
     }
     // Start only new native instances before publishing their proxy references.
     // Existing instances retain their slots, processes and connections.
-    if (old_payload == null || !runtime_awg.write_private(candidate_provider_path, sprintf("%J\n", payload)) ||
+    if (old_payload == null || (ruleset_update && old_config == null) ||
+        !runtime_awg.write_private(candidate_provider_path, sprintf("%J\n", payload)) ||
         !runtime_awg.begin_update(manifest_path, awg_plan)) {
         log_message("Native AWG subscription preparation failed; running provider was preserved", "error");
         remove_provider_stage(candidate_path);
@@ -1006,10 +1030,27 @@ function update_providers(only_if_pending) {
         remove_provider_stage(candidate_path);
         return false;
     }
+    // Persist the new immutable rule-set references for the next service start.
+    // The running router changes only through the validated provider transaction.
+    if (ruleset_update) {
+        managed_provider(candidate).path = provider.path;
+        if (!runtime_awg.write_private(candidate_path, sprintf("%J\n", candidate)) ||
+            !save_config_file(candidate_path, config_path)) {
+            if (!runtime_awg.write_private(candidate_provider_path, old_payload) ||
+                !fs.rename(candidate_provider_path, provider.path))
+                log_message("Provider file restoration remains pending after rule-set configuration save failure", "error");
+            runtime_awg.rollback_update(manifest_path, awg_plan);
+            remove_provider_stage(candidate_path);
+            log_message("Unable to save updated rule-set references; running configuration was preserved", "error");
+            return false;
+        }
+    }
     let revision = substr(trim(command_output_from_args([ "sha256sum", provider.path ])), 0, 64);
     if (!module_success([ LIB_DIR + "/diagnostics/runtime.uc", "clash-api", "update_provider", provider.tag, revision ])) {
         let rollback_path = candidate_path + ".providers.json";
-        if (!runtime_awg.write_private(rollback_path, old_payload) || !fs.rename(rollback_path, provider.path)) {
+        let config_restored = !ruleset_update ||
+            (runtime_awg.write_private(candidate_path, old_config) && fs.rename(candidate_path, config_path));
+        if (!runtime_awg.write_private(rollback_path, old_payload) || !fs.rename(rollback_path, provider.path) || !config_restored) {
             log_message("Provider confirmation failed and the previous file could not be restored", "error");
             remove_provider_stage(candidate_path);
             return false;

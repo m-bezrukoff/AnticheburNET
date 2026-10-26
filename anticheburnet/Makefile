@@ -22,7 +22,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/anticheburnet
 	SECTION:=net
 	CATEGORY:=Network
-	DEPENDS:=+ca-bundle +kmod-inet-diag +kmod-netlink-diag +kmod-tun +curl +ucode +ucode-mod-fs +ucode-mod-uci +kmod-nft-tproxy +coreutils-base64 +bind-dig +nftables +kmod-nft-nat +ip-full
+	DEPENDS:=+ca-bundle +kmod-inet-diag +kmod-netlink-diag +kmod-tun +curl +ucode +ucode-mod-fs +ucode-mod-uci +kmod-nft-tproxy +coreutils-base64 +bind-dig +nftables +kmod-nft-nat +ip-full +libmaxminddb
 	CONFLICTS:=https-dns-proxy nextdns luci-app-passwall luci-app-passwall2
 	TITLE:=AnticheburNET backend service
 	URL:=https://github.com/m-bezrukoff/AnticheburNET
@@ -72,6 +72,10 @@ define Package/anticheburnet/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) ./files/usr/bin/anticheburnet $(1)/usr/bin/anticheburnet
 	$(INSTALL_BIN) ./files/usr/bin/anticheburnet-awg-subscription-run $(1)/usr/bin/anticheburnet-awg-subscription-run
+	$(INSTALL_BIN) ./files/usr/bin/anticheburnet-geoip $(1)/usr/bin/anticheburnet-geoip
+
+	$(INSTALL_DIR) $(1)/usr/share/anticheburnet/geoip
+	$(CP) ./files/usr/share/anticheburnet/geoip/. $(1)/usr/share/anticheburnet/geoip/
 
 	$(INSTALL_DIR) $(1)/usr/lib/anticheburnet
 	$(CP) ./files/usr/lib/. $(1)/usr/lib/anticheburnet/

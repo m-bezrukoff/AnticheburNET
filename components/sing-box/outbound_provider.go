@@ -15,16 +15,18 @@ import (
 
 // Build and start the replacement graph in isolation. The live lookup table is
 // swapped only after every dependency and every new outbound is ready.
-func (m *Manager) ReplaceProvider(ctx context.Context, router adapter.Router, factory log.Factory, owner string, previousTags []string, options []option.Outbound) error {
+func (m *Manager) ReplaceProvider(ctx context.Context, router adapter.Router, factory log.Factory, owner string, previousTags []string, options []option.Outbound, commitRules func()) error {
+	m.startAccess.Lock()
+	defer m.startAccess.Unlock()
 	m.access.RLock()
-	started, stage := m.started, m.stage
+	scope, stage := m.scope, m.stage
 	old := make(map[string]adapter.Outbound, len(m.outboundByTag))
 	for tag, ob := range m.outboundByTag {
 		old[tag] = ob
 	}
 	oldOptions := m.providerOptions[owner]
 	m.access.RUnlock()
-	pool := NewManager(m.logger, m.registry, m.endpoint, m.defaultTag)
+	pool := NewManager(m.registry, m.endpoint, m.defaultTag)
 	pool.Initialize(m.defaultOutboundFallback)
 	previous := make(map[string]bool)
 	for _, tag := range previousTags {
@@ -42,7 +44,9 @@ func (m *Manager) ReplaceProvider(ctx context.Context, router adapter.Router, fa
 	defer func() {
 		if !committed {
 			for _, ob := range created {
-				_ = common.Close(ob)
+				if lifecycle, ok := ob.(adapter.Lifecycle); ok && scope != nil {
+					_ = scope.Remove(lifecycle)
+				}
 			}
 		}
 	}()
@@ -125,14 +129,18 @@ func (m *Manager) ReplaceProvider(ctx context.Context, router adapter.Router, fa
 	if pool.defaultOutbound == nil {
 		pool.defaultOutbound = m.defaultOutbound
 	}
-	if started {
+	if scope != nil {
 		for _, startStage := range adapter.ListStartStages {
 			if startStage > stage {
 				break
 			}
 			for _, ob := range ordered {
 				if created[ob.Tag()] != nil {
-					if err := adapter.LegacyStart(ob, startStage); err != nil {
+					lifecycle, ok := ob.(adapter.Lifecycle)
+					if !ok {
+						continue
+					}
+					if err := scope.Start("outbound/"+ob.Type()+"["+ob.Tag()+"]", lifecycle, startStage); err != nil {
 						return fmt.Errorf("start %s: %w", ob.Tag(), err)
 					}
 				}
@@ -165,6 +173,9 @@ func (m *Manager) ReplaceProvider(ctx context.Context, router adapter.Router, fa
 			dependencies[dependency] = append(dependencies[dependency], ob.Tag())
 		}
 	}
+	// Rule files and all outbounds have been validated and started. No failing
+	// operation remains between committing the rules and publishing the graph.
+	commitRules()
 	m.access.Lock()
 	m.outboundByTag, m.outbounds, m.dependByTag = pool.outboundByTag, ordered, dependencies
 	m.defaultOutbound = pool.defaultOutbound
@@ -188,7 +199,9 @@ func (m *Manager) ReplaceProvider(ctx context.Context, router adapter.Router, fa
 			if history := service.PtrFromContext[urltest.HistoryStorage](ctx); history != nil {
 				history.DeleteURLTestHistory(tag)
 			}
-			_ = common.Close(ob)
+			if lifecycle, ok := ob.(adapter.Lifecycle); ok && scope != nil {
+				_ = scope.Remove(lifecycle)
+			}
 		}
 	}
 	return nil

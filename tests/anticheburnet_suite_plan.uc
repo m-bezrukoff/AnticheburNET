@@ -14,9 +14,9 @@ for (let name in names) push(release.assets, { name, browser_download_url: "http
 read_stdin_json = function() { return release; };
 anticheburnet_release_plan("1.2.3", "apk", "0", "aarch64_cortex-a53", "1");
 let fields = split(replace(output, /\n$/, ""), "\t");
-check(length(fields) == 13, "complete suite did not include all three cores");
+check(length(fields) == 11, "complete suite did not include required cores");
 check(fields[5] == "" && fields[6] == "", "translation became mandatory");
-check(fields[7] == names[2] && fields[9] == names[3] && fields[11] == names[4], "wrong core assets");
+check(fields[7] == names[2] && fields[9] == names[4], "wrong core assets");
 function rejected(arch, ext, tag) {
     output = "";
     let failed = false;

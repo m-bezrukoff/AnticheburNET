@@ -46,6 +46,9 @@ require_file "$ANTICHEBURNET_MAKEFILE"
 require_file "$ANTICHEBURNET_CONFIG"
 require_file "$BUILD_SCRIPT"
 require_file "$BUILD_WORKFLOW"
+require_file "$ROOT_DIR/anticheburnet/files/usr/bin/anticheburnet-geoip"
+require_file "$ROOT_DIR/anticheburnet/files/usr/share/anticheburnet/geoip/country.mmdb.gz"
+require_package_dependency "libmaxminddb"
 require_file "$ANTICHEBURNET_LIB"
 
 bash "$BUILD_SCRIPT" --help >/dev/null ||

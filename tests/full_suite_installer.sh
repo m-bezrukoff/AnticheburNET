@@ -53,6 +53,7 @@ case "$1" in
     printf '%s\n' "$@" >> "$TEST_REMOVED_FILE"
     ;;
   add)
+    if [ "$*" = 'add --upgrade ca-bundle' ]; then exit 0; fi
     printf 'apk %s\n' "$*" >> "$TEST_LOG"
     if [ "$*" = 'add ucode ucode-mod-fs ucode-mod-uci' ]; then
       exit "${TEST_RUNTIME_STATUS:-0}"
@@ -64,7 +65,7 @@ case "$1" in
       sh -c '[ "$ANTICHEBURNET_DEFER_PACKAGE_RESTART" = 1 ]' || exit 1
     # Migration, firewall setup and LuCI post-install hooks must still execute.
     [ "${IPKG_NO_SCRIPT:-}" != 1 ] || exit 1
-    [ "$2" = --allow-untrusted ] && [ "$#" = 8 ] || exit 1
+    [ "$2" = --allow-untrusted ] && [ "$#" = 7 ] || exit 1
     shift 2
     for file do [ -s "$file" ] || exit 1; done
     exit "${TEST_ADD_STATUS:-0}"
@@ -80,7 +81,7 @@ export ANTICHEBURNET_INSTALLER_SING_BOX_BIN="$WORK_DIR/sing-box-binary"
 PKG_IS_APK=1
 
 # Replace only router/network boundaries; retain argument parsing, release
-# resolution, checksum validation, ordering and the six-file apk transaction.
+# resolution, checksum validation, ordering and the five-file apk transaction.
 check_root() { :; }
 init_tmp_dir() { TMP_DIR="$WORK_DIR/downloads"; mkdir -p "$TMP_DIR"; }
 detect_fetcher() { :; }
@@ -165,6 +166,7 @@ grep -Fq 'AnticheburNET 1.0.1:' "$WORK_DIR/output" || fail 'missing installation
 grep -Fxq 'apk add ucode ucode-mod-fs ucode-mod-uci' "$TEST_LOG" ||
   fail 'installer runtime must be retained with OpenWrt-compatible apk options'
 for name in "${names[@]}"; do
+  [[ "$name" != anticheburnet-xray_* ]] || continue
   grep -Fq "$name" "$TEST_LOG" || fail "missing installed package: $name"
 done
 [[ "$(sed -n '3p' "$TEST_LOG")" = backup && "$(sed -n '5p' "$TEST_LOG")" = cleanup &&
@@ -182,17 +184,18 @@ for TEST_RELEASE in 25.12 25.12.3; do
   TEST_TARGET=mediatek/mt7622 run_installer < /dev/null || { cat "$WORK_DIR/output"; fail 'MT7622 complete installation failed'; }
   [[ "$(grep -c '^apk add --allow-untrusted ' "$TEST_LOG")" = 1 ]] || fail 'MT7622 suite must use one apk transaction'
   for name in "${names[@]}"; do
+    [[ "$name" != anticheburnet-xray_* ]] || continue
     grep -Fq "$name" "$TEST_LOG" || fail "missing MT7622 package: $name"
   done
 done
 unset TEST_RELEASE
 
-printf 'corrupted\n' >> "$WORK_DIR/fixtures/${names[4]}"
-if run_installer; then fail 'corrupted Xray APK was accepted'; fi
+printf 'corrupted\n' >> "$WORK_DIR/fixtures/${names[5]}"
+if run_installer; then fail 'corrupted AWG APK was accepted'; fi
 assert_no_replacement
-printf 'fixture: %s\n' "${names[4]}" > "$WORK_DIR/fixtures/${names[4]}"
+printf 'fixture: %s\n' "${names[5]}" > "$WORK_DIR/fixtures/${names[5]}"
 
-head -n 5 "$WORK_DIR/good-sums" > "$WORK_DIR/fixtures/SHA256SUMS"
+head -n 4 "$WORK_DIR/good-sums" > "$WORK_DIR/fixtures/SHA256SUMS"
 if run_installer; then fail 'incomplete checksum coverage was accepted'; fi
 assert_no_replacement
 cp "$WORK_DIR/good-sums" "$WORK_DIR/fixtures/SHA256SUMS"
@@ -204,7 +207,9 @@ if run_installer; then fail 'checksum path traversal was accepted'; fi
 assert_no_replacement
 cp "$WORK_DIR/good-sums" "$WORK_DIR/fixtures/SHA256SUMS"
 
-for kind in sing-box xray awg checksums backend app i18n; do
+TEST_OMIT=xray run_installer || fail 'optional Xray asset was required'
+if grep -q 'anticheburnet-xray_' "$TEST_LOG"; then fail 'optional Xray was installed'; fi
+for kind in sing-box awg checksums backend app i18n; do
   TEST_OMIT="$kind"
   if run_installer; then fail "missing $kind asset was accepted"; fi
   assert_no_replacement

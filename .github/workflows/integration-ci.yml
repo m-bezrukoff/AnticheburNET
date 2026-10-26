@@ -15,7 +15,7 @@ jobs:
       - run: git fetch --no-tags https://github.com/m-bezrukoff/AnticheburNET.git refs/tags/0.7.19.9:refs/tags/0.7.19.9
       - run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libjson-c-dev pkg-config shellcheck
+          sudo apt-get install -y build-essential cmake libjson-c-dev mmdb-bin pkg-config shellcheck
           git clone --depth 1 --branch v0.0.20250529 https://github.com/jow-/ucode.git /tmp/ucode
           cmake -S /tmp/ucode -B /tmp/ucode/build -DUBUS_SUPPORT=OFF -DUCI_SUPPORT=OFF -DULOOP_SUPPORT=OFF
           cmake --build /tmp/ucode/build --parallel
@@ -31,7 +31,7 @@ jobs:
       - run: |
           printf '%s\0' tests/*.sh | xargs -0 -n1 -P4 bash
       - run: |
-          mapfile -d '' scripts < <(find . -not -path './.git/*' -not -path './.build/*' -type f \( -name '*.sh' -o -path '*/etc/init.d/*' -o -path '*/usr/bin/anticheburnet-awg-run' -o -path '*/usr/bin/anticheburnet-awg-subscription-run' -o -path '*/usr/bin/anticheburnet-xray-*' \) -print0)
+          mapfile -d '' scripts < <(find . -not -path './.git/*' -not -path './.build/*' -type f \( -name '*.sh' -o -path '*/etc/init.d/*' -o -path '*/usr/bin/anticheburnet-awg-run' -o -path '*/usr/bin/anticheburnet-awg-subscription-run' -o -path '*/usr/bin/anticheburnet-geoip' -o -path '*/usr/bin/anticheburnet-xray-*' \) -print0)
           shellcheck --severity=error "${scripts[@]}"
   frontend:
     runs-on: ubuntu-24.04

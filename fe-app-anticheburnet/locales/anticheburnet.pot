@@ -3225,7 +3225,7 @@ msgid "Value must not contain control characters"
 msgstr ""
 
 #: ../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1876
-msgid "Via country.is"
+msgid "By local GeoIP database"
 msgstr ""
 
 #: src/anticheburnet/tabs/diagnostic/initController.ts:717

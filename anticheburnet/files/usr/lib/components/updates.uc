@@ -1696,7 +1696,7 @@ function finish_component_job(path, component, action, exit_code, output_file) {
         if (previous.suite_continuation === true) {
             // Preserve the original application's upgrade in this same job.
             value.suite_continuation = true;
-            if (value.success === true && value.suite_complete === true) {
+            if (value.success === true && value.suite_complete === true && int(value.suite_format || 0) >= 2) {
                 value.action = "install";
                 value.changed = 1;
                 value.message = "AnticheburNET has been installed";
@@ -1771,7 +1771,8 @@ function component_action_worker(state_file, output_file, component, action, tar
 function legacy_suite_job_candidate(value) {
     if (value.component != "anticheburnet" || value.action != "install" ||
         value.running !== false || value.success !== true || int(value.changed || 0) != 1 ||
-        value.suite_complete === true || value.suite_continuation === true || value.acked_at != null)
+        (value.suite_complete === true && int(value.suite_format || 0) >= 2) ||
+        (value.suite_continuation === true && int(value.suite_format || 0) >= 2) || value.acked_at != null)
         return false;
     let version = getenv("ANTICHEBURNET_VERSION") || require("core.constants").ANTICHEBURNET_VERSION || "";
     let age = now_seconds() - int(value.updated_at || 0);

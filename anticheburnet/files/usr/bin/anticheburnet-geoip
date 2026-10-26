@@ -1,0 +1,38 @@
+#!/bin/sh
+# The bundled database is kept compressed on flash and read locally from RAM.
+# Never download data or fall back to an online geolocation service here.
+set -eu
+umask 077
+source_dir=${ANTICHEBURNET_GEOIP_SOURCE:-/usr/share/anticheburnet/geoip}
+state_dir=${ANTICHEBURNET_GEOIP_STATE:-/var/run/anticheburnet/geoip}
+mkdir -p "$state_dir"
+attempt=0
+until mkdir "$state_dir/lock" 2>/dev/null; do
+    attempt=$((attempt + 1))
+    [ "$attempt" -le 100 ] || { echo 'Local GeoIP database is locked' >&2; exit 1; }
+    sleep 0.1
+done
+staged=''
+cleanup() {
+    [ -z "$staged" ] || rm -rf "$staged"
+    rmdir "$state_dir/lock" 2>/dev/null || true
+}
+trap cleanup EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
+# A generation is only published after its digest has been verified.
+if [ -s "$state_dir/current/country.mmdb" ] &&
+    cmp -s "$source_dir/country.sha256" "$state_dir/current/country.sha256"; then
+    printf '%s\n' "$state_dir/current/country.mmdb"
+    exit 0
+fi
+staged=$(mktemp -d "$state_dir/staged.XXXXXX")
+gzip -dc "$source_dir/country.mmdb.gz" > "$staged/country.mmdb"
+cp "$source_dir/country.sha256" "$staged/country.sha256"
+(cd "$staged" && sha256sum -c country.sha256 >/dev/null)
+# Keep the published path stable; the lock serializes cache preparation.
+if [ -e "$state_dir/current" ]; then mv "$state_dir/current" "$staged/previous"; fi
+mv "$staged" "$state_dir/current"
+staged=''
+rm -rf "$state_dir/current/previous"
+printf '%s\n' "$state_dir/current/country.mmdb"

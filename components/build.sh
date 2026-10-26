@@ -6,11 +6,16 @@ output="${2:-$component_root/dist/filogic}"
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 2
 # shellcheck source=components/versions.env
 source "$component_root/components/versions.env"
+[[ "$(go env GOVERSION)" == "go$GO_VERSION" ]] || { echo "Build requires Go $GO_VERSION (including crypto/x509 security fixes)" >&2; exit 1; }
+build_xray="${BUILD_XRAY:-0}"
+[[ "$build_xray" == 0 || "$build_xray" == 1 ]] || exit 2
 # Reuse the existing SDK download, package metadata and conffile implementation.
 # shellcheck source=build.sh
 source "$component_root/build.sh" "$version" "$output"
 output="$OUTPUT_DIR"
 mkdir -p "$output" "$BUILD_DIR/components" "$SDK_CACHE_DIR"
+# Do not republish an obsolete optional core from a reused output directory.
+find "$output" -maxdepth 1 -type f -name 'anticheburnet-xray_*.apk' -delete
 work="$BUILD_DIR/components"
 sdk_archive="$(download_sdk_archive "$FILOGIC_SDK_URL")"
 printf '%s  %s\n' "$FILOGIC_SDK_SHA256" "$sdk_archive" | sha256sum -c -
@@ -39,10 +44,21 @@ checkout_pinned awg-tools amnezia-vpn/amneziawg-tools "$AWG_TOOLS_COMMIT"
 tags=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,badlinkname,tfogo_checklinkname0
 bash "$component_root/components/prepare-utls.sh" "$work/sing-box" "$work"
 python3 "$component_root/components/prepare-providers.py" "$work/sing-box"
+python3 "$component_root/components/prepare-security.py" "$work/sing-box"
 (
   cd "$work/sing-box"
+  go get -modfile="$work/sing-box.mod" "github.com/cloudflare/circl@$CIRCL_VERSION" \
+    "golang.org/x/crypto@$X_CRYPTO_VERSION" "golang.org/x/net@$X_NET_VERSION" "golang.org/x/sys@$X_SYS_VERSION" \
+    "google.golang.org/grpc@$GRPC_VERSION" "github.com/go-chi/chi/v5@$CHI_VERSION"
+  go test -mod=mod -modfile="$work/sing-box.mod" -tags "$tags" -ldflags=-checklinkname=0 ./common/tls -run '^TestAnticheburNETRealityMLDSA$' -count=1
+  # Retain symbols for precise vulnerability analysis. Stripped ARM binaries
+  # cause the analyzer to conservatively report unused module packages.
   CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -modfile="$work/sing-box.mod" -trimpath -tags "$tags" \
-    -ldflags "-s -w -X github.com/sagernet/sing-box/constant.Version=$SING_BOX_VERSION" \
+    -ldflags "-checklinkname=0 -X github.com/sagernet/sing-box/constant.Version=$SING_BOX_VERSION" \
+    -o "$work/sing-box-security.arm64" ./cmd/sing-box
+  go run "golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_VERSION" -mode=binary "$work/sing-box-security.arm64"
+  CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -modfile="$work/sing-box.mod" -trimpath -tags "$tags" \
+    -ldflags "-checklinkname=0 -s -w -X github.com/sagernet/sing-box/constant.Version=$SING_BOX_VERSION" \
     -o "$work/sing-box.arm64" ./cmd/sing-box
 )
 (
@@ -53,18 +69,22 @@ python3 "$component_root/components/prepare-providers.py" "$work/sing-box"
 )
 make -C "$work/awg-tools/src" -j2 CC="$cc" LDFLAGS=-static WITH_WGQUICK=no WITH_SYSTEMDUNITS=no
 "$cc" -static -Wall -Wextra -Werror "$component_root/components/test-socket-mark.c" -o "$work/test-socket-mark.arm64"
+if [[ "$build_xray" == 1 ]]; then
 curl -fL --retry 3 "https://github.com/XTLS/Xray-core/releases/download/v$XRAY_VERSION/Xray-linux-arm64-v8a.zip" -o "$work/xray.zip"
 printf '%s  %s\n' "$XRAY_ARM64_SHA256" "$work/xray.zip" | sha256sum -c -
 unzip -oq "$work/xray.zip" xray geoip.dat geosite.dat -d "$work/xray"
+GOOS="$(go env GOHOSTOS)" GOARCH="$(go env GOHOSTARCH)" go build -o "$work/xray-camouflage" "$component_root/components/tests/xray_camouflage.go"
+fi
 
 # AX6000 has 128 MB NAND. Pack executables without removing protocols or geodata.
 curl -fL --retry 3 "https://github.com/upx/upx/releases/download/v$UPX_VERSION/upx-$UPX_VERSION-amd64_linux.tar.xz" -o "$work/upx.tar.xz"
 printf '%s  %s\n' "$UPX_AMD64_SHA256" "$work/upx.tar.xz" | sha256sum -c -
 tar -xJf "$work/upx.tar.xz" -C "$work"
 upx="$work/upx-$UPX_VERSION-amd64_linux/upx"
-chmod 755 "$work/xray/xray"
-"$upx" --best --lzma "$work/sing-box.arm64" "$work/amneziawg-go.arm64" "$work/xray/xray"
-"$upx" -t "$work/sing-box.arm64" "$work/amneziawg-go.arm64" "$work/xray/xray"
+executables=("$work/sing-box.arm64" "$work/amneziawg-go.arm64")
+if [[ "$build_xray" == 1 ]]; then chmod 755 "$work/xray/xray"; executables+=("$work/xray/xray"); fi
+"$upx" --best --lzma "${executables[@]}"
+"$upx" -t "${executables[@]}"
 : > "$output/installed-sizes.txt"
 
 package_component() {
@@ -114,10 +134,11 @@ cp "$component_root/components/sing-box/files/etc/config/sing-box" "$sb_root/etc
 chmod 755 "$sb_root/etc/init.d/sing-box"
 mkdir -p "$sb_root/usr/share/licenses/sing-box-extended"
 install -m644 "$work/sing-box/LICENSE" "$sb_root/usr/share/licenses/sing-box-extended/LICENSE"
-package_component sing-box-extended 1.14.1-r4 'AnticheburNET extended sing-box with Hysteria 2 and XHTTP' \
+package_component sing-box-extended 1.14.3-r6 'AnticheburNET extended sing-box with Hysteria 2 and XHTTP' \
   'ca-bundle kmod-tun !sing-box !sing-box-tiny' GPL-3.0-or-later /etc/config/sing-box
 
 for kind in xray awg; do
+  [[ "$kind" != xray || "$build_xray" == 1 ]] || continue
   case "$kind" in xray) name=anticheburnet-xray ;; awg) name=anticheburnet-amneziawg ;; esac
   mkdir -p "$work/$name-root"
   cp -a "$component_root/components/$kind/files/." "$work/$name-root/"
@@ -125,6 +146,7 @@ for kind in xray awg; do
   chmod 700 "$work/$name-root/etc/anticheburnet"
   chmod 755 "$work/$name-root/usr/bin/"* "$work/$name-root/etc/init.d/"*
 done
+if [[ "$build_xray" == 1 ]]; then
 install -m755 "$work/xray/xray" "$work/anticheburnet-xray-root/usr/bin/xray"
 mkdir -p "$work/anticheburnet-xray-root/usr/share/xray"
 rm -f "$work/anticheburnet-xray-root/usr/share/xray/geoip.dat" "$work/anticheburnet-xray-root/usr/share/xray/geosite.dat"
@@ -132,8 +154,9 @@ bash "$component_root/components/compare-packing.sh" "$work" "$output"
 mkdir -p "$work/anticheburnet-xray-root/usr/share/licenses/anticheburnet-xray"
 curl -fL --retry 3 "https://raw.githubusercontent.com/XTLS/Xray-core/v$XRAY_VERSION/LICENSE" \
   -o "$work/anticheburnet-xray-root/usr/share/licenses/anticheburnet-xray/LICENSE"
-package_component anticheburnet-xray 26.10.10-r1 'Native Xray 26.10.10 SOCKS bridge for AnticheburNET' \
+package_component anticheburnet-xray "$XRAY_VERSION-r1" "Optional native Xray $XRAY_VERSION SOCKS bridge for AnticheburNET" \
   'anticheburnet ca-bundle !xray-core' MPL-2.0 /etc/config/anticheburnet_xray
+fi
 install -m755 "$work/amneziawg-go.arm64" "$work/anticheburnet-amneziawg-root/usr/bin/amneziawg-go"
 install -m755 "$work/awg-tools/src/wg" "$work/anticheburnet-amneziawg-root/usr/bin/awg"
 mkdir -p "$work/anticheburnet-amneziawg-root/usr/share/licenses/anticheburnet-amneziawg"
@@ -144,14 +167,14 @@ package_component anticheburnet-amneziawg 3.1.20260828-r5 'Official AmneziaWG 3.
 
 # Inspect the exact ARM binaries on the build host through qemu-user.
 qemu-aarch64 "$sb_root/usr/bin/sing-box" version
-qemu-aarch64 "$work/anticheburnet-xray-root/usr/bin/xray" version
+[[ "$build_xray" == 0 ]] || qemu-aarch64 "$work/anticheburnet-xray-root/usr/bin/xray" version
 qemu-aarch64 "$work/anticheburnet-amneziawg-root/usr/bin/amneziawg-go" --version
 qemu-aarch64 "$work/anticheburnet-amneziawg-root/usr/bin/awg" --version
 for package in "$output/"*_aarch64_cortex-a53.apk; do
   "$apk_bin" adbdump "$package" > "$work/package-metadata.txt"
   head -60 "$work/package-metadata.txt"
 done
-# Count every installed file from all six packages, not their compressed APK size.
+# Count every selected installed file, not the compressed APK size.
 total=0
 allocated=0
 for package in "$output/"*.apk; do
@@ -164,7 +187,7 @@ for package in "$output/"*.apk; do
   total=$((total + bytes))
   allocated=$((allocated + blocks))
 done
-printf 'All six packages: %s file bytes; at most %s bytes including 4 KiB entry overhead\n' "$total" "$allocated" >> "$output/installed-sizes.txt"
+printf 'All selected packages: %s file bytes; at most %s bytes including 4 KiB entry overhead\n' "$total" "$allocated" >> "$output/installed-sizes.txt"
 cat "$output/installed-sizes.txt"
 # Leave 5 MB for package database, generated configuration and filesystem overhead.
 (( total <= 35000000 && allocated <= 35000000 )) || { echo '40 MB flash budget exceeded (including reserve)' >&2; exit 1; }
@@ -173,5 +196,5 @@ cp "$component_root/components/versions.env" "$output/versions.env"
   cd "$output"
   sha256sum ./*.apk > SHA256SUMS
 )
-sudo bash "$component_root/components/test-runtime.sh" "$work"
+sudo env BUILD_XRAY="$build_xray" bash "$component_root/components/test-runtime.sh" "$work"
 sudo bash "$component_root/components/test-happ-runtime.sh" "$work"

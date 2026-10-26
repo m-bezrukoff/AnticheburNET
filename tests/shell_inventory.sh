@@ -31,6 +31,7 @@ fi
 shell_scripts="$(
   find "$ANTICHEBURNET_FILES" "$LUCI_ROOT" -type f -print |
     while IFS= read -r file; do
+      case "$file" in *.mmdb.gz) continue ;; esac
       first_line="$(sed -n '1p' "$file")"
       case "$first_line" in
         '#!'*'/bin/sh'*|'#!'*'/bin/ash'*|'#!'*'rc.common'*|'#!'*' bash'*|'#!'*'/bash'*)
@@ -45,6 +46,7 @@ expected_shell_scripts="$(
   printf '%s\n' \
     'luci-app-anticheburnet/root/etc/uci-defaults/50_luci-anticheburnet' \
     'anticheburnet/files/usr/bin/anticheburnet-awg-subscription-run' \
+    'anticheburnet/files/usr/bin/anticheburnet-geoip' \
     'anticheburnet/files/etc/init.d/anticheburnet-awg-subscriptions' \
     'anticheburnet/files/etc/init.d/anticheburnet' |
     LC_ALL=C sort

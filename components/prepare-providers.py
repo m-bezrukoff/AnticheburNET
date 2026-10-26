@@ -7,6 +7,7 @@ source = Path(sys.argv[1])
 root = Path(__file__).resolve().parent
 shutil.copyfile(root / "sing-box/provider_anticheburnet.go", source / "provider/local/anticheburnet.go")
 shutil.copyfile(root / "sing-box/outbound_provider.go", source / "adapter/outbound/provider.go")
+shutil.copyfile(root / "sing-box/ruleset_provider.go", source / "route/rule/provider.go")
 
 def edit(relative, before, after, marker=None):
     path = source / relative
@@ -39,10 +40,23 @@ edit("common/dialer/detour.go", "\td.initOnce.Do(d.init)\n\treturn d.dialer, d.i
 # Include a revision in GET /providers/proxies/{name} for runtime verification.
 edit("experimental/clashapi/provider.go", 'info.Put("updatedAt", p.UpdatedAt())', 'info.Put("updatedAt", p.UpdatedAt())\n\tif p, ok := p.(interface{ Revision() string }); ok { info.Put("revision", p.Revision()) }', 'Revision() string')
 edit("experimental/clashapi/provider.go", "render.JSON(w, r, providerInfo(server, provider))", """if value, ok := provider.(interface{ Revision() string }); ok && r.URL.Query().Get("revision") == "true" {
-            render.JSON(w, r, render.M{"name": provider.Tag(), "revision": value.Revision()})
+            info := render.M{"name": provider.Tag(), "revision": value.Revision()}
+            if value, ok := provider.(interface{ Capabilities() []string }); ok { info["capabilities"] = value.Capabilities() }
+            render.JSON(w, r, info)
             return
         }
         render.JSON(w, r, providerInfo(server, provider))""", 'r.URL.Query().Get("revision")')
+# Upgrade checkouts already patched by an earlier component build as well.
+edit("experimental/clashapi/provider.go", 'render.JSON(w, r, render.M{"name": provider.Tag(), "revision": value.Revision()})', 'info := render.M{"name": provider.Tag(), "revision": value.Revision()}\n            if value, ok := provider.(interface{ Capabilities() []string }); ok { info["capabilities"] = value.Capabilities() }\n            render.JSON(w, r, info)', 'info["capabilities"]')
+
+edit("route/rule/rule_set_local.go", "type LocalRuleSet struct {", "type LocalRuleSet struct {\n\tproviderAccess sync.Mutex\n\tproviderPath string", "providerAccess")
+edit("route/rule/rule_set_local.go", "func (s *LocalRuleSet) reloadFile(path string) error {", "func (s *LocalRuleSet) reloadFile(path string) error {\n\ts.providerAccess.Lock()\n\tdefer s.providerAccess.Unlock()\n\tif s.providerPath != \"\" { return nil }", 'if s.providerPath != ""')
+edit("route/rule/rule_set_local.go", "return matchAnyHeadlessRule(s.rules, metadata)", "return s.matchProviderRules(metadata)", "return s.matchProviderRules(metadata)")
+for signature in ("String() string", "mergeableRule() *DefaultHeadlessRule"):
+    before = f"func (s *LocalRuleSet) {signature} {{"
+    edit("route/rule/rule_set_local.go", before, before + "\n\ts.access.RLock()\n\tdefer s.access.RUnlock()", before + "\n\ts.access.RLock()")
+edit("route/rule/rule_set_local.go", "func (s *LocalRuleSet) Cleanup() {", "func (s *LocalRuleSet) Cleanup() {\n\ts.access.Lock()\n\tdefer s.access.Unlock()", "func (s *LocalRuleSet) Cleanup() {\n\ts.access.Lock()")
+edit("route/rule/rule_set_local.go", "func (s *LocalRuleSet) Close() error {\n\ts.rules = nil\n\treturn common.Close(common.PtrOrNil(s.watcher))", "func (s *LocalRuleSet) Close() error {\n\ts.providerAccess.Lock()\n\ts.access.Lock()\n\twatcher := s.watcher\n\ts.rules, s.watcher = nil, nil\n\ts.access.Unlock()\n\ts.providerAccess.Unlock()\n\treturn common.Close(common.PtrOrNil(watcher))", "watcher := s.watcher")
 
 for network in ("TCP", "UDP"):
     edit("route/route.go", f"if !common.Contains(r.defaultOutbound.Network(), N.Network{network})", f"defaultOutbound := r.outbound.Default()\n\t\tif defaultOutbound == nil {{ return E.New(\"default outbound not found\") }}\n\t\tif !common.Contains(defaultOutbound.Network(), N.Network{network})", f"if !common.Contains(defaultOutbound.Network(), N.Network{network})")

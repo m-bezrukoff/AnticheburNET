@@ -253,8 +253,8 @@ function complete_legacy_component_state(path, dir, value) {
     // A successful old worker may still have left the bundled cores outdated.
     if (value.kind == "component" && value.component == "anticheburnet" &&
         value.action == "install" && value.running === false && value.success === true &&
-        int(value.changed || 0) == 1 && value.suite_complete !== true &&
-        value.suite_continuation !== true && value.acked_at == null) {
+        int(value.changed || 0) == 1 && (value.suite_complete !== true || int(value.suite_format || 0) < 2) &&
+        (value.suite_continuation !== true || int(value.suite_format || 0) < 2) && value.acked_at == null) {
         let output = command_output(command_env({ UPDATES_JOB_DIR: dir }) + " " +
             command_from_args([ "ucode", "-L", LIB_DIR, LIB_DIR + "/components/updates.uc",
                 "component-action-status", job_id_from_path(path) ]));

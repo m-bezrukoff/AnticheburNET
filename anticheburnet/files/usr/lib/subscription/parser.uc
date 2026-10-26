@@ -128,6 +128,15 @@ function xhttp_copy_known_settings(target, source) {
         "sc_min_posts_interval_ms",
         "scStreamUpServerSecs",
         "sc_stream_up_server_secs",
+        "noSSEHeader", "no_sse_header", "scMaxBufferedPosts", "sc_max_buffered_posts",
+        "xPaddingObfsMode", "x_padding_obfs_mode", "xPaddingKey", "x_padding_key",
+        "xPaddingHeader", "x_padding_header", "xPaddingPlacement", "x_padding_placement",
+        "xPaddingMethod", "x_padding_method", "uplinkHTTPMethod", "uplink_http_method",
+        "sessionPlacement", "session_placement", "sessionKey", "session_key",
+        "seqPlacement", "seq_placement", "seqKey", "seq_key",
+        "uplinkDataPlacement", "uplink_data_placement", "uplinkDataKey", "uplink_data_key",
+        "uplinkChunkSize", "uplink_chunk_size", "sessionIDTable", "session_id_table",
+        "sessionIDLength", "session_id_length", "downloadSettings", "download",
         "xmux"
     ]) {
         if (xhttp_value_present(source[key]))
@@ -146,10 +155,7 @@ function xhttp_merge_extra_settings(target, value) {
     xhttp_copy_known_settings(target, xhttp_settings);
     xhttp_copy_known_settings(target, xhttp_object_arg(xhttp_settings.extra));
 
-    let download_settings = xhttp_object_arg(extra.downloadSettings);
-    let download_xhttp_settings = xhttp_object_arg(download_settings.xhttpSettings);
-    xhttp_copy_known_settings(target, download_xhttp_settings);
-    xhttp_copy_known_settings(target, xhttp_object_arg(download_xhttp_settings.extra));
+    // Download settings belong to a separate connection, never to the uplink.
 }
 
 function xhttp_extra_settings(query) {
@@ -277,6 +283,165 @@ function xhttp_normalize_xmux(value) {
     return length(keys(result)) > 0 ? result : null;
 }
 
+function object_or_empty(value) {
+    return type(value) == "object" ? value : {};
+}
+
+function valid_port(port) {
+    let port_type = type(port);
+    return (port_type == "int" || port_type == "double") && port >= 1 && port <= 65535 && int(port) == port;
+}
+
+function normalize_utls_fingerprint(value) {
+    if (value == null || value == "")
+        return "";
+
+    let allowed = {
+        "": true,
+        chrome: true,
+        firefox: true,
+        edge: true,
+        safari: true,
+        "360": true,
+        ios: true,
+        android: true,
+        randomized: true,
+        randomizedalpn: true,
+        randomizednoalpn: true
+    };
+
+    value = as_string(value);
+    if (value == "randomizedalpn" || value == "randomizednoalpn")
+        return "randomized";
+
+    return allowed[value] ? value : "chrome";
+}
+
+function xray_first_string(values) {
+    for (let value in values) {
+        value = as_string(value);
+        if (value != "")
+            return value;
+    }
+    return "";
+}
+
+function xray_valid_port_value(value) {
+    let value_type = type(value);
+    if (value_type == "int" || value_type == "double")
+        return valid_port(value) ? int(value) : null;
+
+    value = as_string(value);
+    if (!is_integer_string(value))
+        return null;
+
+    let port = int(value, 10);
+    return valid_port(port) ? port : null;
+}
+
+function xray_alpn(value) {
+    if (type(value) == "array")
+        return value;
+
+    let text = as_string(value);
+    return text != "" ? split_csv(text) : [];
+}
+
+function xray_add_utls(tls, fingerprint) {
+    fingerprint = normalize_utls_fingerprint(fingerprint);
+    if (fingerprint != "")
+        tls.utls = { enabled: true, fingerprint: fingerprint };
+}
+
+function xray_tls_from_stream(stream, network) {
+    stream = object_or_empty(stream);
+    let security = lc(as_string(stream.security || ""));
+    let reality = object_or_empty(stream.realitySettings);
+    let tls_settings = object_or_empty(stream.tlsSettings);
+    let settings = security == "reality" ? reality : tls_settings;
+
+    if (security != "tls" && security != "xtls" && security != "reality" && length(keys(settings)) == 0)
+        return null;
+
+    let tls = { enabled: true };
+    let server_name = xray_first_string([settings.serverName, settings.server_name, settings.sni]);
+    let alpn = tls_alpn_for_transport(xray_alpn(settings.alpn), network);
+    if (server_name != "")
+        tls.server_name = server_name;
+    if (is_true(settings.allowInsecure) || is_true(settings.insecure))
+        tls.insecure = true;
+    if (length(alpn) > 0)
+        tls.alpn = alpn;
+
+    xray_add_utls(tls, settings.fingerprint || settings.fp || "");
+
+    if (security == "reality" || length(keys(reality)) > 0) {
+        tls.reality = { enabled: true };
+        let public_key = xray_first_string([reality.password, reality.publicKey, reality.public_key, settings.publicKey, settings.public_key]);
+        let short_id = xray_first_string([reality.shortId, reality.short_id, settings.shortId, settings.short_id]);
+        if (public_key != "")
+            tls.reality.public_key = public_key;
+        if (short_id != "")
+            tls.reality.short_id = short_id;
+        let verify = xray_first_string([reality.mldsa65Verify, reality.mldsa65_verify]);
+        if (verify != "") tls.reality.mldsa65_verify = verify;
+        if (!tls.utls)
+            tls.utls = { enabled: true, fingerprint: "chrome" };
+    }
+
+    return tls;
+}
+
+function xhttp_apply_settings(result, source, extra, depth) {
+    for (let pair in [
+        ["xPaddingKey", "x_padding_key"], ["xPaddingHeader", "x_padding_header"],
+        ["xPaddingPlacement", "x_padding_placement"], ["xPaddingMethod", "x_padding_method"],
+        ["uplinkHTTPMethod", "uplink_http_method"], ["sessionPlacement", "session_placement"],
+        ["sessionKey", "session_key"], ["seqPlacement", "seq_placement"], ["seqKey", "seq_key"],
+        ["uplinkDataPlacement", "uplink_data_placement"], ["uplinkDataKey", "uplink_data_key"],
+        ["sessionIDTable", "session_id_table"]
+    ]) {
+        let value = xhttp_setting_value(source, extra, pair[0], pair[1]);
+        if (value != null) result[pair[1]] = as_string(value);
+    }
+    for (let pair in [["noGRPCHeader", "no_grpc_header"], ["noSSEHeader", "no_sse_header"], ["xPaddingObfsMode", "x_padding_obfs_mode"]])
+        xhttp_optional_bool(result, pair[1], xhttp_setting_value(source, extra, pair[0], pair[1]));
+    for (let pair in [["xPaddingBytes", "x_padding_bytes"], ["scMaxEachPostBytes", "sc_max_each_post_bytes"], ["uplinkChunkSize", "uplink_chunk_size"], ["sessionIDLength", "session_id_length"]])
+        xhttp_optional_positive_range(result, pair[1], xhttp_setting_value(source, extra, pair[0], pair[1]));
+    for (let pair in [["scMinPostsIntervalMs", "sc_min_posts_interval_ms"], ["scStreamUpServerSecs", "sc_stream_up_server_secs"]])
+        xhttp_optional_range(result, pair[1], xhttp_setting_value(source, extra, pair[0], pair[1]));
+    let buffered = xhttp_non_negative_integer_value(xhttp_setting_value(source, extra, "scMaxBufferedPosts", "sc_max_buffered_posts"));
+    if (buffered != null) result.sc_max_buffered_posts = buffered;
+    let xmux = xhttp_normalize_xmux(xhttp_setting_value(source, extra, "xmux", "xmux"));
+    if (xmux) result.xmux = xmux;
+    let download = xhttp_setting_value(source, extra, "downloadSettings", "download");
+    if (!xhttp_value_present(download)) return true;
+    if ((depth || 0) > 0 || result.mode == "stream-one") return false;
+    download = xhttp_object_arg(download);
+    let network = lc(as_string(download.network || "xhttp"));
+    if (network != "xhttp" && network != "splithttp") return false;
+    let settings = object_or_empty(download.xhttpSettings || download.splithttpSettings);
+    let target = { x_padding_bytes: "100-1000" };
+    let server = xray_first_string([download.address, download.server]);
+    if (server != "") target.server = server;
+    if (download.port != null) {
+        let port = xray_valid_port_value(download.port);
+        if (port == null) return false;
+        target.server_port = port;
+    }
+    for (let key in ["path", "host", "headers"])
+        if (settings[key] != null) target[key] = settings[key];
+    if (!xhttp_apply_settings(target, settings, xhttp_extra_settings(settings), 1)) return false;
+    let tls = xray_tls_from_stream(download, "xhttp");
+    if (tls) target.tls = tls;
+    result.download = target;
+    return true;
+}
+
+function supported_v2ray_transport(network) {
+    return index(["", "tcp", "raw", "ws", "grpc", "http", "h2", "httpupgrade", "xhttp", "splithttp"], lc(as_string(network))) >= 0;
+}
+
 function json_decode_text(text) {
     try {
         return json(as_string(text));
@@ -369,10 +534,6 @@ function runtime_outbounds_equal(left_path, right_path) {
 
 function array_or_empty(value) {
     return type(value) == "array" ? value : [];
-}
-
-function object_or_empty(value) {
-    return type(value) == "object" ? value : {};
 }
 
 function base64_decode(value) {
@@ -544,31 +705,6 @@ function parse_url(url) {
     };
 }
 
-function normalize_utls_fingerprint(value) {
-    if (value == null || value == "")
-        return "";
-
-    let allowed = {
-        "": true,
-        chrome: true,
-        firefox: true,
-        edge: true,
-        safari: true,
-        "360": true,
-        ios: true,
-        android: true,
-        randomized: true,
-        randomizedalpn: true,
-        randomizednoalpn: true
-    };
-
-    value = as_string(value);
-    if (value == "randomizedalpn" || value == "randomizednoalpn")
-        return "randomized";
-
-    return allowed[value] ? value : "chrome";
-}
-
 function add_tls(url, security, default_tls) {
     let query = object_or_empty(url.query);
     let sni = query.sni || query.peer || "";
@@ -609,6 +745,8 @@ function add_tls(url, security, default_tls) {
             tls.reality.public_key = public_key;
         if (short_id != "")
             tls.reality.short_id = short_id;
+        let verify = as_string(query.pqv || query.mldsa65Verify || "");
+        if (verify != "") tls.reality.mldsa65_verify = verify;
     }
 
     return [tls, true];
@@ -617,7 +755,7 @@ function add_tls(url, security, default_tls) {
 function add_transport(url) {
     let query = object_or_empty(url.query);
     let transport = query.type || "";
-    if (transport == "" || transport == "tcp")
+    if (transport == "" || transport == "tcp" || transport == "raw")
         return null;
 
     let path = query.path || "";
@@ -660,7 +798,7 @@ function add_transport(url) {
             result.host = host;
         return result;
     }
-    if (transport == "xhttp") {
+    if (transport == "xhttp" || transport == "splithttp") {
         if (path == "")
             path = "/";
         if (host == "")
@@ -686,15 +824,11 @@ function add_transport(url) {
         let xmux = xhttp_normalize_xmux(xhttp_setting_value(query, extra_settings, "xmux", "xmux"));
         if (xmux)
             result.xmux = xmux;
+        if (!xhttp_apply_settings(result, query, extra_settings, 0)) return false;
         return result;
     }
 
     return null;
-}
-
-function valid_port(port) {
-    let port_type = type(port);
-    return (port_type == "int" || port_type == "double") && port >= 1 && port <= 65535 && int(port) == port;
 }
 
 function normalize_port_number(value) {
@@ -757,6 +891,8 @@ function process_vless(raw, url) {
     if (url.host == "" || !valid_port(url.port) || url.userinfo == "")
         return null;
 
+    if (!supported_v2ray_transport(url.query.type || "")) return null;
+
     let flow = url.query.flow || "";
     if (!vless_flow_supported(flow))
         return null;
@@ -788,6 +924,7 @@ function process_vless(raw, url) {
         outbound.tls = tls_result[0];
 
     let transport = add_transport(url);
+    if (transport === false) return null;
     if (transport)
         outbound.transport = transport;
     return outbound;
@@ -796,6 +933,7 @@ function process_vless(raw, url) {
 function process_trojan(raw, url) {
     if (url.host == "" || !valid_port(url.port) || url.userinfo == "")
         return null;
+    if (!supported_v2ray_transport(url.query.type || "")) return null;
 
     let outbound = {
         type: "trojan",
@@ -813,6 +951,7 @@ function process_trojan(raw, url) {
         outbound.tls = tls_result[0];
 
     let transport = add_transport(url);
+    if (transport === false) return null;
     if (transport)
         outbound.transport = transport;
     return outbound;
@@ -2065,83 +2204,10 @@ function xray_first_array_object(value) {
     return length(value) > 0 && type(value[0]) == "object" ? value[0] : {};
 }
 
-function xray_first_string(values) {
-    for (let value in values) {
-        value = as_string(value);
-        if (value != "")
-            return value;
-    }
-    return "";
-}
-
-function xray_valid_port_value(value) {
-    let value_type = type(value);
-    if (value_type == "int" || value_type == "double")
-        return valid_port(value) ? int(value) : null;
-
-    value = as_string(value);
-    if (!is_integer_string(value))
-        return null;
-
-    let port = int(value, 10);
-    return valid_port(port) ? port : null;
-}
-
-function xray_alpn(value) {
-    if (type(value) == "array")
-        return value;
-
-    let text = as_string(value);
-    return text != "" ? split_csv(text) : [];
-}
-
-function xray_add_utls(tls, fingerprint) {
-    fingerprint = normalize_utls_fingerprint(fingerprint);
-    if (fingerprint != "")
-        tls.utls = { enabled: true, fingerprint: fingerprint };
-}
-
-function xray_tls_from_stream(stream, network) {
-    stream = object_or_empty(stream);
-    let security = lc(as_string(stream.security || ""));
-    let reality = object_or_empty(stream.realitySettings);
-    let tls_settings = object_or_empty(stream.tlsSettings);
-    let settings = security == "reality" ? reality : tls_settings;
-
-    if (security != "tls" && security != "xtls" && security != "reality" && length(keys(settings)) == 0)
-        return null;
-
-    let tls = { enabled: true };
-    let server_name = xray_first_string([settings.serverName, settings.server_name, settings.sni]);
-    let alpn = tls_alpn_for_transport(xray_alpn(settings.alpn), network);
-    if (server_name != "")
-        tls.server_name = server_name;
-    if (is_true(settings.allowInsecure) || is_true(settings.insecure))
-        tls.insecure = true;
-    if (length(alpn) > 0)
-        tls.alpn = alpn;
-
-    xray_add_utls(tls, settings.fingerprint || settings.fp || "");
-
-    if (security == "reality" || length(keys(reality)) > 0) {
-        tls.reality = { enabled: true };
-        let public_key = xray_first_string([reality.publicKey, reality.public_key, settings.publicKey, settings.public_key]);
-        let short_id = xray_first_string([reality.shortId, reality.short_id, settings.shortId, settings.short_id]);
-        if (public_key != "")
-            tls.reality.public_key = public_key;
-        if (short_id != "")
-            tls.reality.short_id = short_id;
-        if (!tls.utls)
-            tls.utls = { enabled: true, fingerprint: "chrome" };
-    }
-
-    return tls;
-}
-
 function xray_transport_from_stream(stream) {
     stream = object_or_empty(stream);
     let network = lc(as_string(stream.network || ""));
-    if (network == "" || network == "tcp")
+    if (network == "" || network == "tcp" || network == "raw")
         return null;
 
     if (network == "ws") {
@@ -2186,8 +2252,8 @@ function xray_transport_from_stream(stream) {
         return result;
     }
 
-    if (network == "xhttp") {
-        let settings = object_or_empty(stream.xhttpSettings);
+    if (network == "xhttp" || network == "splithttp") {
+        let settings = object_or_empty(stream.xhttpSettings || stream.splithttpSettings);
         let result = {
             type: "xhttp",
             mode: as_string(settings.mode || "auto"),
@@ -2209,6 +2275,7 @@ function xray_transport_from_stream(stream) {
         let xmux = xhttp_normalize_xmux(settings.xmux);
         if (xmux)
             result.xmux = xmux;
+        if (!xhttp_apply_settings(result, settings, xhttp_extra_settings(settings), 0)) return false;
         return result;
     }
 
@@ -2280,7 +2347,12 @@ function convert_xray_vless(outbound, tag) {
         result.encryption = encryption;
 
     let stream = object_or_empty(outbound.streamSettings);
+    // Unsupported transports/obfuscation must never become an unprotected RAW
+    // connection after conversion. Native Xray remains an explicit opt-in.
+    let finalmask = object_or_empty(stream.finalmask || stream.finalMask);
+    if (!supported_v2ray_transport(stream.network || "") || length(keys(finalmask)) > 0) return null;
     let transport = xray_transport_from_stream(stream);
+    if (transport === false) return null;
     let tls = xray_tls_from_stream(stream, lc(as_string(stream.network || "")));
     if (tls)
         result.tls = tls;
@@ -2662,6 +2734,18 @@ function normalize_xray_configs(configs) {
     return outbounds;
 }
 
+function xray_skipped_configs(configs) {
+    let skipped = 0;
+    for (let config in configs) {
+        for (let outbound in array_or_empty(object_or_empty(config).outbounds)) {
+            if (type(outbound) != "object") continue;
+            if (index(["vless", "socks", "hysteria"], lc(as_string(outbound.protocol || ""))) >= 0 &&
+                !xray_outbound_supported(outbound)) skipped++;
+        }
+    }
+    return skipped;
+}
+
 function normalize_sing_box_xhttp_transport(outbound) {
     if (type(outbound) != "object" || type(outbound.transport) != "object")
         return outbound;
@@ -2737,16 +2821,21 @@ function normalize_sing_box_json_outbounds(candidates) {
 function normalize_sing_box_json_value(value, output_file) {
     let candidates = [];
     let outbounds = [];
+    let xray_configs = null;
 
     if (is_xray_config(value))
-        outbounds = normalize_xray_configs([value]);
+        xray_configs = [value];
     else if (type(value) == "array" && length(value) > 0 && is_xray_config(value[0]))
-        outbounds = normalize_xray_configs(value);
+        xray_configs = value;
 
-    if (length(outbounds) > 0) {
+    if (xray_configs != null) {
+        outbounds = normalize_xray_configs(xray_configs);
+        if (length(outbounds) == 0) { fs.unlink(output_file); return false; }
         return write_json_file(output_file, {
             version: 1,
             format: "sing-box-json",
+            source_format: "xray-json",
+            skipped: xray_skipped_configs(xray_configs),
             outbounds: outbounds
         });
     }
@@ -2838,6 +2927,8 @@ function normalized_skipped_message(path) {
 
     if (as_string(value.format != null ? value.format : "") == "clash-yaml")
         return "Skipped " + skipped + " invalid or unsupported Clash proxy entries";
+    if (value.source_format == "xray-json")
+        return "Skipped " + skipped + " invalid or unsupported Xray proxy entries; native Xray may be required";
 
     return "Skipped " + skipped + " invalid or unsupported subscription links";
 }

@@ -10,7 +10,7 @@ let values = action_state_from_dir("/jobs");
 check(length(values) == 1 && values[0].running && values[0].job_id == "1", "UI exposed legacy success before suite completion");
 check(length(calls) == 1 && index(calls[0], "UPDATES_JOB_DIR='/jobs'") >= 0,
     "UI did not reconcile the original job in its configured directory");
-state.suite_complete = true;
+state.suite_complete = true; state.suite_format = 2;
 values = action_state_from_dir("/jobs");
 check(!values[0].running && length(calls) == 1, "UI started another check for an already complete suite");
 state.suite_complete = false;

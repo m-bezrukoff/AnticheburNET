@@ -425,6 +425,19 @@ function parseQueryString(query) {
   );
 }
 
+// src/validators/v2rayTransport.ts
+var supportedV2RayTransports = /* @__PURE__ */ new Set([
+  "tcp",
+  "raw",
+  "ws",
+  "grpc",
+  "http",
+  "h2",
+  "httpupgrade",
+  "xhttp",
+  "splithttp"
+]);
+
 // src/validators/validateVlessUrl.ts
 function validateVlessUrl(url) {
   try {
@@ -474,20 +487,9 @@ function validateVlessUrl(url) {
         message: "Invalid VLESS URL: missing query parameters"
       };
     const params = parseQueryString(queryString);
-    const validTypes = [
-      "tcp",
-      "raw",
-      "udp",
-      "grpc",
-      "http",
-      "httpupgrade",
-      "xhttp",
-      "ws",
-      "kcp"
-    ];
     const validSecurities = ["tls", "reality", "none"];
     const transportType = params.type || "tcp";
-    if (!validTypes.includes(transportType))
+    if (!supportedV2RayTransports.has(transportType))
       return {
         valid: false,
         message: "Invalid VLESS URL: unsupported or missing type"
@@ -502,11 +504,6 @@ function validateVlessUrl(url) {
         return {
           valid: false,
           message: "Invalid VLESS URL: missing pbk for reality"
-        };
-      if (!params.fp)
-        return {
-          valid: false,
-          message: "Invalid VLESS URL: missing fp for reality"
         };
     }
     if (params.flow === "xtls-rprx-vision-udp443") {
@@ -596,7 +593,13 @@ function validateTrojanUrl(url) {
     }
     const body = url.slice("trojan://".length);
     const [mainPart] = body.split("#");
-    const [userHostPort] = mainPart.split("?");
+    const [userHostPort, queryString = ""] = mainPart.split("?");
+    const params = parseQueryString(queryString);
+    if (!supportedV2RayTransports.has(params.type || "tcp"))
+      return {
+        valid: false,
+        message: "Invalid Trojan URL: unsupported transport"
+      };
     const [userPart, hostPortPart] = userHostPort.split("@");
     if (!userHostPort)
       return {
@@ -2272,6 +2275,17 @@ function render() {
             subscriptionUpdating: false,
             selectorSwitchingTag: void 0
           })
+        )
+      ]),
+      E("small", { class: "fkp_dashboard-page__geoip-attribution" }, [
+        E(
+          "a",
+          {
+            href: "https://db-ip.com",
+            target: "_blank",
+            rel: "noopener noreferrer"
+          },
+          "IP Geolocation by DB-IP"
         )
       ])
     ]

@@ -376,6 +376,7 @@ function updates_response(success, component, action, message, current_version, 
         latest_version: as_string(latest_version),
         changed: int(changed || 0),
         suite_complete: suite_complete,
+        suite_format: 2,
         status: as_string(status),
         release_url: as_string(release_url)
     });
@@ -1896,7 +1897,8 @@ function resolve_anticheburnet_release(latest_version) {
     let i18n_required = pkg_is_installed("luci-i18n-anticheburnet-ru") ? "1" : "0";
     let arch = read_openwrt_release_value("DISTRIB_ARCH");
     let cores_required = (is_apk() && arch == "aarch64_cortex-a53" &&
-        read_openwrt_release_value("DISTRIB_TARGET") == "mediatek/filogic") ||
+        (read_openwrt_release_value("DISTRIB_TARGET") == "mediatek/filogic" ||
+         read_openwrt_release_value("DISTRIB_TARGET") == "mediatek/mt7622")) ||
         pkg_is_installed("sing-box-extended") || pkg_is_installed("anticheburnet-xray") ||
         pkg_is_installed("anticheburnet-amneziawg");
     // Preserve empty translation fields at the end of a generic release plan.
@@ -1905,7 +1907,7 @@ function resolve_anticheburnet_release(latest_version) {
     let fields = split(plan, "\t");
     if (length(fields) < 7 || as_string(fields[1]) == "" || as_string(fields[2]) == "" || as_string(fields[3]) == "" || as_string(fields[4]) == "")
         return null;
-    if (cores_required && length(fields) != 13)
+    if (cores_required && length(fields) != 11)
         return null;
     let packages = [ { name: fields[1], url: fields[2] }, { name: fields[3], url: fields[4] } ];
     if (fields[6] != "") push(packages, { name: fields[5], url: fields[6] });
@@ -1943,7 +1945,7 @@ function verify_release_package(path, name, manifest) {
 function anticheburnet_cores_need_update(release) {
     if (!release.cores_required) return false;
     for (let asset in release.packages) {
-        for (let name in [ "sing-box-extended", "anticheburnet-xray", "anticheburnet-amneziawg" ]) {
+        for (let name in [ "sing-box-extended", "anticheburnet-amneziawg" ]) {
             let prefix = name + "_";
             if (substr(asset.name, 0, length(prefix)) != prefix) continue;
             let suffix = (name == "sing-box-extended" ? "_openwrt_" : "_") +
@@ -1961,7 +1963,16 @@ function anticheburnet_cores_need_update(release) {
     return false;
 }
 
+function retired_xray_packages() {
+    let packages = [];
+    if (!is_apk()) return packages;
+    for (let name in [ "anticheburnet-xray", "xray-core" ])
+        if (pkg_is_installed(name)) push(packages, name);
+    return packages;
+}
+
 function anticheburnet_suite_needs_update(release, version) {
+    if (length(retired_xray_packages()) > 0) return true;
     for (let name in [ "anticheburnet", "luci-app-anticheburnet", "luci-i18n-anticheburnet-ru" ]) {
         let included = false;
         for (let asset in release.packages)
@@ -1972,6 +1983,33 @@ function anticheburnet_suite_needs_update(release, version) {
         if (current == "" || comparison == null || comparison < 0) return true;
     }
     return anticheburnet_cores_need_update(release);
+}
+
+function prepare_xray_removal(packages) {
+    for (let name in packages) {
+        // No forced dependency removal: a standalone application's dependency
+        // must be resolved before any running service is stopped.
+        if (!command_success_from_args([ "apk", "info", "-r", name ])) return false;
+        let result = command_output_from_args([ "apk", "info", "-r", name ]);
+        for (let line in split(result, "\n")) {
+            line = trim(line);
+            if (line != "" && match(line, /[ \t:]/) == null && index(packages, line) < 0)
+                return false;
+        }
+    }
+    return !length(packages) || command_success_from_args([ "apk", "del", "--simulate", ...packages ]);
+}
+
+function remove_retired_xray(packages) {
+    for (let script in [ "/etc/init.d/anticheburnet-xray", "/etc/init.d/xray" ]) {
+        if (!file_exists(script)) continue;
+        for (let action in [ "stop", "disable" ])
+            if (!command_success_from_args([ script, action ])) return false;
+    }
+    if (length(packages) && !run_logged("Removing optional Xray from the default suite",
+        command_from_args([ "apk", "del", ...packages ]) + " </dev/null")) return false;
+    for (let name in packages) if (pkg_is_installed(name)) return false;
+    return true;
 }
 
 function install_anticheburnet(requested_version, resolved_release) {
@@ -2016,10 +2054,14 @@ function install_anticheburnet(requested_version, resolved_release) {
             action_fail("anticheburnet", "install", "Release package checksum verification failed: " + asset.name, ANTICHEBURNET_VERSION, latest_version);
     }
 
+    let retired = is_apk() ? retired_xray_packages() : [];
+    if (!prepare_xray_removal(retired))
+        action_fail("anticheburnet", "install", "Xray is required by another package; update cancelled before stopping services", ANTICHEBURNET_VERSION, latest_version);
+
     let config_path = constants.ANTICHEBURNET_CONFIG || "/etc/config/anticheburnet";
     report_update_progress("backup", "");
     let configs = [];
-    for (let path in [ config_path, "/etc/config/anticheburnet_xray", "/etc/config/anticheburnet_awg", "/etc/config/sing-box" ]) {
+    for (let path in [ config_path, "/etc/config/anticheburnet_xray", "/etc/config/xray", "/etc/config/anticheburnet_awg", "/etc/config/sing-box" ]) {
         if (file_exists(path)) push(configs, { path, content: read_file(path), name: path_basename(path) });
     }
     let backup_dir = "/root/anticheburnet-backups/update-" + now_seconds() + "-" + owner_pid();
@@ -2029,11 +2071,13 @@ function install_anticheburnet(requested_version, resolved_release) {
         if (!command_success_from_args([ "cp", "-p", config.path, backup_dir + "/" + config.name + ".uci" ]))
             action_fail("anticheburnet", "install", "Failed to back up configuration; update cancelled", ANTICHEBURNET_VERSION, latest_version);
     }
-    for (let name in [ "anticheburnet", "sing-box" ]) {
+    for (let name in [ "anticheburnet", "sing-box", "xray" ]) {
         if (file_exists("/etc/" + name) && !command_success_from_args([ "tar", "-C", "/etc", "-czf", backup_dir + "/" + name + ".tar.gz", name ]))
             action_fail("anticheburnet", "install", "Failed to back up configuration; update cancelled", ANTICHEBURNET_VERSION, latest_version);
     }
     updates_log("Configuration backup: " + backup_dir);
+    if (is_apk() && !command_success_from_args([ "apk", "add", "--upgrade", "ca-bundle" ]))
+        action_fail("anticheburnet", "install", "Failed to update trusted CA certificates; update cancelled", ANTICHEBURNET_VERSION, latest_version);
 
     // All downloads and backups must succeed before any running engine is replaced.
     if (release.cores_required && anticheburnet_was_running && file_exists(SERVICE_INIT)) {
@@ -2042,6 +2086,8 @@ function install_anticheburnet(requested_version, resolved_release) {
         anticheburnet_stopped_for_sing_box_change = true;
     }
     report_update_progress("installing", "");
+    if (length(retired) && !remove_retired_xray(retired))
+        action_fail("anticheburnet", "install", "Failed to remove Xray; configuration backup: " + backup_dir, ANTICHEBURNET_VERSION, latest_version);
     let installed = run_logged("Installing AnticheburNET release packages",
         command_env({ ANTICHEBURNET_DEFER_PACKAGE_RESTART: "1" }) + " " + pkg_install_files_command(packages, true));
     // Keep user settings even when package scripts replace the configuration.

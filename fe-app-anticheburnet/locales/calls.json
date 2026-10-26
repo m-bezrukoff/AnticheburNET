@@ -5479,8 +5479,8 @@
     ]
   },
   {
-    "call": "Via country.is",
-    "key": "Via country.is",
+    "call": "By local GeoIP database",
+    "key": "By local GeoIP database",
     "places": [
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1898"
     ]

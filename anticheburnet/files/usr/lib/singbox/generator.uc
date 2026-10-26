@@ -946,7 +946,8 @@ function configured_country_filter(mode, include_countries, exclude_countries) {
         (filter_mode_uses_exclude(mode) && length(array_or_empty(exclude_countries)) > 0);
 }
 
-function section_needs_country_is(section) {
+// country_is is the persisted compatibility key; all lookups now use local MMDB.
+function section_needs_local_geoip(section) {
     let dashboard_mode = connections.dashboard_filter_mode(section);
     if (connections.dashboard_detect_server_country(section) == "country_is" &&
         configured_country_filter(
@@ -2339,13 +2340,14 @@ function add_connections_outbound(config, section, taken) {
     if (length(selector_tags) == 0)
         runtime_generate_unsupported("connection section has no usable outbounds");
 
-    if (section_needs_country_is(section)) {
+    if (section_needs_local_geoip(section)) {
         let previous_state = read_json_file(runtime_subscription.section_cache_path(section_name));
         state.outboundMetadata.countries = runtime_country.detect(
             state.servers,
             previous_state,
             option(runtime_settings(), "bootstrap_dns_server", "77.88.8.8")
         );
+        state.outboundMetadata.countryDatabase = runtime_country.database_revision();
     }
     if (section_has_direct_priority_level(section))
         state.outboundMetadata.names[runtime_constants.DIRECT_OUTBOUND_TAG] = "Direct";

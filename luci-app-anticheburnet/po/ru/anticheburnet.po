@@ -2213,8 +2213,8 @@ msgstr "Значение не может быть пустым"
 msgid "Value must not contain control characters"
 msgstr "Значение не должно содержать управляющие символы"
 
-msgid "Via country.is"
-msgstr "Через сервис country.is"
+msgid "By local GeoIP database"
+msgstr "По локальной базе GeoIP"
 
 msgid "View logs"
 msgstr "Посмотреть логи"

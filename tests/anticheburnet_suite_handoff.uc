@@ -20,13 +20,18 @@ function legacy() {
         action: "install", changed: 1, current_version: "1.2.3", latest_version: "1.2.3", updated_at: 99 };
 }
 state = legacy();
+state.suite_complete = true;
+check(legacy_suite_job_candidate(state), "old six-package success skipped optional-Xray migration");
+state.suite_format = 2;
+check(!legacy_suite_job_candidate(state), "new five-package success was migrated twice");
+state = legacy();
 continue_legacy_suite_job("/jobs/1.json");
 check(state.running && state.suite_continuation && state.pid == "123", "legacy success was exposed before completing the suite");
 check(length(launched) == 1 && launched[0][0] == "component-action-worker" && launched[0][5] == "1.2.3", "legacy continuation was not pinned to the installed release");
 check(launched[0][2] == "/jobs/1.out.suite", "old worker cleanup can delete the continuation output");
 continue_legacy_suite_job("/jobs/1.json");
 check(length(launched) == 1, "concurrent/repeated polling launched another installer");
-result = { success: true, component: "anticheburnet", action: "check_update", changed: 0, suite_complete: true };
+result = { success: true, component: "anticheburnet", action: "check_update", changed: 0, suite_complete: true, suite_format: 2 };
 finish_component_job("/jobs/1.json", "anticheburnet", "install", 0, "/jobs/1.out");
 check(!state.running && state.changed == 1 && state.action == "install" && state.suite_complete,
     "no-op core completion lost the original application upgrade");
@@ -37,6 +42,7 @@ for (let key, value in { acked_at: 100, success: false, changed: 0, running: tru
     current_version: "1.2.2", suite_complete: true, suite_continuation: true, updated_at: -4000,
     component: "sing_box", action: "check_update" }) {
     state = legacy(); state[key] = value;
+    if (key == "suite_complete" || key == "suite_continuation") state.suite_format = 2;
     continue_legacy_suite_job("/jobs/1.json");
     check(length(launched) == 1, "ineligible job was automatically installed: " + key);
 }
@@ -71,7 +77,7 @@ launch_component_worker = function(args) { return ""; };
 state = legacy(); continue_legacy_suite_job("/jobs/1.json");
 check(!state.success && !state.running && state.suite_continuation, "failed worker launch left a successful or running job");
 launch_component_worker = function(args) {
-    state = { success: true, running: false, suite_complete: true, suite_continuation: true };
+    state = { success: true, running: false, suite_complete: true, suite_format: 2, suite_continuation: true };
     return "123";
 };
 set_component_running_job_pid = function(path, pid) { return false; };
@@ -79,7 +85,7 @@ state = legacy(); continue_legacy_suite_job("/jobs/1.json");
 check(state.success && state.suite_complete, "fast completion was overwritten by PID registration failure");
 command_status = function(value) { command = value; return 0; };
 state = { suite_continuation: true };
-result = { success: true, suite_complete: true };
+result = { success: true, suite_complete: true, suite_format: 2 };
 component_action_worker("/jobs/1.json", "/jobs/1.out", "anticheburnet", "install", "1.2.3");
 check(index(command, "ANTICHEBURNET_SUITE_TARGET_VERSION='1.2.3'") >= 0, "worker lost the pinned legacy release");
 component_action_status_error_exit = function(message) { die(message); };

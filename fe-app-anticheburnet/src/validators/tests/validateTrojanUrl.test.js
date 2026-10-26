@@ -24,12 +24,6 @@ const validUrls = [
     'trojan://90caP481ay@127.0.0.1:59708?type=tcp&security=tls&fp=chrome&alpn=h2%2Chttp%2F1.1&ech=AF3%2BDQBZAAAgACC2y%2BAe4dqthLNpfvmtE6g%2BnaJ%2FciK6P%2BREbRLkR%2Fg%2FEgAkAAEAAQABAAIAAQADAAIAAQACAAIAAgADAAMAAQADAAIAAwADAApnb29nbGUuY29tAAA%3D&sni=google.com#trojan-tcp-tls-ech',
   ],
 
-  // mKCP
-  [
-    'mKCP + none',
-    'trojan://N5v7iIOe9G@127.0.0.1:36319?type=kcp&headerType=none&seed=P91wFIfjzZ&security=none#trojan-mKCP',
-  ],
-
   // WebSocket
   [
     'ws + none',
@@ -100,6 +94,14 @@ const validUrls = [
 ];
 
 const invalidUrls = [
+  [
+    'Unsupported XDRIVE',
+    'trojan://password@example.com:443?type=xdrive&security=tls',
+  ],
+  [
+    'mKCP + none',
+    'trojan://N5v7iIOe9G@127.0.0.1:36319?type=kcp&headerType=none&seed=P91wFIfjzZ&security=none#trojan-mKCP',
+  ],
   ['No prefix', 'uuid@host:443?type=tcp&security=tls'],
   ['No password', 'trojan://@127.0.0.1:443?type=tcp&security=tls'],
   ['No host', 'trojan://pass@:443?type=tcp&security=tls'],

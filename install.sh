@@ -131,15 +131,15 @@ select_install_mode() {
 }
 
 select_install_language() {
-    printf '\nSelect interface language / Выберите язык интерфейса:\n'
-    printf '  1) English (default)\n  2) Русский\n'
+    printf '\nSelect interface language / Р’С‹Р±РµСЂРёС‚Рµ СЏР·С‹Рє РёРЅС‚РµСЂС„РµР№СЃР°:\n'
+    printf '  1) English (default)\n  2) Р СѓСЃСЃРєРёР№\n'
     while :; do
-        printf 'Select / Выберите [1]: '
+        printf 'Select / Р’С‹Р±РµСЂРёС‚Рµ [1]: '
         read -r language_answer || language_answer=""
         case "$language_answer" in
             1|"") INSTALLER_LANG="en"; return 0 ;;
             2) INSTALLER_LANG="ru"; return 0 ;;
-            *) warn "Enter 1 or 2 / Введите 1 или 2." ;;
+            *) warn "Enter 1 or 2 / Р’РІРµРґРёС‚Рµ 1 РёР»Рё 2." ;;
         esac
     done
 }
@@ -1342,6 +1342,9 @@ function installer_prepare_full_suite() {
             let result = installer_command_result([ init_script, "stop" ], INSTALLER_SERVICE_ACTION_TIMEOUT);
             if (!result.complete || result.status != 0)
                 return false;
+            if ((init_script == env("ANTICHEBURNET_INSTALLER_XRAY_INIT", "/etc/init.d/anticheburnet-xray") ||
+                 init_script == "/etc/init.d/xray") && !run_args([ init_script, "disable" ]))
+                return false;
         }
     }
 
@@ -1950,7 +1953,7 @@ check_full_suite_platform() {
 
 download_full_suite() {
     FULL_COMPONENT_FILES=""
-    for suite_kind in sing-box xray awg checksums; do
+    for suite_kind in sing-box awg checksums; do
         suite_url="$(printf '%s' "$ANTICHEBURNET_RELEASE_JSON" | install_json_ucode release-asset-url "$suite_kind" apk)" ||
             fail "Failed to read the $suite_kind release asset"
         case "$suite_url" in
@@ -1969,7 +1972,7 @@ download_full_suite() {
 }
 
 verify_full_suite() {
-    # Only accept one checksum for each of the six selected APKs, with no paths
+    # Only accept one checksum for each selected APK, with no paths
     # outside the temporary directory. sha256sum -c alone allows omitted files.
     suite_names="$(basename "$ANTICHEBURNET_BACKEND_FILE") $(basename "$ANTICHEBURNET_APP_FILE") $(basename "$ANTICHEBURNET_I18N_FILE")"
     for suite_file in $FULL_COMPONENT_FILES; do
@@ -1979,12 +1982,17 @@ verify_full_suite() {
         BEGIN { n = split(names, files, " "); for (i = 1; i <= n; i++) expected[files[i]] = 1 }
         {
             name = $2; sub(/^\*/, "", name); sub(/^\.\//, "", name)
-            if (NF != 2 || length($1) != 64 || $1 ~ /[^0-9a-fA-F]/ || !(name in expected) || seen[name]++) exit 1
+            if (NF != 2 || length($1) != 64 || $1 ~ /[^0-9a-fA-F]/ || name ~ /[^A-Za-z0-9._+-]/ || seen[name]++) exit 1
+            if (!(name in expected)) {
+                if (name ~ /^anticheburnet-xray_[A-Za-z0-9.+_-]+_aarch64_cortex-a53[.]apk$/) next
+                exit 1
+            }
             count++
+            print $0
         }
-        END { if (count != 6) exit 1 }
-    ' "$TMP_DIR/SHA256SUMS" || fail "SHA256SUMS must cover exactly the six selected APKs"
-    (cd "$TMP_DIR" && sha256sum -c SHA256SUMS) || fail "Package checksum verification failed; installation stopped"
+        END { if (count != n) exit 1 }
+    ' "$TMP_DIR/SHA256SUMS" > "$TMP_DIR/SELECTED-SHA256SUMS" || fail "SHA256SUMS must cover each selected APK exactly once"
+    (cd "$TMP_DIR" && sha256sum -c SELECTED-SHA256SUMS) || fail "Package checksum verification failed; installation stopped"
 }
 
 install_full_suite() {
@@ -2004,6 +2012,7 @@ install_full_suite() {
         check_flash_space
     fi
     backup_full_suite_configuration
+    apk add --upgrade ca-bundle </dev/null || fail "Failed to update trusted CA certificates"
     # Keep the helper available even when APK collects dependencies orphaned
     # by legacy-package removal. A plain add retains the installed versions;
     # --no-upgrade is not supported by OpenWrt's apk-tools 3.0.5.
@@ -2027,7 +2036,7 @@ install_full_suite() {
     migrate_legacy_configuration
     post_install
     FULL_INSTALL_COMPLETE=1
-    msg "AnticheburNET $ANTICHEBURNET_PACKAGE_VERSION: AnticheburNET, LuCI ($INSTALLER_LANG), sing-box extended, Xray and AmneziaWG installed"
+    msg "AnticheburNET $ANTICHEBURNET_PACKAGE_VERSION: AnticheburNET, LuCI ($INSTALLER_LANG), sing-box extended and AmneziaWG installed; Xray is optional"
     msg "Source release: ${REPO_OWNER}/${REPO_NAME}@${ANTICHEBURNET_RELEASE_TAG}"
     msg "AnticheburNET autostart enabled; service startup requested. Open LuCI to add connections if needed."
 }
@@ -2041,7 +2050,7 @@ backup_full_suite_configuration() {
         apk info > "$FULL_BACKUP_DIR/packages.txt" || exit 1
         [ ! -f /etc/apk/world ] || cp /etc/apk/world "$FULL_BACKUP_DIR/world" || exit 1
         set --
-        for backup_path in etc/config etc/anticheburnet etc/sing-box \
+        for backup_path in etc/config etc/anticheburnet etc/sing-box etc/xray \
             "etc/$LEGACY_BACKEND_PACKAGE" "etc/$LEGACY_BRAND"; do
             [ ! -e "/$backup_path" ] || set -- "$@" "$backup_path"
         done
@@ -2099,14 +2108,14 @@ installer_text() {
 
     if installer_is_ru; then
         case "$key" in
-            yes) printf '%s\n' "Да" ;;
-            no) printf '%s\n' "Нет" ;;
-            select) printf '%s\n' "Выберите номер" ;;
-            invalid_choice) printf '%s\n' "Введите номер из списка." ;;
-            sing_box_prompt) printf '%s\n' "Какую сборку singbox ставить?" ;;
+            yes) printf '%s\n' "Р”Р°" ;;
+            no) printf '%s\n' "РќРµС‚" ;;
+            select) printf '%s\n' "Р’С‹Р±РµСЂРёС‚Рµ РЅРѕРјРµСЂ" ;;
+            invalid_choice) printf '%s\n' "Р’РІРµРґРёС‚Рµ РЅРѕРјРµСЂ РёР· СЃРїРёСЃРєР°." ;;
+            sing_box_prompt) printf '%s\n' "РљР°РєСѓСЋ СЃР±РѕСЂРєСѓ singbox СЃС‚Р°РІРёС‚СЊ?" ;;
             sing_box_stable) printf '%s\n' "singbox stable" ;;
-            sing_box_extended) printf '%s\n' "singbox extended (если нужен xhttp)" ;;
-            sing_box_skip_msg) printf '%s\n' "Пропускаю установку sing-box." ;;
+            sing_box_extended) printf '%s\n' "singbox extended (РµСЃР»Рё РЅСѓР¶РµРЅ xhttp)" ;;
+            sing_box_skip_msg) printf '%s\n' "РџСЂРѕРїСѓСЃРєР°СЋ СѓСЃС‚Р°РЅРѕРІРєСѓ sing-box." ;;
             *) printf '%s\n' "$key" ;;
         esac
         return 0

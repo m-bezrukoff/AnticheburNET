@@ -1676,6 +1676,18 @@ function clash_api(action, arg1, arg2, arg3) {
     let test_url = latency_test_url();
     let auth = clash_auth_args();
 
+    if (action == "provider_supports_rulesets") {
+        let args = [ "curl", "-q", "-f", "-sS", "--max-time", "3" ];
+        for (let item in auth) push(args, item);
+        push(args, base_url + "/providers/proxies/" + clash_urlencode(arg1) + "?revision=true");
+        let result = command_capture(command_from_args(args));
+        let value = {};
+        try { value = json(result.output); } catch (e) {}
+        for (let capability in type(value.capabilities) == "array" ? value.capabilities : [])
+            if (result.status == 0 && capability == "happ-ruleset-update-v1") return 0;
+        return 1;
+    }
+
     if (action == "update_provider") {
         let provider_url = base_url + "/providers/proxies/" + clash_urlencode(arg1);
         let args = [ "curl", "-q", "-f", "-sS", "--max-time", "5", "-X", "PUT", "-o", "/dev/null" ];

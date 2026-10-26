@@ -10,6 +10,10 @@ on:
         type: string
         default: ''
         description: Reuse unchanged ARM64 cores from a previously tested release
+      include_xray:
+        type: boolean
+        default: true
+        description: Publish the optional Xray APK (also enables migration from old six-package updaters; new installers skip it)
       publish:
         type: boolean
         default: true
@@ -29,17 +33,23 @@ jobs:
     timeout-minutes: 60
     env:
       PACKAGE_VERSION: ${{ inputs.package_version || '1.0.10' }}
+      BUILD_XRAY: ${{ inputs.include_xray && '1' || '0' }}
     steps:
       - uses: actions/checkout@v5.0.0
+      - name: Read pinned toolchain
+        id: versions
+        run: |
+          source components/versions.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-go@v5.0.0
         if: inputs.components_from == ''
         with:
-          go-version: '1.26.8'
+          go-version: ${{ steps.versions.outputs.go }}
           cache: false
       - run: |
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libjson-c-dev libglib2.0-dev python3-venv ninja-build pkg-config curl fakeroot file gawk git patch perl tar unzip util-linux xz-utils zstd bzip2 squashfs-tools qemu-user iproute2 iputils-ping openssl
+          sudo apt-get install -y build-essential cmake libjson-c-dev libglib2.0-dev python3-venv python3-cryptography ninja-build pkg-config curl fakeroot file gawk git patch perl tar unzip util-linux xz-utils zstd bzip2 squashfs-tools qemu-user iproute2 iputils-ping openssl
           git clone --depth 1 --branch v0.0.20250529 https://github.com/jow-/ucode.git /tmp/ucode
           cmake -S /tmp/ucode -B /tmp/ucode/build -DUBUS_SUPPORT=OFF -DUCI_SUPPORT=OFF -DULOOP_SUPPORT=OFF
           cmake --build /tmp/ucode/build --parallel
@@ -60,12 +70,20 @@ jobs:
           COMPONENTS_TAG: ${{ inputs.components_from }}
         run: |
           mkdir -p .build/reused-components
-          gh release download "$COMPONENTS_TAG" --repo "$GITHUB_REPOSITORY" --dir .build/reused-components --pattern '*_aarch64_cortex-a53.apk' --pattern SHA256SUMS
+          gh release download "$COMPONENTS_TAG" --repo "$GITHUB_REPOSITORY" --dir .build/reused-components --pattern '*_aarch64_cortex-a53.apk' --pattern SHA256SUMS --pattern versions.env
+          cmp components/versions.env .build/reused-components/versions.env
+          cp components/versions.env dist/filogic/versions.env
           cd .build/reused-components
-          awk '/aarch64_cortex-a53[.]apk$/ {print}' SHA256SUMS > ARM64SUMS
-          test "$(wc -l < ARM64SUMS)" -eq 3
+          awk '/sing-box-extended_.*aarch64_cortex-a53[.]apk$|anticheburnet-amneziawg_.*aarch64_cortex-a53[.]apk$/ {print}' SHA256SUMS > ARM64SUMS
+          test "$(wc -l < ARM64SUMS)" -eq 2
           sha256sum -c ARM64SUMS
-          cp ./*.apk ../../dist/filogic/
+          cp ./sing-box-extended_*.apk ./anticheburnet-amneziawg_*.apk ../../dist/filogic/
+          if [ "$BUILD_XRAY" = 1 ]; then
+            awk '/anticheburnet-xray_.*aarch64_cortex-a53[.]apk$/ {print}' SHA256SUMS > XRAYSUMS
+            test "$(wc -l < XRAYSUMS)" -eq 1
+            sha256sum -c XRAYSUMS
+            cp ./anticheburnet-xray_*.apk ../../dist/filogic/
+          fi
       - name: Build update test baseline
         if: github.event_name == 'workflow_dispatch' && inputs.update_baseline
         run: bash build.sh 1.0.0 "$PWD/dist/update-baseline"

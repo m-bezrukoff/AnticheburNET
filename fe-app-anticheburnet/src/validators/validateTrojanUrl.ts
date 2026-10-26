@@ -1,5 +1,7 @@
 import { ValidationResult } from './types';
 import { isValidPort, parseHostPort } from './hostPort';
+import { parseQueryString } from '../helpers/parseQueryString';
+import { supportedV2RayTransports } from './v2rayTransport';
 
 export function validateTrojanUrl(url: string): ValidationResult {
   try {
@@ -19,7 +21,13 @@ export function validateTrojanUrl(url: string): ValidationResult {
 
     const body = url.slice('trojan://'.length);
     const [mainPart] = body.split('#');
-    const [userHostPort] = mainPart.split('?');
+    const [userHostPort, queryString = ''] = mainPart.split('?');
+    const params = parseQueryString(queryString);
+    if (!supportedV2RayTransports.has(params.type || 'tcp'))
+      return {
+        valid: false,
+        message: 'Invalid Trojan URL: unsupported transport',
+      };
 
     const [userPart, hostPortPart] = userHostPort.split('@');
 

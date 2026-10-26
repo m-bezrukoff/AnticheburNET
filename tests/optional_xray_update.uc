@@ -1,0 +1,33 @@
+function check(value, message) { if (!value) die(message); }
+let installed = { "anticheburnet-xray": true, "xray-core": true };
+let events = [];
+let removal_ok = true;
+let dependent = "";
+is_apk = function() { return true; };
+pkg_is_installed = function(name) { return !!installed[name]; };
+command_output_from_args = function(args) { return dependent; };
+command_success_from_args = function(args) { push(events, join(" ", args)); return true; };
+file_exists = function(path) { return true; };
+run_logged = function(label, command) {
+    push(events, command);
+    if (removal_ok) installed = {};
+    return removal_ok;
+};
+let packages = retired_xray_packages();
+check(length(packages) == 2, "both Xray package names must migrate");
+check(anticheburnet_suite_needs_update({packages:[], cores_required:false}, "1.2.3"), "current suite skipped Xray removal");
+check(prepare_xray_removal(packages), "unneeded Xray removal was rejected");
+check(index(events[length(events)-1], "--simulate") >= 0, "removal was not planned before stopping services");
+events = [];
+check(remove_retired_xray(packages), "Xray removal failed");
+check(length(retired_xray_packages()) == 0, "removed Xray remained installed");
+check(index(events[0], " stop") > 0 && index(events[1], " disable") > 0, "Xray must stop and disable before deleting");
+check(index(events[length(events)-1], "--force") < 0, "Xray migration forces dependency removal");
+installed = { "anticheburnet-xray": true }; events = []; dependent = "some-other-app-1.0.0-r1\n";
+check(!prepare_xray_removal(retired_xray_packages()) && length(events) == 1 && index(events[0], "info -r") > 0, "foreign dependency was ignored or service stopped");
+dependent = ""; removal_ok = false;
+check(!remove_retired_xray(retired_xray_packages()), "failed removal was reported as successful");
+removal_ok = true;
+run_logged = function(label, command) { return true; };
+check(!remove_retired_xray(retired_xray_packages()), "APK retaining a required Xray was reported as removed");
+print("Optional Xray migration, dependency and failure checks passed\n");

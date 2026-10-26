@@ -124,5 +124,6 @@ jobs:
           path: |
             .build/components/sing-box.arm64
             .build/test-qemu/build/qemu-aarch64
+            .build/components/xray-compat/
           retention-days: 3
           if-no-files-found: ignore

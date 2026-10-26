@@ -112,7 +112,7 @@ def fetch(proxy, dest, tls=False):
 
 
 @contextlib.contextmanager
-def running(exe, config, label):
+def running(exe, config, label, listen_port):
     path = WORK / (label + '.json')
     path.write_text(json.dumps(config), encoding='utf-8')
     args = [str(exe), 'run', '-config' if exe == XRAY else '-c', str(path)]
@@ -125,9 +125,17 @@ def running(exe, config, label):
     with (WORK / (label + '.log')).open('w', encoding='utf-8') as log:
         proc = subprocess.Popen(RUNNER + args, stdout=log, stderr=log, creationflags=CREATE_FLAGS)
         try:
-            time.sleep(.3)
-            if proc.poll() is not None:
-                raise RuntimeError((WORK / (label + '.log')).read_text())
+            deadline = time.monotonic() + 30
+            while True:
+                if proc.poll() is not None:
+                    raise RuntimeError((WORK / (label + '.log')).read_text(encoding='utf-8'))
+                try:
+                    with socket.create_connection(('127.0.0.1', listen_port), timeout=.5):
+                        break
+                except OSError:
+                    if time.monotonic() >= deadline:
+                        raise RuntimeError('Listener did not start: ' + (WORK / (label + '.log')).read_text(encoding='utf-8'))
+                    time.sleep(.1)
             yield
         finally:
             proc.terminate()
@@ -245,15 +253,17 @@ def main():
             server['inbounds'] = [{'listen': '127.0.0.1', 'port': listen, 'protocol': 'socks', 'settings': {'auth': 'noauth', 'udp': True}}]
             client['outbounds'] = [{'type': 'socks', 'tag': 'proxy', 'server': '127.0.0.1', 'server_port': listen, 'version': '5'}]
         reject = kind == 'reality-mldsa' and variant != 'valid'
+        started = False
         try:
-            with running(XRAY, server, label+'-server'), running(SING, client, label+'-client'):
+            with running(XRAY, server, label+'-server', listen), running(SING, client, label+'-client', proxy):
+                started = True
                 fetch(proxy, httpd.server_port)
                 fetch(proxy, httpsd.server_port, True)
                 udp_fetch(proxy, echo.getsockname()[1])
             if reject: raise AssertionError('invalid ML-DSA authentication was accepted')
             result = {'case': label, 'ok': True, 'checks': ['HTTP 262144 bytes', 'TLS1.3 HTTP 262144 bytes', 'UDP echo']}
         except Exception as exc:
-            result = {'case': label, 'ok': bool(reject and not isinstance(exc, AssertionError)), 'error': str(exc), 'expected_rejection': reject}
+            result = {'case': label, 'ok': bool(reject and started and not isinstance(exc, AssertionError)), 'error': str(exc), 'expected_rejection': reject}
         results.append(result)
         print(json.dumps(result), flush=True)
     httpd.shutdown()

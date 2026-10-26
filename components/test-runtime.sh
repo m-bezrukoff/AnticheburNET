@@ -54,7 +54,7 @@ qemu-aarch64 "$work/xray/xray" run -config "$test_dir/xray.json" > "$test_dir/xr
 pids+=("$!")
 python3 "$root/tests/xray_compat_runtime.py" --runner qemu-aarch64 \
   --binary "$work/sing-box.arm64" --xray "$work/xray/xray" \
-  --camouflage "$work/xray-camouflage" --work "$test_dir/compat"
+  --camouflage "$work/xray-camouflage" --work "$work/xray-compat"
 fi
 for role in server client; do
   qemu-aarch64 "$work/sing-box.arm64" check -c "$test_dir/hy-$role.json"

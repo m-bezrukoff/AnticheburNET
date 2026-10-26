@@ -64,7 +64,8 @@ Usage: $0 [--install | --generic | --uninstall]
 
 Without arguments, asks whether to install or uninstall AnticheburNET.
 --install installs the complete AnticheburNET suite from one GitHub release:
-  anticheburnet, LuCI, Russian translation, sing-box extended, Xray and AmneziaWG.
+  anticheburnet, LuCI, Russian translation, sing-box extended and AmneziaWG.
+  Local Xray is optional; previously installed Xray is removed after backup.
 Requires OpenWrt 25.12, mediatek/filogic or mediatek/mt7622, aarch64_cortex-a53 and apk.
 Downloads and verifies SHA256SUMS before replacing installed packages.
 Explicit mode options skip the install/uninstall question.
@@ -131,15 +132,15 @@ select_install_mode() {
 }
 
 select_install_language() {
-    printf '\nSelect interface language / Р’С‹Р±РµСЂРёС‚Рµ СЏР·С‹Рє РёРЅС‚РµСЂС„РµР№СЃР°:\n'
-    printf '  1) English (default)\n  2) Р СѓСЃСЃРєРёР№\n'
+    printf '\nSelect interface language / Выберите язык интерфейса:\n'
+    printf '  1) English (default)\n  2) Русский\n'
     while :; do
-        printf 'Select / Р’С‹Р±РµСЂРёС‚Рµ [1]: '
+        printf 'Select / Выберите [1]: '
         read -r language_answer || language_answer=""
         case "$language_answer" in
             1|"") INSTALLER_LANG="en"; return 0 ;;
             2) INSTALLER_LANG="ru"; return 0 ;;
-            *) warn "Enter 1 or 2 / Р’РІРµРґРёС‚Рµ 1 РёР»Рё 2." ;;
+            *) warn "Enter 1 or 2 / Введите 1 или 2." ;;
         esac
     done
 }
@@ -2108,14 +2109,14 @@ installer_text() {
 
     if installer_is_ru; then
         case "$key" in
-            yes) printf '%s\n' "Р”Р°" ;;
-            no) printf '%s\n' "РќРµС‚" ;;
-            select) printf '%s\n' "Р’С‹Р±РµСЂРёС‚Рµ РЅРѕРјРµСЂ" ;;
-            invalid_choice) printf '%s\n' "Р’РІРµРґРёС‚Рµ РЅРѕРјРµСЂ РёР· СЃРїРёСЃРєР°." ;;
-            sing_box_prompt) printf '%s\n' "РљР°РєСѓСЋ СЃР±РѕСЂРєСѓ singbox СЃС‚Р°РІРёС‚СЊ?" ;;
+            yes) printf '%s\n' "Да" ;;
+            no) printf '%s\n' "Нет" ;;
+            select) printf '%s\n' "Выберите номер" ;;
+            invalid_choice) printf '%s\n' "Введите номер из списка." ;;
+            sing_box_prompt) printf '%s\n' "Какую сборку singbox ставить?" ;;
             sing_box_stable) printf '%s\n' "singbox stable" ;;
-            sing_box_extended) printf '%s\n' "singbox extended (РµСЃР»Рё РЅСѓР¶РµРЅ xhttp)" ;;
-            sing_box_skip_msg) printf '%s\n' "РџСЂРѕРїСѓСЃРєР°СЋ СѓСЃС‚Р°РЅРѕРІРєСѓ sing-box." ;;
+            sing_box_extended) printf '%s\n' "singbox extended (если нужен xhttp)" ;;
+            sing_box_skip_msg) printf '%s\n' "Пропускаю установку sing-box." ;;
             *) printf '%s\n' "$key" ;;
         esac
         return 0

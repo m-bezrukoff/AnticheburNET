@@ -2900,13 +2900,14 @@ function apply_subscription_update_result(result) {
     return true;
 }
 
-function subscription_update_common_locked(force, target_section, target_source_index) {
+function subscription_update_common_locked(force, target_section, target_source_index, phase) {
     let started = clock(true);
     let result = subscription_cache_capture([
         "update-request",
         force ? "1" : "0",
         as_string(target_section),
-        as_string(target_source_index)
+        as_string(target_source_index),
+        phase == "scheduled" ? "scheduled" : "runtime"
     ]);
     let sources_finished = clock(true);
     let success = apply_subscription_update_result(result);
@@ -2917,7 +2918,7 @@ function subscription_update_common_locked(force, target_section, target_source_
     return success;
 }
 
-function subscription_update_common(force, target_section, target_source_index) {
+function subscription_update_common(force, target_section, target_source_index, phase) {
     if (!ensure_subscription_runtime_dirs())
         return 1;
 
@@ -2933,7 +2934,7 @@ function subscription_update_common(force, target_section, target_source_index) 
         return force ? 1 : 0;
     }
 
-    let ok = subscription_update_common_locked(force, target_section, target_source_index);
+    let ok = subscription_update_common_locked(force, target_section, target_source_index, phase);
     release_runtime_lock(RELOAD_LOCK_DIR);
     release_runtime_lock(SUBSCRIPTION_UPDATE_LOCK_DIR);
     run_pending_config_reload_if_requested();
@@ -2991,7 +2992,7 @@ function subscription_auto_update_settings(value) {
 function subscription_update_daily() {
     if (!bool_option(uci_settings(), "subscription_auto_update_enabled", true)) return;
     log_message("Starting daily subscription update", "info");
-    exit(subscription_update_common(true, "", ""));
+    exit(subscription_update_common(true, "", "", "scheduled"));
 }
 
 function subscription_update_if_due() {

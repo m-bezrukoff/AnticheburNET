@@ -1550,9 +1550,10 @@ function monotonic_milliseconds() {
 }
 
 function download_subscription(url, filepath, http_proxy_address, headers_filepath, effective_user_agent, effective_hwid, device_headers, request_budget_ms) {
-    let retries = 1;
     request_budget_ms = int(request_budget_ms || 15000);
-    let timeout = request_budget_ms <= 2000 ? 1 : 3;
+    let retries = 1;
+    let timeout = request_budget_ms <= 2000 ? 1 : 5;
+    let deadline = monotonic_milliseconds() + request_budget_ms;
     let stamp = clock();
     let suffix = sprintf(".part.%d.%d", stamp[0], stamp[1]);
     let tmpfile = filepath + suffix;
@@ -1564,10 +1565,12 @@ function download_subscription(url, filepath, http_proxy_address, headers_filepa
         unlink_path(headers_tmpfile);
 
     for (let attempt = 1; attempt <= retries; attempt++) {
+        let remaining_ms = deadline - monotonic_milliseconds();
+        if (remaining_ms <= 0) return 28;
         let args = [
             "curl", "-q", "-fL", "-sS",
             "--connect-timeout", timeout,
-            "--max-time", sprintf("%.3f", request_budget_ms / 1000.0)
+            "--max-time", sprintf("%.3f", remaining_ms / 1000.0)
         ];
 
         if (http_proxy_address != "") {
@@ -1613,11 +1616,16 @@ function download_subscription(url, filepath, http_proxy_address, headers_filepa
 
         if (status == 5 || status == 6) {
             resolution_failed = true;
+            if (attempt < retries) continue;
             break;
         }
 
-        if (status == 7 || status == 28 || status == 35 || status == 52 || status == 56)
+        if (status == 7 || status == 28 || status == 35 || status == 52 || status == 56) {
+            if (attempt < retries) continue;
             return status;
+        }
+        // HTTP/profile errors are handled by the compatibility loop.
+        return status == 0 ? 1 : status;
     }
 
     unlink_path(tmpfile);
@@ -1730,7 +1738,7 @@ function get_subscription_download_proxy_address(section_name_value, sections, p
     return address;
 }
 
-function download_subscription_into_cache(section_name_value, subscription_url, subscription_json_path, subscription_url_cache_path, service_proxy_address_value, subscription_user_agent, subscription_hwid, source_index, cache_section, metadata_output_path, sections, subscription_device_headers, request_budget_ms) {
+function download_subscription_into_cache(section_name_value, subscription_url, subscription_json_path, subscription_url_cache_path, service_proxy_address_value, subscription_user_agent, subscription_hwid, source_index, cache_section, metadata_output_path, sections, subscription_device_headers, request_budget_ms, network_retry_limit) {
     ensure_dir(TMP_SUBSCRIPTION_FOLDER);
     let subscription_user_agent_cache_path = source_user_agent_path(TMP_SUBSCRIPTION_FOLDER, cache_section);
     let subscription_hwid_cache_path = source_hwid_path(TMP_SUBSCRIPTION_FOLDER, cache_section);
@@ -1745,10 +1753,14 @@ function download_subscription_into_cache(section_name_value, subscription_url, 
     let parser = subscription_parser();
     let deadline = monotonic_milliseconds() + int(request_budget_ms || 15000);
 
+    let failure_reason = "";
+    let network_retries = 0;
+    network_retry_limit = int(network_retry_limit || 0);
     let attempt_index = 0;
     for (let effective_user_agent in user_agent_candidates(subscription_user_agent, cached_user_agent, default_user_agent)) {
         let remaining_ms = deadline - monotonic_milliseconds();
         if (remaining_ms <= 0) {
+            failure_reason = "request time budget exhausted";
             log_message("Subscription request budget exhausted for rule '" + section_name_value + "'; keeping the last working cache", "warn");
             break;
         }
@@ -1760,12 +1772,27 @@ function download_subscription_into_cache(section_name_value, subscription_url, 
 
         let effective_hwid = get_subscription_hwid(subscription_hwid);
         remaining_ms = deadline - monotonic_milliseconds();
-        if (remaining_ms <= 0) break;
-        let download_status = download_subscription(subscription_url, raw_tmpfile, service_proxy_address_value, headers_tmpfile, effective_user_agent, effective_hwid, subscription_device_headers, remaining_ms);
+        if (remaining_ms <= 0) { failure_reason = "request time budget exhausted"; break; }
+        let download_status;
+        while (true) {
+            remaining_ms = deadline - monotonic_milliseconds();
+            download_status = remaining_ms <= 0 ? 28 : download_subscription(subscription_url, raw_tmpfile, service_proxy_address_value, headers_tmpfile, effective_user_agent, effective_hwid, subscription_device_headers, remaining_ms);
+            let network_failure = download_status == 5 || download_status == 6 || download_status == 7 ||
+                download_status == 28 || download_status == 35 || download_status == 52 || download_status == 56;
+            if (!network_failure || network_retries >= network_retry_limit)
+                break;
+            network_retries++;
+            log_message("Subscription network request failed for rule '" + section_name_value + "' (curl exit " + download_status + "); retry " + network_retries + "/" + network_retry_limit + " in 30 seconds", "info");
+            if (command_status_from_args([ "sleep", "30" ]) != 0)
+                break;
+            // Each delayed retry needs its own request window; the pause must not consume it.
+            deadline = monotonic_milliseconds() + int(request_budget_ms || 15000);
+        }
         if (download_status != 0) {
+            failure_reason = "download failed (curl exit " + download_status + ")";
             if (metadata_output_path != "")
                 unlink_path(metadata_output_path);
-            if (download_status == 6) {
+            if (download_status == 5 || download_status == 6) {
                 log_message("Subscription download failed for rule '" + section_name_value + "' because the subscription host could not be resolved; compatibility retries skipped", "warn");
                 break;
             }
@@ -1779,6 +1806,7 @@ function download_subscription_into_cache(section_name_value, subscription_url, 
                 log_message("Subscription download attempt " + attempt_index + " failed for rule '" + section_name_value + "'; trying another compatibility profile", "warn");
             continue;
         }
+        failure_reason = "";
 
         if (parser.try_decode_gzip_content_file(raw_tmpfile))
             log_message("Decoded gzip-compressed subscription body for rule '" + section_name_value + "'", "info");
@@ -1893,7 +1921,9 @@ function download_subscription_into_cache(section_name_value, subscription_url, 
     unlink_path(headers_tmpfile);
     unlink_path(normalized_tmpfile);
     unlink_path(metadata_tmpfile);
-    if (subscription_user_agent != "")
+    if (failure_reason != "")
+        log_message("Subscription update for rule '" + section_name_value + "' failed: " + failure_reason + "; keeping the last working cache", "error");
+    else if (subscription_user_agent != "")
         log_message("Configured subscription request profile for rule '" + section_name_value + "' did not produce valid proxy entries", "error");
     else
         log_message("No compatible subscription request profile produced valid proxy entries for rule '" + section_name_value + "'", "error");
@@ -1981,7 +2011,8 @@ function update_subscription_source(section_name_value, index_value, entry, phas
         as_string(metadata_output_path),
         sections,
         parsed.device_headers,
-        (phase || "runtime") == "runtime" ? 2000 : 15000
+        (phase || "runtime") == "runtime" ? 2000 : 15000,
+        phase == "scheduled" ? 3 : 0
     );
 }
 
@@ -2043,7 +2074,7 @@ function update_count_summary(updated, unchanged, failed) {
     return length(parts) > 0 ? join(", ", parts) : "no subscription sources checked";
 }
 
-function update_subscription_sources_parallel(section, force) {
+function update_subscription_sources_parallel(section, force, phase) {
     let section_name_value = section_name(section);
     let records = [], batch = [], index_value = 0;
     for (let entry in connections.subscription_urls(section)) {
@@ -2054,7 +2085,7 @@ function update_subscription_sources_parallel(section, force) {
         let record = { index: index_value, source_section, metadata_path, result_path, skipped: !force && !connections.subscription_update_enabled(section, entry) };
         push(records, record);
         if (record.skipped) continue;
-        let command = command_from_args([ "ucode", "-L", LIB_DIR, LIB_DIR + "/subscription/cache.uc", "update-source", section_name_value, index_value, entry, "runtime", metadata_path ]);
+        let command = command_from_args([ "ucode", "-L", LIB_DIR, LIB_DIR + "/subscription/cache.uc", "update-source", section_name_value, index_value, entry, phase == "scheduled" ? "scheduled" : "runtime", metadata_path ]);
         push(batch, "(subscription_status=0; " + command + " >/dev/null 2>&1 || subscription_status=$?; printf '%s\\n' \"$subscription_status\" >" + shell_quote(result_path) + ") &");
         if (length(batch) == 8) {
             system(join("\n", batch) + "\nwait");
@@ -2065,7 +2096,7 @@ function update_subscription_sources_parallel(section, force) {
     return records;
 }
 
-function subscription_update_section(section, force) {
+function subscription_update_section(section, force, phase) {
     section = object_or_empty(section);
     if (!section_is_subscription_proxy(section))
         return 3;
@@ -2091,7 +2122,7 @@ function subscription_update_section(section, force) {
     let superseded = 0;
     let total = 0;
 
-    for (let record in update_subscription_sources_parallel(section, force)) {
+    for (let record in update_subscription_sources_parallel(section, force, phase)) {
         total++;
         let source_section = record.source_section;
         if (record.skipped) {
@@ -2165,7 +2196,7 @@ function source_index_number(value) {
     return result > 0 ? result : null;
 }
 
-function subscription_update_selected_source(sections, section_name_value, source_index_value, force) {
+function subscription_update_selected_source(sections, section_name_value, source_index_value, force, phase) {
     if (!cache_section_is_safe(section_name_value)) {
         log_message("Invalid subscription rule name", "error");
         return 1;
@@ -2211,7 +2242,7 @@ function subscription_update_selected_source(sections, section_name_value, sourc
 
     let source_section = source_id(section_name_value, source_index);
     let metadata_output_path = temp_path(TMP_SUBSCRIPTION_FOLDER, source_section, "metadata-output");
-    let update_result = update_subscription_source(section_name_value, source_index, selected_entry, "runtime", metadata_output_path);
+    let update_result = update_subscription_source(section_name_value, source_index, selected_entry, phase == "scheduled" ? "scheduled" : "runtime", metadata_output_path);
 
     if (update_result == 0 || update_result == 2)
         write_source_metadata(
@@ -2266,7 +2297,7 @@ function print_subscription_update_summary(summary) {
     print(summary.updated, "\t", summary.failed, "\t", summary.unchanged, "\t", summary.superseded, "\n");
 }
 
-function subscription_update_request(force_value, target_section_name, target_source_index) {
+function subscription_update_request(force_value, target_section_name, target_source_index, phase) {
     let force = as_string(force_value) == "1";
     let sections = uci_sections();
     let summary = empty_subscription_update_summary();
@@ -2276,15 +2307,15 @@ function subscription_update_request(force_value, target_section_name, target_so
 
     if (target_section_name != "") {
         if (target_source_index != "")
-            add_subscription_update_result(summary, subscription_update_selected_source(sections, target_section_name, target_source_index, force));
+            add_subscription_update_result(summary, subscription_update_selected_source(sections, target_section_name, target_source_index, force, phase));
         else
-            add_subscription_update_result(summary, subscription_update_section(find_section(sections, target_section_name), force));
+            add_subscription_update_result(summary, subscription_update_section(find_section(sections, target_section_name), force, phase));
         print_subscription_update_summary(summary);
         return;
     }
 
     for (let section in sections)
-        add_subscription_update_result(summary, subscription_update_section(section, force));
+        add_subscription_update_result(summary, subscription_update_section(section, force, phase));
 
     print_subscription_update_summary(summary);
 }
@@ -2743,7 +2774,7 @@ else if (mode == "update-section") {
     exit(subscription_update_section(find_section(uci_sections(), ARGV[1] || ""), as_string(ARGV[2] || "0") == "1"));
 }
 else if (mode == "update-request") {
-    subscription_update_request(ARGV[1] || "0", ARGV[2] || "", ARGV[3] || "");
+    subscription_update_request(ARGV[1] || "0", ARGV[2] || "", ARGV[3] || "", ARGV[4] || "runtime");
 }
 else if (mode == "prepare-caches") {
     exit(prepare_subscription_caches(ARGV[1] || "startup", ARGV[2] || "0", ARGV[3] || "0"));

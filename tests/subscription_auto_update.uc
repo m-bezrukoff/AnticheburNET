@@ -35,7 +35,8 @@ check(!subscription_auto_update_settings("0") && stored == "1", "Concurrent refr
 locked = false;
 let refreshed = 0, exit_status = -1;
 log_message = function(message, level) {};
-subscription_update_common = function(force, section, source) {
+subscription_update_common = function(force, section, source, phase) {
+    check(phase == "scheduled", "Daily job must select the background request budget");
     check(force && section == "" && source == "", "Daily job must refresh all active sources regardless of recent manual updates");
     refreshed++; return 0;
 };
@@ -45,4 +46,13 @@ check(refreshed == 1 && exit_status == 0, "Enabled daily job must update subscri
 stored = "0";
 subscription_update_daily();
 check(refreshed == 1, "A stale cron invocation must respect the disabled checkbox");
+
+// Verify the scheduled phase reaches the cache subprocess, beyond the daily entry point.
+let captured_args;
+subscription_cache_capture = function(args) { captured_args = args; return {}; };
+apply_subscription_update_result = function(result) { return true; };
+check(subscription_update_common_locked(true, "", "", "scheduled"), "Scheduled cache invocation must complete");
+check(captured_args[4] == "scheduled", "Daily phase must reach the cache CLI");
+subscription_update_common_locked(true, "main", "1");
+check(captured_args[4] == "runtime", "Manual cache invocation must retain the fast phase");
 print("Daily schedule, setting persistence, cron migration, rollback, concurrency and all-source refresh passed\n");

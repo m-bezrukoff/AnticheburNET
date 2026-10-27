@@ -60,17 +60,6 @@ export function render() {
           }),
         ),
       ]),
-      E('small', { class: 'fkp_dashboard-page__geoip-attribution' }, [
-        E(
-          'a',
-          {
-            href: 'https://db-ip.com',
-            target: '_blank',
-            rel: 'noopener noreferrer',
-          },
-          'IP Geolocation by DB-IP',
-        ),
-      ]),
     ],
   );
 }

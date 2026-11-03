@@ -80,7 +80,9 @@ def main():
     mptcp = re.compile(r"socket\([^\n]*,\s*(?:IPPROTO_MPTCP|262)(?=[)\s])")
     if mptcp.search(trace):
         raise AssertionError("Core attempted an MPTCP socket with default inbound/API options")
-    tcp = re.findall(r"socket\(AF_INET6?,\s*SOCK_STREAM[^\n]*,\s*IPPROTO_TCP(?=[)\s])", trace)
+    # Go uses protocol 0 for ordinary TCP; Linux selects TCP for AF_INET[6]
+    # SOCK_STREAM and strace prints that protocol as IPPROTO_IP.
+    tcp = re.findall(r"socket\(AF_INET6?,\s*SOCK_STREAM[^\n]*,\s*(?:IPPROTO_IP|IPPROTO_TCP|0|6)(?=[)\s])", trace)
     if len(tcp) < 4:
         raise AssertionError("Trace did not cover IPv4, IPv6, TCP Fast Open and API TCP sockets")
     # Positive control proves the tracer can detect MPTCP even when the Linux

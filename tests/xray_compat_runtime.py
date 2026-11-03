@@ -204,6 +204,8 @@ def main():
     cases += [('reality-mldsa', variant, 'chrome') for variant in ['valid', 'wrong-key', 'missing-proof']]
     cases += [('xhttp-split', 'packet-up', None)]
     cases += [('grpc', 'tls', None), ('grpc', 'reality', 'chrome')]
+    cases += [('xhttp-options', mode, None) for mode in ['packet-up', 'stream-up', 'stream-one']]
+    cases += [('xhttp-h2params', 'packet-up', None)]
     results = []
     for index, (kind, variant, fp) in enumerate(cases):
         label = '-'.join(filter(None, [kind, variant, fp]))
@@ -224,10 +226,15 @@ def main():
         if kind in ['reality', 'xhttp-reality', 'reality-mldsa'] or (kind == 'grpc' and variant == 'reality'):
             stream.update(security='reality', realitySettings={'dest': f'127.0.0.1:{camo_port}', 'serverNames': ['localhost'], 'privateKey': private, 'shortIds': ['0123456789abcdef']})
             out['tls'] = {'enabled': True, 'server_name': 'localhost', 'utls': {'enabled': True, 'fingerprint': fp}, 'reality': {'enabled': True, 'public_key': public, 'short_id': '0123456789abcdef', 'support_x25519mlkem768': True}}
-        if kind in ['xhttp', 'xhttp-split']:
+        if kind in ['xhttp', 'xhttp-split', 'xhttp-options', 'xhttp-h2params']:
             stream = {'network': 'xhttp', 'security': 'tls', 'xhttpSettings': {'path': '/compat/', 'mode': 'auto'}, 'tlsSettings': {'alpn': ['h2'], 'certificates': [{'certificateFile': str(WORK/'cert.pem'), 'keyFile': str(WORK/'key.pem')}]}}
             out['transport'] = {'type': 'xhttp', 'path': '/compat/', 'mode': variant, 'x_padding_bytes': '100-1000'}
             out['tls'] = {'enabled': True, 'server_name': 'localhost', 'alpn': ['h2'], 'certificate_path': str(WORK/'cert.pem')}
+        if kind == 'xhttp-options':
+            stream['xhttpSettings']['uplinkHTTPMethod'] = 'OPTIONS'
+            out['transport']['uplink_http_method'] = 'OPTIONS'
+        if kind == 'xhttp-h2params':
+            stream['xhttpSettings']['h2Params'] = {'MaxConcurrentStreams': 64}
         if kind == 'xhttp-reality':
             stream.update(network='xhttp', xhttpSettings={'path': '/compat/', 'mode': 'auto'})
             out['transport'] = {'type': 'xhttp', 'path': '/compat/', 'mode': variant, 'x_padding_bytes': '100-1000'}

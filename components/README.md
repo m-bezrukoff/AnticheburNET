@@ -1,6 +1,6 @@
 # AnticheburNET components
 
-AnticheburNET is intended for all devices running OpenWrt 25.12. Supported protocols include VLESS, Hysteria 2, XHTTP and AmneziaWG 3.1, with an optional full Xray 26.10.21 core. Current prebuilt components support mediatek/filogic and mediatek/mt7622 with aarch64_cortex-a53.
+AnticheburNET is intended for all devices running OpenWrt 25.12. Supported protocols include VLESS, Hysteria 2, XHTTP and AmneziaWG 3.1, with an optional full Xray 26.10.31 core. Current prebuilt components support mediatek/filogic and mediatek/mt7622 with aarch64_cortex-a53.
 The component build and services are separate from the architecture-independent AnticheburNET backend.
 Both targets use the same ARM64 userspace APKs. Go executables use `CGO_ENABLED=0`,
 and AmneziaWG tools are statically linked. No target-specific kernel modules are
@@ -18,7 +18,7 @@ bash build.sh 1.0.1 dist/filogic
 bash components/build.sh 1.0.1 dist/filogic
 ```
 
-The second command needs `qemu-user`, `iproute2`, `iputils-ping`, `openssl`, Python 3 and sudo
+The second command needs `strace`, `qemu-user`, `iproute2`, `iputils-ping`, `openssl`, Python 3 and sudo
 for isolated network tests. See `.github/workflows/filogic-build.yml` for all host dependencies.
 The build also installs ucode for end-to-end importer tests and compares gzip, bzip2, xz,
 zstd and SquashFS compression of the full official geodata. gzip is selected because
@@ -31,7 +31,7 @@ sing-box and AWG are built from the exact commits below. The sing-box build appl
 the reviewed source patch `patches/utls-modern-browser-presets.patch` to a private
 copy of metacubex/uTLS 1.8.7; the Go module cache remains unchanged. Firefox 148,
 Safari 26.3 and Firefox hybrid/classical key reuse are backported from
-[the uTLS revision used by Xray 26.10.21](https://github.com/refraction-networking/utls/tree/aa6edf4b11af).
+[the uTLS revision used by Xray 26.10.31](https://github.com/refraction-networking/utls/tree/aa6edf4b11af).
 Subscription fingerprints remain unchanged. The patch updates the browser presets
 behind `firefox` and `safari`, so their REALITY handshakes include X25519MLKEM768.
 The source build tests the actual generated key shares before compiling the core.
@@ -41,10 +41,10 @@ Corresponding upstream source and licenses:
 - [sing-box extended source](https://github.com/shtorm-7/sing-box-extended/tree/d9442d14b19ddd02605bf3ee893a171947038e19), GPL-3.0-or-later.
 - [AmneziaWG Go 3.1 source](https://github.com/amnezia-vpn/amneziawg-go/tree/b5928efb6ca19f0153958460c3d141f04abc5c2e), MIT.
 - [AmneziaWG tools 3.1 source](https://github.com/amnezia-vpn/amneziawg-tools/tree/ee0f0a9aa34ff0a0da4b3433b9512781cfe02843), GPL-2.0.
-- [Xray 26.10.21 source](https://github.com/XTLS/Xray-core/tree/v26.10.21), MPL-2.0.
+- [Xray 26.10.31 source](https://github.com/XTLS/Xray-core/tree/v26.10.31), MPL-2.0.
 
 The extended snapshot retains its XHTTP implementation. Native Xray is a separate process
-and uses a SOCKS bridge; sing-box does not embed Xray 26.10.21. AWG 3.1 is also a separate
+and uses a SOCKS bridge; sing-box does not embed Xray 26.10.31. AWG 3.1 is also a separate
 official userspace daemon; it is not the more limited AWG endpoint embedded in extended.
 This avoids relying on new AWG fields that the embedded endpoint does not expose.
 
@@ -62,7 +62,7 @@ Services and user configuration are documented in [the OpenWrt 25.12 guide](../d
 
 ## Dynamic subscription providers
 
-Component `sing-box-extended` 1.14.3-r6 (`anticheburnet.6`) includes the managed
+Component `sing-box-extended` 1.14.3-r7 (`anticheburnet.7`) includes the managed
 provider installed by `prepare-providers.py`. Build this component together with
 the backend; older component APKs do not implement its atomic update API.
 After installing both, Apply configuration once to migrate an existing flat
@@ -99,3 +99,9 @@ subscription server; the hot apply operation does not wait for a service restart
 The source build excludes Xray unless `BUILD_XRAY=1` is set. Its separate APK is never selected by the new installer or updater. The release workflow defaults to publishing that optional asset for compatibility with older six-package updaters. The new UI reconciles their completed job through suite format 2 and removes Xray. See [migration details](../docs/XRAY-OPTIONAL-MIGRATION.md).
 
 Builds require Go 1.26.10 and pin security updates for x/crypto, x/net and x/sys in versions.env. prepare-security.py adds REALITY ML-DSA-65 verification; invalid or missing proofs fail authentication. The managed provider uses the scoped lifecycle of extended 2.7.3 while retaining atomic graph/ruleset updates, selection and existing connections. Optional builds run tests/xray_compat_runtime.py against the exact ARM64 artifacts through QEMU.
+
+Revision 7 disables MPTCP by default in sing-box, including API listeners. CI traces
+the packed ARM64 core under QEMU to verify TCP sockets for IPv4, IPv6, TCP Fast Open
+and Clash API, with explicit MPTCP as a positive control. The optional Xray 26.10.31
+release independently disables MPTCP by default. Explicit MPTCP options can still
+enable it; updating these applications does not replace a required kernel fix.

@@ -32,4 +32,11 @@ converted = process_vless(uri, parse_url(uri));
 check(converted.tls.reality.mldsa65_verify == "verify", "URI pqv lost");
 uri = "vless://00000000-0000-4000-8000-000000000001@example.com:443?security=tls&type=xdrive";
 check(process_vless(uri, parse_url(uri)) == null, "unsupported URI transport accepted as TCP");
+original.streamSettings = {network:"xhttp",security:"tls",xhttpSettings:{path:"/compat/",mode:"packet-up",
+    extra:{uplinkHTTPMethod:"OPTIONS",h2Params:{MaxConcurrentStreams:64}}}};
+converted = convert_xray_vless(original, "options-test");
+check(converted.transport.uplink_http_method == "OPTIONS", "XHTTP OPTIONS method lost");
+original.streamSettings = {network:"xdrive",security:"tls",xdriveSettings:{service:"s3",
+    s3:{endpoint:"https://s3.example",bucket:"test",region:"test"}}};
+check(convert_xray_vless(original, "s3-test") == null, "XDRIVE S3 silently became RAW");
 print("Xray password, ML-DSA, XHTTP split download and unsupported transport checks passed\n");

@@ -53,12 +53,14 @@ python3 "$component_root/components/prepare-security.py" "$work/sing-box"
   go test -mod=mod -modfile="$work/sing-box.mod" -tags "$tags" -ldflags=-checklinkname=0 ./common/tls -run '^TestAnticheburNETRealityMLDSA$' -count=1
   # Retain symbols for precise vulnerability analysis. Stripped ARM binaries
   # cause the analyzer to conservatively report unused module packages.
+  # Go enables listener MPTCP by default. Disable it across the core, including
+  # API listeners, without enabling upstream's unrelated legacy TLS SHA-1 flag.
   CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -modfile="$work/sing-box.mod" -trimpath -tags "$tags" \
-    -ldflags "-checklinkname=0 -X github.com/sagernet/sing-box/constant.Version=$SING_BOX_VERSION" \
+    -ldflags "-checklinkname=0 -X runtime.godebugDefault=multipathtcp=0 -X github.com/sagernet/sing-box/constant.Version=$SING_BOX_VERSION" \
     -o "$work/sing-box-security.arm64" ./cmd/sing-box
   go run "golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_VERSION" -mode=binary "$work/sing-box-security.arm64"
   CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -modfile="$work/sing-box.mod" -trimpath -tags "$tags" \
-    -ldflags "-checklinkname=0 -s -w -X github.com/sagernet/sing-box/constant.Version=$SING_BOX_VERSION" \
+    -ldflags "-checklinkname=0 -s -w -X runtime.godebugDefault=multipathtcp=0 -X github.com/sagernet/sing-box/constant.Version=$SING_BOX_VERSION" \
     -o "$work/sing-box.arm64" ./cmd/sing-box
 )
 (
@@ -134,7 +136,7 @@ cp "$component_root/components/sing-box/files/etc/config/sing-box" "$sb_root/etc
 chmod 755 "$sb_root/etc/init.d/sing-box"
 mkdir -p "$sb_root/usr/share/licenses/sing-box-extended"
 install -m644 "$work/sing-box/LICENSE" "$sb_root/usr/share/licenses/sing-box-extended/LICENSE"
-package_component sing-box-extended 1.14.3-r6 'AnticheburNET extended sing-box with Hysteria 2 and XHTTP' \
+package_component sing-box-extended 1.14.3-r7 'AnticheburNET extended sing-box with Hysteria 2 and XHTTP' \
   'ca-bundle kmod-tun !sing-box !sing-box-tiny' GPL-3.0-or-later /etc/config/sing-box
 
 for kind in xray awg; do

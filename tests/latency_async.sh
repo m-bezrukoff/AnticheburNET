@@ -14,6 +14,7 @@ fail() {
 mkdir -p "$WORK_DIR/bin" "$WORK_DIR/latency-actions"
 cat >"$WORK_DIR/bin/curl" <<'SH'
 #!/usr/bin/env sh
+[ "$1" = '-q' ] && [ "$2" = '--noproxy' ] && [ "$3" = '*' ] || exit 64
 for arg do
   case "$arg" in
     *:9090/proxies)

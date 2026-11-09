@@ -856,6 +856,13 @@ function add_subscription_source_with_state(config, section, source_index, sourc
             continue;
         }
 
+        // Under HAPP/full-tunnel policy, server sockets (including Dashboard
+        // URLTests) must bypass interception even if a subscription overrides the mark.
+        // Explicit subscription chains still dial through their own terminal outbound.
+        if (routing_strategy.global_tunnel(runtime_settings()) &&
+            !is_group && as_string(outbound.detour || "") == "")
+            outbound.routing_mark = runtime_constants.OUTBOUND_MARK;
+
         push(config.outbounds, outbound);
         added++;
         if (!is_group)
@@ -3165,8 +3172,6 @@ function generate_config(output_path, service_address, mwan3_active, supports_xh
         for (let server in config.dns.servers)
             if (server.tag == runtime_constants.DNS_SERVER_TAG)
                 server.detour = outbound_tag(tunnel[".name"]);
-        // Resolve the tunnel endpoint outside that tunnel to avoid a DNS loop.
-        config.route.default_domain_resolver = runtime_constants.BOOTSTRAP_DNS_SERVER_TAG;
     }
     add_source_aware_dns_support(config, source_aware_dns);
     let taken = reserved_runtime_tag_set(config.outbounds);

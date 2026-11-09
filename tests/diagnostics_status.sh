@@ -140,6 +140,7 @@ fake_bin="$WORK_DIR/bin"
 mkdir -p "$fake_bin"
 cat >"$fake_bin/curl" <<'SH'
 #!/usr/bin/env sh
+[ "$1" = '-q' ] && [ "$2" = '--noproxy' ] && [ "$3" = '*' ] || exit 64
 printf '%s\n' "$*" >>"$FAKE_CURL_LOG"
 case "$*" in
   *'127.0.0.1:9090/proxies') printf '%s\n' '{"proxies":{"urltest":{"type":"URLTest"},"provider-urltest":{"type":"urltest"},"proxy-a":{"type":"VLESS"},"proxy-b":{"type":"Trojan"}}}' ;;
@@ -160,6 +161,15 @@ PATH="$fake_bin:$PATH" \
   fail "clash-api get_proxy_latency should use fake curl successfully"
 grep -Fq "url=https://latency.example/generate_204" "$WORK_DIR/fake-curl.log" ||
   fail "clash-api latency check must use settings.latency_test_url"
+
+FAKE_CURL_LOG="$WORK_DIR/fake-curl-group.log" \
+ANTICHEBURNET_UCI_STATE_FILE="$uci_state" \
+ANTICHEBURNET_LIB="$ANTICHEBURNET_LIB" \
+PATH="$fake_bin:$PATH" \
+  ucode -L "$ANTICHEBURNET_LIB" "$DIAGNOSTICS_RUNTIME" clash-api get_group_latency auto 5000 >/dev/null ||
+  fail "group latency must bypass ambient proxy and curl settings"
+grep -Fq '/group/auto/delay' "$WORK_DIR/fake-curl-group.log" ||
+  fail "group latency must retain the group URLTest endpoint"
 
 latency_action_dir="$WORK_DIR/ui-state/latency-actions"
 mkdir -p "$latency_action_dir"

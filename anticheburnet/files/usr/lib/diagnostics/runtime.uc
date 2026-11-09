@@ -1602,7 +1602,7 @@ function clash_json_error(message) {
 }
 
 function clash_proxy_snapshot(base_url, auth) {
-    let args = [ "curl", "-s", "--max-time", "5" ];
+    let args = [ "curl", "-q", "--noproxy", "*", "-s", "--max-time", "5" ];
     for (let item in auth) push(args, item);
     push(args, base_url + "/proxies");
     return command_output(command_from_args(args));
@@ -1640,7 +1640,7 @@ function clash_latency_batch(proxy_tags, base_url, proxy_types, auth, test_url, 
     let max_time = int((int(timeout) + 999) / 1000) + 1;
     let validate = command_from_args(module_args(STATUS_UC, [ "stdin-json" ]));
     for (let proxy_tag in proxy_tags) {
-        let args = [ "curl", "-G", "-s", "--max-time", max_time, clash_latency_endpoint(base_url, proxy_tag, proxy_types[proxy_tag]) ];
+        let args = [ "curl", "-q", "--noproxy", "*", "-G", "-s", "--max-time", max_time, clash_latency_endpoint(base_url, proxy_tag, proxy_types[proxy_tag]) ];
         for (let item in auth) push(args, item);
         push(args, "--data-urlencode", "url=" + test_url, "--data-urlencode", "timeout=" + timeout);
         // Each child emits one result; the parent owns progress updates.
@@ -1724,7 +1724,7 @@ function clash_api(action, arg1, arg2, arg3) {
         let url = as_string(arg3 || "");
         if (url == "")
             url = test_url;
-        let args = [ "curl", "-G", "-s", base_url + "/proxies/" + clash_urlencode(arg1) + "/delay" ];
+        let args = [ "curl", "-q", "--noproxy", "*", "-G", "-s", base_url + "/proxies/" + clash_urlencode(arg1) + "/delay" ];
         for (let item in auth) push(args, item);
         push(args, "--data-urlencode");
         push(args, "url=" + url);
@@ -1775,7 +1775,7 @@ function clash_api(action, arg1, arg2, arg3) {
     if (action == "get_group_latency") {
         if (as_string(arg1) == "")
             return clash_json_error("group_tag required");
-        let args = [ "curl", "-G", "-s", base_url + "/group/" + clash_urlencode(arg1) + "/delay" ];
+        let args = [ "curl", "-q", "--noproxy", "*", "-G", "-s", base_url + "/group/" + clash_urlencode(arg1) + "/delay" ];
         for (let item in auth) push(args, item);
         push(args, "--data-urlencode");
         push(args, "url=" + test_url);

@@ -140,7 +140,8 @@ function bootstrap_server(tag_name, value) {
         type: "udp",
         tag: tag_name,
         server: server != "" ? server : value,
-        server_port: port != "" ? int(port, 10) : 53
+        server_port: port != "" ? int(port, 10) : 53,
+        routing_mark: runtime_constants.OUTBOUND_MARK
     };
 }
 
@@ -248,7 +249,10 @@ function config(settings, override_state) {
 }
 
 function default_domain_resolver(settings) {
-    return bool_option(settings, "dns_detour_enabled", false)
+    // Server names (also for Dashboard probes) must resolve outside the active
+    // tunnel. HAPP can route the main DNS through its selected remote resolver.
+    let strategy = option(settings, "routing_strategy", "selected");
+    return strategy == "happ" || strategy == "tunnel" || bool_option(settings, "dns_detour_enabled", false)
         ? runtime_constants.BOOTSTRAP_DNS_SERVER_TAG
         : runtime_constants.DNS_SERVER_TAG;
 }

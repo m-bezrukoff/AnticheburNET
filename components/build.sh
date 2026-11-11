@@ -49,7 +49,8 @@ python3 "$component_root/components/prepare-security.py" "$work/sing-box"
   cd "$work/sing-box"
   go get -modfile="$work/sing-box.mod" "github.com/cloudflare/circl@$CIRCL_VERSION" \
     "golang.org/x/crypto@$X_CRYPTO_VERSION" "golang.org/x/net@$X_NET_VERSION" "golang.org/x/sys@$X_SYS_VERSION" \
-    "google.golang.org/grpc@$GRPC_VERSION" "github.com/go-chi/chi/v5@$CHI_VERSION"
+    "google.golang.org/grpc@$GRPC_VERSION" "github.com/go-chi/chi/v5@$CHI_VERSION" \
+    "github.com/andybalholm/brotli@$BROTLI_VERSION" "github.com/klauspost/compress@$COMPRESS_VERSION"
   go test -mod=mod -modfile="$work/sing-box.mod" -tags "$tags" -ldflags=-checklinkname=0 ./common/tls -run '^TestAnticheburNETRealityMLDSA$' -count=1
   go test -mod=mod -modfile="$work/sing-box.mod" -tags "$tags" -ldflags=-checklinkname=0 "$component_root/components/tests/torrent_udp_mapping_test.go" -count=1
   # Retain symbols for precise vulnerability analysis. Stripped ARM binaries

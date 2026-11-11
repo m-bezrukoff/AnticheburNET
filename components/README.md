@@ -11,7 +11,7 @@ For installation on the router, run the single SSH command in
 from GitHub, verifies their SHA-256 checksums and installs the complete suite.
 The commands below are for building packages on a Linux development host.
 
-Build on Linux with Go 1.26.10 and the Filogic SDK pinned in `versions.env`:
+Build on Linux with Go 1.26.11 and the Filogic SDK pinned in `versions.env`:
 
 ```sh
 bash build.sh 1.0.1 dist/filogic
@@ -115,7 +115,7 @@ The native traffic test exercises XDRIVE local storage with VLESS Encryption and
 mux.cool, through the same config preparer and sing-box SOCKS bridge. It does not
 validate live Google Drive/S3 credentials or router throughput.
 
-Builds require Go 1.26.10 and pin security updates for x/crypto, x/net and x/sys in versions.env. prepare-security.py adds REALITY ML-DSA-65 verification; invalid or missing proofs fail authentication. The managed provider uses the scoped lifecycle of extended 2.7.3 while retaining atomic graph/ruleset updates, selection and existing connections. Optional builds run tests/xray_compat_runtime.py against the exact ARM64 artifacts through QEMU.
+Builds require Go 1.26.11 and pin security updates for x/crypto, x/net, x/sys, Brotli and klauspost/compress in versions.env. prepare-security.py adds REALITY ML-DSA-65 verification; invalid or missing proofs fail authentication. The managed provider uses the scoped lifecycle of extended 2.7.3 while retaining atomic graph/ruleset updates, selection and existing connections. Optional builds run tests/xray_compat_runtime.py against the exact ARM64 artifacts through QEMU.
 
 Revision 7 disables MPTCP by default in sing-box, including API listeners. CI traces
 the packed ARM64 core under QEMU to verify TCP sockets for IPv4, IPv6, TCP Fast Open

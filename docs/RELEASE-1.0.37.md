@@ -10,4 +10,6 @@ The sing-box component advances to `1.14.3-extended-2.7.3-anticheburnet.8`, with
 
 Diagnostics mask credentials in multiline native JSON entries, including escaped quotes. Dashboard latency requests treat HTTP errors as failures rather than accepting an error body as a measurement.
 
+The sing-box build uses Go 1.26.11, Brotli 1.2.7 and klauspost/compress 1.20.2 to address GO-2026-6859, GO-2026-6888 and GO-2026-6865 reported by the release security scan. The vulnerability check remains a required build step.
+
 The release contains rebuilt backend, LuCI and Russian translation APK/IPK packages, plus ARM64 sing-box, AmneziaWG and optional Xray APKs. The component workflow validates the packed ARM64 artifacts with QEMU and controlled protocol traffic. XDRIVE tests use a local file backend; live Google Drive/S3 credentials and physical-router throughput are outside these checks. Installing the release and applying its configuration remain separate from publishing it.

@@ -67,7 +67,9 @@ fake_bin="$WORK_DIR/bin"
 mkdir -p "$fake_lib/components" "$fake_lib/core" "$fake_lib/singbox" "$fake_lib/providers/zapret2" "$fake_bin"
 cp "$UPDATER" "$fake_lib/components/updater.uc"
 cp "$ANTICHEBURNET_LIB/singbox/selection.uc" "$fake_lib/singbox/selection.uc"
+cp "$ANTICHEBURNET_LIB/singbox/constants.uc" "$fake_lib/singbox/constants.uc"
 cp "$ANTICHEBURNET_LIB/core/common.uc" "$fake_lib/core/common.uc"
+cp "$ANTICHEBURNET_LIB/core/xray.uc" "$fake_lib/core/xray.uc"
 
 cat >"$fake_lib/core/constants.uc" <<'UCODE'
 function module_exports() {

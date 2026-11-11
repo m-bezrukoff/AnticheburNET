@@ -50,6 +50,7 @@ const ANTICHEBURNET_MASK_AFTER_TOKEN = [
 
 const ANTICHEBURNET_MASK_AFTER_TOKEN_SPACE = [
   'option outbound_json',
+  'list outbound_jsons',
   'list domain',
   'list domain_suffix',
   'list domain_keyword',
@@ -165,11 +166,22 @@ function maskGlobalCheckLine(line: string) {
   return maskedLine;
 }
 
-function maskMultilineContinuation(line: string) {
-  const leadingSpace = line.match(/^\s*/)?.[0] ?? '';
-  const hasClosingQuote = line.includes("'");
+function uciSingleQuoteOpen(line: string, quoted = false) {
+  for (let i = 0; i < line.length; i++) {
+    if (!quoted && line[i] === '\\') {
+      i++;
+    } else if (line[i] === "'") {
+      quoted = !quoted;
+    }
+  }
 
-  return `${leadingSpace}${MASKED_VALUE}${hasClosingQuote ? "'" : ''}`;
+  return quoted;
+}
+
+function maskMultilineContinuation(line: string, closed: boolean) {
+  const leadingSpace = line.match(/^\s*/)?.[0] ?? '';
+
+  return `${leadingSpace}${MASKED_VALUE}${closed ? "'" : ''}`;
 }
 
 export function maskSingBoxConfigValue(value: unknown): unknown {
@@ -214,20 +226,21 @@ export function maskGlobalCheckText(text: string = '') {
     .split('\n')
     .map((line) => {
       if (inMaskedMultiline) {
-        if (line.includes("'")) {
-          inMaskedMultiline = false;
-        }
+        inMaskedMultiline = uciSingleQuoteOpen(line, true);
 
-        return maskMultilineContinuation(line);
+        return maskMultilineContinuation(line, !inMaskedMultiline);
       }
 
       const maskedLine = maskGlobalCheckLine(line);
 
-      if (line.includes('option outbound_json')) {
+      if (
+        line.includes('option outbound_json') ||
+        line.includes('list outbound_jsons')
+      ) {
         const firstQuote = line.indexOf("'");
 
-        if (firstQuote >= 0 && line.slice(firstQuote + 1).indexOf("'") < 0) {
-          inMaskedMultiline = true;
+        if (firstQuote >= 0) {
+          inMaskedMultiline = uciSingleQuoteOpen(line.slice(firstQuote));
         }
       }
 

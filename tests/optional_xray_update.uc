@@ -3,6 +3,8 @@ let installed = { "anticheburnet-xray": true, "xray-core": true };
 let events = [];
 let removal_ok = true;
 let dependent = "";
+let native_required = false;
+native_xray.required = function() { return native_required; };
 is_apk = function() { return true; };
 pkg_is_installed = function(name) { return !!installed[name]; };
 command_output_from_args = function(args) { return dependent; };
@@ -30,4 +32,9 @@ check(!remove_retired_xray(retired_xray_packages()), "failed removal was reporte
 removal_ok = true;
 run_logged = function(label, command) { return true; };
 check(!remove_retired_xray(retired_xray_packages()), "APK retaining a required Xray was reported as removed");
+native_required = true;
+installed = { "anticheburnet-xray": true };
+check(length(retired_xray_packages()) == 0, "configured native Xray was selected for removal");
+installed["xray-core"] = true;
+check(length(retired_xray_packages()) == 1 && retired_xray_packages()[0] == "xray-core", "conflicting legacy package was retained with managed Xray");
 print("Optional Xray migration, dependency and failure checks passed\n");

@@ -112,7 +112,7 @@ function addRoutingStrategy(map, rulesSection) {
     form.ListValue,
     "routing_strategy",
     _("Select routing strategy"),
-    _("Torrent traffic always goes directly."),
+    _("Detected BitTorrent goes directly. Encrypted peer connections, DHT and HTTP(S) trackers follow the routing rules."),
   );
   strategy.value(
     "happ",

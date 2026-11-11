@@ -492,7 +492,7 @@ function validate_start_config() {
         return status;
     }
 
-    return 0;
+    return module_status(LIB_DIR + "/singbox/xray.uc", [ "check-uci" ]);
 }
 
 function acquire_start_subscription_update_lock() {
@@ -779,6 +779,7 @@ function stop_main(preserve_selection) {
     if (sing_box_status != 0)
         status = sing_box_status;
     if (!module_success(LIB_DIR + "/singbox/awg.uc", [ "stop" ])) status = 1;
+    if (!module_success(LIB_DIR + "/singbox/xray.uc", [ "stop" ])) status = 1;
 
     return status;
 }

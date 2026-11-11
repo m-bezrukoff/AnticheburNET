@@ -77,6 +77,41 @@ export function validateOutboundJson(
 
   const type = parsed.type.trim().toLowerCase();
 
+  if (type === 'xray') {
+    if (
+      Object.keys(parsed).some(
+        (key) => !['type', 'tag', 'config'].includes(key),
+      )
+    ) {
+      return invalid(
+        _('Native Xray profile accepts only type, tag and config'),
+      );
+    }
+    if (
+      !isPlainObject(parsed.config) ||
+      !Array.isArray(parsed.config.outbounds) ||
+      !parsed.config.outbounds.length
+    ) {
+      return invalid(
+        _('Native Xray config must contain a non-empty outbounds array'),
+      );
+    }
+    if (
+      parsed.config.outbounds.some(
+        (outbound) =>
+          !isPlainObject(outbound) || !nonEmptyString(outbound.protocol),
+      )
+    ) {
+      return invalid(_('Invalid native Xray outbound'));
+    }
+    if (
+      new TextEncoder().encode(JSON.stringify(parsed.config)).length > 1048576
+    ) {
+      return invalid(_('Native Xray config exceeds 1 MB'));
+    }
+    return { valid: true, message: _('Valid') };
+  }
+
   if (
     (type === 'selector' || type === 'urltest') &&
     !validateOutbounds(parsed.outbounds)

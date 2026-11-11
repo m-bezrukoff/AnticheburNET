@@ -6,6 +6,23 @@ import {
 } from '../helpers/maskDiagnostics';
 
 describe('diagnostic masking', () => {
+  it('masks multiline native Xray credentials stored in JSON outbound lists', () => {
+    for (const password of ['simple', String.raw`part'\''rest`]) {
+      const raw = [
+        "config section 'native'",
+        "\tlist outbound_jsons '{",
+        `"type":"xray","password":"${password}",`,
+        '"refreshToken":"cloud-secret"',
+        "}'",
+        "\toption label 'visible'",
+      ].join('\n');
+      const masked = maskGlobalCheckText(raw);
+      expect(masked).not.toContain('cloud-secret');
+      expect(masked).not.toContain(password);
+      expect(masked).toContain("option label 'visible'");
+      expect(masked.split('\n')).toHaveLength(raw.split('\n').length);
+    }
+  });
   it('masks sensitive sing-box keys without mutating the original config', () => {
     const config = {
       outbounds: [

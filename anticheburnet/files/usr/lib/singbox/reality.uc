@@ -14,6 +14,12 @@ function prepare_outbounds(outbounds, version) {
     let hybrid_supported = supports_hybrid_share(version);
     for (let outbound in outbounds || []) {
         let tls = outbound.tls;
+        if (type(tls) == "object" && type(tls.utls) == "object" &&
+            index([ "chrome155", "chrome_155", "hellochrome_155", "chrome133", "chrome_133", "hellochrome_133" ], tls.utls.fingerprint) >= 0) {
+            let revision = match(version || "", /anticheburnet[.]([0-9]+)/);
+            if (revision == null || int(revision[1]) < 8)
+                die("Explicit Chrome 155/133 presets require sing-box component revision .8 or newer; update the complete release\n");
+        }
         if (type(tls) != "object" || tls.enabled !== true ||
             type(tls.reality) != "object" || tls.reality.enabled !== true)
             continue;

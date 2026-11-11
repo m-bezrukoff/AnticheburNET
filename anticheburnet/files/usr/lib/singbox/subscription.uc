@@ -205,6 +205,12 @@ function remember_outbound_metadata(state, tag_name, display_name, outbound) {
         state.outboundMetadata.protocols[tag_name] = protocol;
 
     let transport = outbound.__awg_config != null ? "udp" : lc(as_string(object_or_empty(outbound.transport).type || ""));
+    let native_stream = null;
+    if (protocol == "xray") {
+        let native_outbounds = array_or_empty(object_or_empty(outbound.config).outbounds);
+        if (length(native_outbounds)) native_stream = object_or_empty(object_or_empty(native_outbounds[0]).streamSettings);
+        if (native_stream != null) transport = lc(as_string(native_stream.network || ""));
+    }
     if (transport == "" || transport == "raw")
         transport = "tcp";
     else if (transport == "h2")
@@ -213,6 +219,8 @@ function remember_outbound_metadata(state, tag_name, display_name, outbound) {
 
     let tls = type(outbound.tls) == "object" ? outbound.tls : null;
     let security = "none";
+    if (native_stream != null && index([ "tls", "reality" ], native_stream.security) >= 0)
+        security = native_stream.security;
     if (tls != null && tls.enabled !== false) {
         let reality = type(tls.reality) == "object" ? tls.reality : null;
         security = reality != null && reality.enabled !== false ? "reality" : "tls";

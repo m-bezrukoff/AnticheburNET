@@ -15,8 +15,10 @@ mkdir -p "$WORK_DIR/bin" "$WORK_DIR/latency-actions"
 cat >"$WORK_DIR/bin/curl" <<'SH'
 #!/usr/bin/env sh
 [ "$1" = '-q' ] && [ "$2" = '--noproxy' ] && [ "$3" = '*' ] || exit 64
+fail_on_http=0
 for arg do
   case "$arg" in
+    -f|--fail) fail_on_http=1 ;;
     *:9090/proxies)
       printf '%s\n' '{"proxies":{"group-a":{"type":"URLTest"},"group-b":{"type":"urltest"}}}'
       exit 0 ;;
@@ -34,6 +36,10 @@ printf 'end %s\n' "$tag" >>"$LATENCY_EVENTS"
 case "$tag" in
   transport-failure) printf '%s\n' '{"delay":1}'; exit 28 ;;
   invalid-json) printf '%s\n' 'invalid json'; exit 0 ;;
+  http-timeout|http-unavailable)
+    # curl without --fail returns zero for JSON error bodies from HTTP 504/503.
+    [ "$fail_on_http" = 1 ] && exit 22
+    printf '%s\n' '{"message":"Timeout"}' ;;
   *) printf '%s\n' '{"delay":1}' ;;
 esac
 SH
@@ -41,7 +47,7 @@ chmod +x "$WORK_DIR/bin/curl"
 printf '%s\n' 'anticheburnet.settings=settings' >"$WORK_DIR/uci-state"
 state="$WORK_DIR/latency-actions/job.json"
 printf '%s\n' '{"success":true,"running":true,"kind":"latency","started_at":100}' >"$state"
-tags='["group-a","proxy-0","proxy-1","proxy-2","proxy-3","proxy-4","proxy-5","proxy-6","proxy-7","proxy-8","proxy-9","transport-failure","invalid-json","group-b"]'
+tags='["group-a","proxy-0","proxy-1","proxy-2","proxy-3","proxy-4","proxy-5","proxy-6","proxy-7","proxy-8","proxy-9","transport-failure","invalid-json","http-timeout","http-unavailable","group-b"]'
 
 LATENCY_EVENTS="$WORK_DIR/events" \
 ANTICHEBURNET_UCI_STATE_FILE="$WORK_DIR/uci-state" \
@@ -82,7 +88,7 @@ for (const line of fs.readFileSync(process.argv[2], 'utf8').trim().split('\n')) 
   if (event === 'start') {
     assert(!active.has(tag) && !completed.has(tag), 'each tag must run once');
     if (tag.startsWith('group-')) {
-      assert.equal([...completed].filter(t => !t.startsWith('group-')).length, 12,
+      assert.equal([...completed].filter(t => !t.startsWith('group-')).length, 14,
         'URLTest probes must wait for all ordinary proxies');
     }
     active.add(tag);
@@ -94,11 +100,11 @@ for (const line of fs.readFileSync(process.argv[2], 'utf8').trim().split('\n')) 
 }
 assert.equal(peak, 8, 'probe concurrency must reach and never exceed eight');
 assert.equal(active.size, 0);
-assert.equal(completed.size, 14);
+assert.equal(completed.size, 16);
 const progress = JSON.parse(fs.readFileSync(process.argv[3], 'utf8')).progress;
-assert.deepEqual(progress, {completed: 14, total: 14, failed: 2});
+assert.deepEqual(progress, {completed: 16, total: 16, failed: 4});
 const result = JSON.parse(fs.readFileSync(process.argv[4], 'utf8'));
-assert.deepEqual(result, {success: false, count: 14, failed: true});
+assert.deepEqual(result, {success: false, count: 16, failed: true});
 NODE
 
 printf 'PASS: bounded asynchronous latency probes, live progress and mixed failures\n'

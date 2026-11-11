@@ -8,6 +8,8 @@ import ipaddress
 import json
 import pathlib
 import re
+import os
+import shutil
 import socket
 import ssl
 import struct
@@ -29,6 +31,23 @@ CASE_FILTER = ''
 CREATE_FLAGS = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
 UUID = '00000000-0000-4000-8000-000000000001'
 BODY = hashlib.sha256(b'AnticheburNET Xray compatibility').digest() * 8192
+
+
+def prepare_native(config, proxy):
+    """Exercise the product's native config preparation, including managed marks."""
+    root = pathlib.Path(__file__).resolve().parents[1]
+    if shutil.which('ucode'):
+        command = ['ucode', '-L', str(root/'anticheburnet/files/usr/lib'), '-e',
+                   'let x=require("core.xray"),f=require("fs"); print(sprintf("%J",x.prepare(json(f.readfile("/dev/stdin")),int(ARGV[0]))));', str(proxy)]
+    elif os.environ.get('ANTICHEBURNET_UCODE_WASM'):
+        command = ['node', str(root/'tests/native_xray_prepare.cjs'), str(proxy)]
+    else:
+        raise RuntimeError('Native Xray traffic test needs ucode or ANTICHEBURNET_UCODE_WASM')
+    result = subprocess.run(command, input=json.dumps(config), capture_output=True, text=True,
+                            timeout=20, creationflags=CREATE_FLAGS)
+    if result.returncode:
+        raise RuntimeError(result.stderr)
+    return json.loads(result.stdout)
 
 
 def port():
@@ -196,11 +215,12 @@ def main():
     verify = mldsa.split('Verify: ')[1].splitlines()[0]
     wrong = subprocess.check_output(RUNNER + [str(XRAY), 'mldsa65'], text=True).split('Verify: ')[1].splitlines()[0]
     cases = [('raw', '', None), ('raw', 'xtls-rprx-vision', None)]
-    cases += [('reality', flow, fp) for flow in ['', 'xtls-rprx-vision'] for fp in ['chrome', 'firefox', 'safari']]
+    cases += [('reality', flow, fp) for flow in ['', 'xtls-rprx-vision'] for fp in ['chrome', 'chrome155', 'chrome133', 'firefox', 'safari']]
     cases += [('xhttp', mode, None) for mode in ['auto', 'packet-up', 'stream-up', 'stream-one']]
     cases += [('encryption', str(i), None) for i in range(len(encryption_pairs))]
     cases += [('xhttp-reality', mode, 'chrome') for mode in ['auto', 'packet-up', 'stream-up', 'stream-one']]
     cases += [('native-socks-bridge', '', None)]
+    cases += [('native-xdrive-local', '', None)]
     cases += [('reality-mldsa', variant, 'chrome') for variant in ['valid', 'wrong-key', 'missing-proof']]
     cases += [('xhttp-split', 'packet-up', None)]
     cases += [('grpc', 'tls', None), ('grpc', 'reality', 'chrome')]
@@ -259,10 +279,34 @@ def main():
         if kind == 'native-socks-bridge':
             server['inbounds'] = [{'listen': '127.0.0.1', 'port': listen, 'protocol': 'socks', 'settings': {'auth': 'noauth', 'udp': True}}]
             client['outbounds'] = [{'type': 'socks', 'tag': 'proxy', 'server': '127.0.0.1', 'server_port': listen, 'version': '5'}]
+        native_client = None
+        server_ready = listen
+        if kind == 'native-xdrive-local':
+            storage = WORK/'xdrive-storage'
+            storage.mkdir(exist_ok=True)
+            native_proxy, server_ready = port(), port()
+            xdrive = {'network': 'xdrive', 'security': 'none', 'xdriveSettings': {
+                'service': 'local', 'remoteFolder': str(storage), 'flushIntervalMs': 5,
+                'pollIntervalMs': 5, 'maxPollIntervalMs': 20, 'sessionTtlSeconds': 60}}
+            decrypt, encrypt = encryption_pairs[0]
+            server['inbounds'][0]['streamSettings'] = copy.deepcopy(xdrive)
+            server['inbounds'][0]['settings']['decryption'] = decrypt
+            server['inbounds'].append({'listen': '127.0.0.1', 'port': server_ready,
+                'protocol': 'socks', 'settings': {'auth': 'noauth', 'udp': True}})
+            native_client = prepare_native({'log': {'loglevel': 'debug'}, 'outbounds': [{
+                'protocol': 'vless', 'tag': 'native', 'settings': {'vnext': [{
+                    'address': '127.0.0.1', 'port': listen, 'users': [{'id': UUID, 'encryption': encrypt}]}]},
+                'mux': {'enabled': True, 'concurrency': 128}, 'streamSettings': xdrive}]}, native_proxy)
+            client['outbounds'] = [{'type': 'socks', 'tag': 'proxy', 'server': '127.0.0.1',
+                                   'server_port': native_proxy, 'version': '5'}]
         reject = kind == 'reality-mldsa' and variant != 'valid'
         started = False
         try:
-            with running(XRAY, server, label+'-server', listen), running(SING, client, label+'-client', proxy):
+            with contextlib.ExitStack() as stack:
+                stack.enter_context(running(XRAY, server, label+'-server', server_ready))
+                if native_client is not None:
+                    stack.enter_context(running(XRAY, native_client, label+'-native', native_proxy))
+                stack.enter_context(running(SING, client, label+'-client', proxy))
                 started = True
                 fetch(proxy, httpd.server_port)
                 fetch(proxy, httpsd.server_port, True)

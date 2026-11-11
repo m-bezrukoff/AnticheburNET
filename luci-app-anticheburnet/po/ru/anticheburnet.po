@@ -2390,8 +2390,8 @@ msgstr "Первое включённое подключение"
 msgid "Update subscriptions daily at 03:00 (router time)"
 msgstr "Обновлять подписки ежедневно в 03:00 (по времени роутера)"
 
-msgid "Torrent traffic always goes directly."
-msgstr "Торрент-трафик всегда идёт напрямую."
+msgid "Detected BitTorrent goes directly. Encrypted peer connections, DHT and HTTP(S) trackers follow the routing rules."
+msgstr "Распознанный BitTorrent идёт напрямую. Шифрованные соединения с пирами, DHT и HTTP(S)-трекеры подчиняются правилам маршрутизации."
 
 msgid "HAPP rules and resources"
 msgstr "Правила и ресурсы HAPP"
@@ -2560,3 +2560,39 @@ msgstr "Ожидание остановки сервиса."
 
 msgid "Please wait. Connections may be briefly interrupted."
 msgstr "Подождите. Возможен кратковременный разрыв соединений."
+
+
+msgid "Execution engine"
+msgstr "Ядро подключения"
+
+
+msgid "Native Xray requires the optional Xray component. Save the profile, check the complete release in Components, then Apply. XDRIVE requires matching client and server versions."
+msgstr "Для нативного Xray нужен дополнительный компонент Xray. Сохраните профиль, проверьте обновление комплекта в разделе «Компоненты», затем примените настройки. Для XDRIVE версии клиента и сервера должны совпадать."
+
+
+msgid "Profile name"
+msgstr "Название профиля"
+
+
+msgid "Enter a sing-box outbound object or a complete native Xray config with an outbounds array"
+msgstr "Введите outbound sing-box или полную нативную конфигурацию Xray с массивом outbounds"
+
+
+msgid "Custom sing-box outbounds or native Xray profiles in JSON format"
+msgstr "Пользовательские outbound sing-box или нативные профили Xray в формате JSON"
+
+
+msgid "Native Xray profile accepts only type, tag and config"
+msgstr "Нативный профиль Xray принимает только поля type, tag и config"
+
+
+msgid "Native Xray config must contain a non-empty outbounds array"
+msgstr "Нативная конфигурация Xray должна содержать непустой массив outbounds"
+
+
+msgid "Invalid native Xray outbound"
+msgstr "Некорректный нативный outbound Xray"
+
+
+msgid "Native Xray config exceeds 1 MB"
+msgstr "Нативная конфигурация Xray превышает 1 МБ"

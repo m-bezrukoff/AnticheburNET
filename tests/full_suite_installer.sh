@@ -65,7 +65,8 @@ case "$1" in
       sh -c '[ "$ANTICHEBURNET_DEFER_PACKAGE_RESTART" = 1 ]' || exit 1
     # Migration, firewall setup and LuCI post-install hooks must still execute.
     [ "${IPKG_NO_SCRIPT:-}" != 1 ] || exit 1
-    [ "$2" = --allow-untrusted ] && [ "$#" = 7 ] || exit 1
+    expected_args=$((7 + ${TEST_XRAY_REQUIRED:-0}))
+    [ "$2" = --allow-untrusted ] && [ "$#" = "$expected_args" ] || exit 1
     shift 2
     for file do [ -s "$file" ] || exit 1; done
     exit "${TEST_ADD_STATUS:-0}"
@@ -81,7 +82,7 @@ export ANTICHEBURNET_INSTALLER_SING_BOX_BIN="$WORK_DIR/sing-box-binary"
 PKG_IS_APK=1
 
 # Replace only router/network boundaries; retain argument parsing, release
-# resolution, checksum validation, ordering and the five-file apk transaction.
+# resolution, checksum validation, ordering and the optional native-core transaction.
 check_root() { :; }
 init_tmp_dir() { TMP_DIR="$WORK_DIR/downloads"; mkdir -p "$TMP_DIR"; }
 detect_fetcher() { :; }
@@ -111,6 +112,7 @@ install_json_ucode() {
   case "$1" in release-tag|release-asset-url) cat >/dev/null ;; esac
   case "$1" in
     release-tag) printf '1.0.1\n' ;;
+    installer-xray-required) printf '%s\n' "${TEST_XRAY_REQUIRED:-0}" ;;
     release-asset-url)
       [ "$2" != "${TEST_OMIT:-}" ] || return 0
       case "$2" in
@@ -179,6 +181,10 @@ grep -Fq 'LuCI (en)' "$WORK_DIR/output" || fail 'result must report English'
 run_installer <<< '2' || fail 'Russian installation failed'
 [[ "$(cat "$WORK_DIR/language")" = ru ]] || fail 'Russian was not passed to post-install'
 grep -Fq 'LuCI (ru)' "$WORK_DIR/output" || fail 'result must report Russian'
+TEST_XRAY_REQUIRED=1 run_installer < /dev/null || { cat "$WORK_DIR/output"; fail 'native Xray suite installation failed'; }
+grep -Fq "${names[4]}" "$TEST_LOG" || fail 'required native Xray APK was omitted from installation'
+if TEST_XRAY_REQUIRED=1 TEST_OMIT=xray run_installer < /dev/null; then fail 'required native Xray asset was optional'; fi
+assert_no_replacement
 
 for TEST_RELEASE in 25.12 25.12.3; do
   TEST_TARGET=mediatek/mt7622 run_installer < /dev/null || { cat "$WORK_DIR/output"; fail 'MT7622 complete installation failed'; }

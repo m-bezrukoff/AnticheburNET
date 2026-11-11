@@ -1,5 +1,6 @@
 function check(value, message) { if (!value) die(message); }
 let events = [];
+native_xray.required = function() { return false; };
 let plan_args = [];
 let root_url = "https://github.com/m-bezrukoff/AnticheburNET/releases/download/1.2.3/";
 let core_names = [
@@ -188,3 +189,13 @@ installed_versions["anticheburnet-amneziawg"] = "old"; called = "";
 component_action("anticheburnet", "install");
 check(called == "install", "direct update did not complete its outdated core");
 print("Complete-suite update, configuration and failure checks passed\n");
+native_xray.required = function() { return true; };
+installed_versions["anticheburnet-amneziawg"] = "3.1.20260828-r4";
+suite.xray_required = true;
+push(suite.packages, {name:"anticheburnet-xray_26.11.9-r1_aarch64_cortex-a53.apk",url:root_url+"anticheburnet-xray_26.11.9-r1_aarch64_cortex-a53.apk"});
+check(anticheburnet_cores_need_update(suite), "missing required native Xray did not trigger installation");
+installed_versions["anticheburnet-xray"] = "26.11.9-r1";
+check(!anticheburnet_cores_need_update(suite) && length(retired_xray_packages()) == 0,"current required native Xray was removed or reinstalled");
+installed_versions["anticheburnet-xray"] = "26.10.31-r1";
+check(anticheburnet_cores_need_update(suite), "old required native Xray was not upgraded");
+print("Required native Xray installation, preservation and version checks passed\n");

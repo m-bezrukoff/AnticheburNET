@@ -17,6 +17,10 @@ let fields = split(replace(output, /\n$/, ""), "\t");
 check(length(fields) == 11, "complete suite did not include required cores");
 check(fields[5] == "" && fields[6] == "", "translation became mandatory");
 check(fields[7] == names[2] && fields[9] == names[4], "wrong core assets");
+output = "";
+anticheburnet_release_plan("1.2.3", "apk", "0", "aarch64_cortex-a53", "1", "1");
+fields = split(replace(output, /\n$/, ""), "\t");
+check(length(fields) == 13 && fields[11] == names[3], "explicit native Xray was omitted from the complete suite");
 function rejected(arch, ext, tag) {
     output = "";
     let failed = false;

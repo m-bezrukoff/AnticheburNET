@@ -1640,7 +1640,7 @@ function clash_latency_batch(proxy_tags, base_url, proxy_types, auth, test_url, 
     let max_time = int((int(timeout) + 999) / 1000) + 1;
     let validate = command_from_args(module_args(STATUS_UC, [ "stdin-json" ]));
     for (let proxy_tag in proxy_tags) {
-        let args = [ "curl", "-q", "--noproxy", "*", "-G", "-s", "--max-time", max_time, clash_latency_endpoint(base_url, proxy_tag, proxy_types[proxy_tag]) ];
+        let args = [ "curl", "-q", "--noproxy", "*", "-f", "-G", "-s", "--max-time", max_time, clash_latency_endpoint(base_url, proxy_tag, proxy_types[proxy_tag]) ];
         for (let item in auth) push(args, item);
         push(args, "--data-urlencode", "url=" + test_url, "--data-urlencode", "timeout=" + timeout);
         // Each child emits one result; the parent owns progress updates.

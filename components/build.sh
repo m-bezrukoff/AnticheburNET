@@ -51,6 +51,7 @@ python3 "$component_root/components/prepare-security.py" "$work/sing-box"
     "golang.org/x/crypto@$X_CRYPTO_VERSION" "golang.org/x/net@$X_NET_VERSION" "golang.org/x/sys@$X_SYS_VERSION" \
     "google.golang.org/grpc@$GRPC_VERSION" "github.com/go-chi/chi/v5@$CHI_VERSION"
   go test -mod=mod -modfile="$work/sing-box.mod" -tags "$tags" -ldflags=-checklinkname=0 ./common/tls -run '^TestAnticheburNETRealityMLDSA$' -count=1
+  go test -mod=mod -modfile="$work/sing-box.mod" -tags "$tags" -ldflags=-checklinkname=0 "$component_root/components/tests/torrent_udp_mapping_test.go" -count=1
   # Retain symbols for precise vulnerability analysis. Stripped ARM binaries
   # cause the analyzer to conservatively report unused module packages.
   # Go enables listener MPTCP by default. Disable it across the core, including
@@ -136,7 +137,7 @@ cp "$component_root/components/sing-box/files/etc/config/sing-box" "$sb_root/etc
 chmod 755 "$sb_root/etc/init.d/sing-box"
 mkdir -p "$sb_root/usr/share/licenses/sing-box-extended"
 install -m644 "$work/sing-box/LICENSE" "$sb_root/usr/share/licenses/sing-box-extended/LICENSE"
-package_component sing-box-extended 1.14.3-r7 'AnticheburNET extended sing-box with Hysteria 2 and XHTTP' \
+package_component sing-box-extended 1.14.3-r8 'AnticheburNET extended sing-box with Hysteria 2 and XHTTP' \
   'ca-bundle kmod-tun !sing-box !sing-box-tiny' GPL-3.0-or-later /etc/config/sing-box
 
 for kind in xray awg; do

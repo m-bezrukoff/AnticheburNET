@@ -292,6 +292,29 @@ function validateOutboundJson(value, usedTags = []) {
     return invalid(_("Duplicate JSON outbound tag"));
   }
   const type = parsed.type.trim().toLowerCase();
+  if (type === "xray") {
+    if (Object.keys(parsed).some(
+      (key) => !["type", "tag", "config"].includes(key)
+    )) {
+      return invalid(
+        _("Native Xray profile accepts only type, tag and config")
+      );
+    }
+    if (!isPlainObject(parsed.config) || !Array.isArray(parsed.config.outbounds) || !parsed.config.outbounds.length) {
+      return invalid(
+        _("Native Xray config must contain a non-empty outbounds array")
+      );
+    }
+    if (parsed.config.outbounds.some(
+      (outbound) => !isPlainObject(outbound) || !nonEmptyString(outbound.protocol)
+    )) {
+      return invalid(_("Invalid native Xray outbound"));
+    }
+    if (new TextEncoder().encode(JSON.stringify(parsed.config)).length > 1048576) {
+      return invalid(_("Native Xray config exceeds 1 MB"));
+    }
+    return { valid: true, message: _("Valid") };
+  }
   if ((type === "selector" || type === "urltest") && !validateOutbounds(parsed.outbounds)) {
     return invalid(
       _(
@@ -9815,6 +9838,7 @@ var ANTICHEBURNET_MASK_AFTER_TOKEN = [
 ];
 var ANTICHEBURNET_MASK_AFTER_TOKEN_SPACE = [
   "option outbound_json",
+  "list outbound_jsons",
   "list domain",
   "list domain_suffix",
   "list domain_keyword",
@@ -9903,10 +9927,19 @@ function maskGlobalCheckLine(line) {
   maskedLine = maskOptionPath(maskedLine, "list dns_server '");
   return maskedLine;
 }
-function maskMultilineContinuation(line) {
+function uciSingleQuoteOpen(line, quoted = false) {
+  for (let i = 0; i < line.length; i++) {
+    if (!quoted && line[i] === "\\") {
+      i++;
+    } else if (line[i] === "'") {
+      quoted = !quoted;
+    }
+  }
+  return quoted;
+}
+function maskMultilineContinuation(line, closed) {
   const leadingSpace = line.match(/^\s*/)?.[0] ?? "";
-  const hasClosingQuote = line.includes("'");
-  return `${leadingSpace}${MASKED_VALUE}${hasClosingQuote ? "'" : ""}`;
+  return `${leadingSpace}${MASKED_VALUE}${closed ? "'" : ""}`;
 }
 function maskSingBoxConfigValue(value) {
   if (Array.isArray(value)) {
@@ -9939,16 +9972,14 @@ function maskGlobalCheckText(text = "") {
   let inMaskedMultiline = false;
   return `${text}`.split("\n").map((line) => {
     if (inMaskedMultiline) {
-      if (line.includes("'")) {
-        inMaskedMultiline = false;
-      }
-      return maskMultilineContinuation(line);
+      inMaskedMultiline = uciSingleQuoteOpen(line, true);
+      return maskMultilineContinuation(line, !inMaskedMultiline);
     }
     const maskedLine = maskGlobalCheckLine(line);
-    if (line.includes("option outbound_json")) {
+    if (line.includes("option outbound_json") || line.includes("list outbound_jsons")) {
       const firstQuote = line.indexOf("'");
-      if (firstQuote >= 0 && line.slice(firstQuote + 1).indexOf("'") < 0) {
-        inMaskedMultiline = true;
+      if (firstQuote >= 0) {
+        inMaskedMultiline = uciSingleQuoteOpen(line.slice(firstQuote));
       }
     }
     return maskedLine;

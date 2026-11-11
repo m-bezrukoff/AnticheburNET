@@ -12,6 +12,7 @@ let runtime_servers = require("singbox.servers");
 let runtime_subscription = require("singbox.subscription");
 let runtime_reality = require("singbox.reality");
 let runtime_awg = require("singbox.awg");
+let runtime_xray = require("core.xray");
 let runtime_happ = require("singbox.happ");
 let routing_strategy = require("routing.strategy");
 let runtime_happ_profiles = {};
@@ -57,14 +58,14 @@ let url_query_params = runtime_url.query_params;
 
 const CONFIG_NAME = "anticheburnet";
 
-function sing_box_uses_legacy_independent_cache(value) {
+function sing_box_at_least_114(value) {
     let matched = match(as_string(value), /^([0-9]+)[.]([0-9]+)/);
     if (matched == null)
-        return true;
+        return false;
 
     let major = int(matched[1], 10);
     let minor = int(matched[2], 10);
-    return major < 1 || (major == 1 && minor < 14);
+    return major > 1 || (major == 1 && minor >= 14);
 }
 
 function supports_dynamic_providers(value) {
@@ -495,6 +496,14 @@ function base_config(settings, service_address, runtime_context) {
         { type: "tproxy", tag: runtime_constants.TPROXY_INBOUND6_TAG, listen: runtime_constants.TPROXY_INBOUND6_ADDRESS, listen_port: runtime_constants.TPROXY_INBOUND_PORT, tcp_fast_open: true, udp_fragment: true },
         { type: "direct", tag: runtime_constants.DNS_INBOUND_TAG, listen: runtime_constants.DNS_INBOUND_ADDRESS, listen_port: runtime_constants.DNS_INBOUND_PORT }
     ];
+    // Since 1.14, TProxy defaults to sharing one UDP session across every
+    // destination of a source socket. A DHT packet can then pin later uTP
+    // peers to the tunnel without sniffing them. Keep routing per destination
+    // for both IP families, including different ports on the same peer.
+    if (sing_box_at_least_114(runtime_sing_box_version))
+        for (let inbound in inbounds)
+            if (inbound.type == "tproxy")
+                inbound.udp_mapping = "address_and_port_dependent";
     if (runtime_context.source_aware_dns)
         push(inbounds, { type: "direct", tag: runtime_constants.SOURCE_DNS_INBOUND_TAG, listen: runtime_constants.SOURCE_DNS_INBOUND_ADDRESS, listen_port: runtime_constants.SOURCE_DNS_INBOUND_PORT });
     for (let inbound in dns_config.inbounds)
@@ -534,7 +543,7 @@ function base_config(settings, service_address, runtime_context) {
             clash_api: clash_api_config(settings, service_address)
         }
     };
-    if (sing_box_uses_legacy_independent_cache(runtime_sing_box_version))
+    if (!sing_box_at_least_114(runtime_sing_box_version))
         result.dns.independent_cache = true;
     return result;
 }
@@ -2298,6 +2307,10 @@ function prepare_json_connection_outbounds(section, taken) {
         push(legacy_tags, [ legacy_tag, tag_name ]);
 
         outbound.tag = tag_name;
+        if (outbound.type == "xray") {
+            let error = runtime_xray.profile_error(outbound);
+            if (error != "") runtime_generate_unsupported(error);
+        }
         push(outbounds, outbound);
         push(prepared, {
             outbound,
@@ -3222,6 +3235,7 @@ function generate_config(output_path, service_address, mwan3_active, supports_xh
 
     runtime_reality.prepare_outbounds(config.outbounds, runtime_sing_box_version);
     let awg_profiles = runtime_awg.prepare_outbounds(config.outbounds);
+    let xray_profiles = runtime_xray.prepare_outbounds(config.outbounds);
     assert_unique_outbound_tags(config);
     strip_internal_fields(config);
     extract_dynamic_provider(config, output_path, runtime_sing_box_version);
@@ -3231,6 +3245,8 @@ function generate_config(output_path, service_address, mwan3_active, supports_xh
     }
     if (!runtime_awg.write_private(output_path + ".awg.json", sprintf("%J\n", awg_profiles)))
         die("Unable to write private AWG subscription profiles\n");
+    if (!runtime_awg.write_private(output_path + ".xray.json", sprintf("%J\n", xray_profiles)))
+        die("Unable to write private native Xray profiles\n");
 }
 
 function generate_config_fixture(fixture_path, output_path, service_address, mwan3_active, supports_xhttp, deferred_sections, sing_box_version) {

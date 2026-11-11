@@ -3433,7 +3433,7 @@ msgstr ""
 msgid "Update subscriptions daily at 03:00 (router time)"
 msgstr ""
 
-msgid "Torrent traffic always goes directly."
+msgid "Detected BitTorrent goes directly. Encrypted peer connections, DHT and HTTP(S) trackers follow the routing rules."
 msgstr ""
 
 msgid "HAPP rules and resources"
@@ -3602,4 +3602,40 @@ msgid "Waiting for the service to stop."
 msgstr ""
 
 msgid "Please wait. Connections may be briefly interrupted."
+msgstr ""
+
+
+msgid "Execution engine"
+msgstr ""
+
+
+msgid "Native Xray requires the optional Xray component. Save the profile, check the complete release in Components, then Apply. XDRIVE requires matching client and server versions."
+msgstr ""
+
+
+msgid "Profile name"
+msgstr ""
+
+
+msgid "Enter a sing-box outbound object or a complete native Xray config with an outbounds array"
+msgstr ""
+
+
+msgid "Custom sing-box outbounds or native Xray profiles in JSON format"
+msgstr ""
+
+
+msgid "Native Xray profile accepts only type, tag and config"
+msgstr ""
+
+
+msgid "Native Xray config must contain a non-empty outbounds array"
+msgstr ""
+
+
+msgid "Invalid native Xray outbound"
+msgstr ""
+
+
+msgid "Native Xray config exceeds 1 MB"
 msgstr ""

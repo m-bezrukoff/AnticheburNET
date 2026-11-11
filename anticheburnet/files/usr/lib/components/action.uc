@@ -4,6 +4,7 @@ let fs = require("fs");
 let constants = require("core.constants");
 let uci_core = require("core.uci");
 let selection = require("singbox.selection");
+let native_xray = require("core.xray");
 
 const LIB_DIR = getenv("ANTICHEBURNET_LIB") || "/usr/lib/anticheburnet";
 const BIN_PATH = getenv("ANTICHEBURNET_BIN") || constants.ANTICHEBURNET_BIN || "/usr/bin/anticheburnet";
@@ -1896,6 +1897,7 @@ function resolve_anticheburnet_release(latest_version) {
     let asset_ext = is_apk() ? "apk" : "ipk";
     let i18n_required = pkg_is_installed("luci-i18n-anticheburnet-ru") ? "1" : "0";
     let arch = read_openwrt_release_value("DISTRIB_ARCH");
+    let xray_required = native_xray.required();
     let cores_required = (is_apk() && arch == "aarch64_cortex-a53" &&
         (read_openwrt_release_value("DISTRIB_TARGET") == "mediatek/filogic" ||
          read_openwrt_release_value("DISTRIB_TARGET") == "mediatek/mt7622")) ||
@@ -1903,11 +1905,11 @@ function resolve_anticheburnet_release(latest_version) {
         pkg_is_installed("anticheburnet-amneziawg");
     // Preserve empty translation fields at the end of a generic release plan.
     let plan = replace(helper_output_input(release_json, "anticheburnet-release-plan",
-        [ latest_version, asset_ext, i18n_required, arch, cores_required ? "1" : "0" ]), /[\r\n]+$/, "");
+        [ latest_version, asset_ext, i18n_required, arch, cores_required ? "1" : "0", xray_required ? "1" : "0" ]), /[\r\n]+$/, "");
     let fields = split(plan, "\t");
     if (length(fields) < 7 || as_string(fields[1]) == "" || as_string(fields[2]) == "" || as_string(fields[3]) == "" || as_string(fields[4]) == "")
         return null;
-    if (cores_required && length(fields) != 11)
+    if ((cores_required || xray_required) && length(fields) != (cores_required ? 11 : 7) + (xray_required ? 2 : 0))
         return null;
     let packages = [ { name: fields[1], url: fields[2] }, { name: fields[3], url: fields[4] } ];
     if (fields[6] != "") push(packages, { name: fields[5], url: fields[6] });
@@ -1922,6 +1924,7 @@ function resolve_anticheburnet_release(latest_version) {
         release_url: fields[0],
         packages,
         cores_required,
+        xray_required,
         manifest_url: release_prefix + (is_apk() ? "SHA256SUMS" : "SHA256SUMS-IPK")
     };
 }
@@ -1943,9 +1946,9 @@ function verify_release_package(path, name, manifest) {
 }
 
 function anticheburnet_cores_need_update(release) {
-    if (!release.cores_required) return false;
+    if (!release.cores_required && !release.xray_required) return false;
     for (let asset in release.packages) {
-        for (let name in [ "sing-box-extended", "anticheburnet-amneziawg" ]) {
+        for (let name in [ "sing-box-extended", "anticheburnet-amneziawg", "anticheburnet-xray" ]) {
             let prefix = name + "_";
             if (substr(asset.name, 0, length(prefix)) != prefix) continue;
             let suffix = (name == "sing-box-extended" ? "_openwrt_" : "_") +
@@ -1967,7 +1970,7 @@ function retired_xray_packages() {
     let packages = [];
     if (!is_apk()) return packages;
     for (let name in [ "anticheburnet-xray", "xray-core" ])
-        if (pkg_is_installed(name)) push(packages, name);
+        if (pkg_is_installed(name) && (name != "anticheburnet-xray" || !native_xray.required())) push(packages, name);
     return packages;
 }
 

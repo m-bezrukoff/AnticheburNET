@@ -1,0 +1,473 @@
+--- a/dicttls/exttype_values.go
++++ b/dicttls/exttype_values.go
+@@ -67,11 +67,12 @@
+ 
+ // Not IANA assigned
+ const (
+-	ExtType_next_protocol_negotiation uint16 = 13172 // https://datatracker.ietf.org/doc/html/draft-agl-tls-nextprotoneg-04
+-	ExtType_application_settings      uint16 = 17513 // https://www.ietf.org/archive/id/draft-vvv-tls-alps-01.html
+-	ExtType_application_settings_new  uint16 = 17613 // https://www.ietf.org/archive/id/draft-vvv-tls-alps-01.html
+-	ExtType_channel_id_old            uint16 = 30031 // https://datatracker.ietf.org/doc/html/draft-balfanz-tls-channelid-01
+-	ExtType_channel_id                uint16 = 30032 // https://datatracker.ietf.org/doc/html/draft-balfanz-tls-channelid-01
++	ExtType_next_protocol_negotiation uint16 = 13172  // https://datatracker.ietf.org/doc/html/draft-agl-tls-nextprotoneg-04
++	ExtType_application_settings      uint16 = 17513  // https://www.ietf.org/archive/id/draft-vvv-tls-alps-01.html
++	ExtType_application_settings_new  uint16 = 17613  // https://www.ietf.org/archive/id/draft-vvv-tls-alps-01.html
++	ExtType_channel_id_old            uint16 = 30031  // https://datatracker.ietf.org/doc/html/draft-balfanz-tls-channelid-01
++	ExtType_channel_id                uint16 = 30032  // https://datatracker.ietf.org/doc/html/draft-balfanz-tls-channelid-01
++	ExtType_trust_anchors             uint16 = 0xca34 // draft-ietf-tls-trust-anchor-ids
+ )
+ 
+ var DictExtTypeValueIndexed = map[uint16]string{
+@@ -135,11 +136,12 @@
+ 	59:    "dnssec_chain",
+ 	65281: "renegotiation_info",
+ 
+-	13172: "next_protocol_negotiation",
+-	17513: "application_settings",
+-	17613: "application_settings_new",
+-	30031: "channel_id_old",
+-	30032: "channel_id",
++	13172:  "next_protocol_negotiation",
++	17513:  "application_settings",
++	17613:  "application_settings_new",
++	30031:  "channel_id_old",
++	30032:  "channel_id",
++	0xca34: "trust_anchors",
+ }
+ 
+ var DictExtTypeNameIndexed = map[string]uint16{
+@@ -209,4 +211,5 @@
+ 	"application_settings_new":  17613,
+ 	"channel_id_old":            30031,
+ 	"channel_id":                30032,
++	"trust_anchors":             0xca34,
+ }
+--- a/dicttls/signaturescheme.go
++++ b/dicttls/signaturescheme.go
+@@ -38,6 +38,9 @@
+ 	SigScheme_ecdsa_brainpoolP256r1tls13_sha256 uint16 = 0x081A
+ 	SigScheme_ecdsa_brainpoolP384r1tls13_sha384 uint16 = 0x081B
+ 	SigScheme_ecdsa_brainpoolP512r1tls13_sha512 uint16 = 0x081C
++	SigScheme_mldsa44                           uint16 = 0x0904
++	SigScheme_mldsa65                           uint16 = 0x0905
++	SigScheme_mldsa87                           uint16 = 0x0906
+ )
+ 
+ var DictSignatureSchemeValueIndexed = map[uint16]string{
+@@ -75,6 +78,9 @@
+ 	0x081A: "ecdsa_brainpoolP256r1tls13_sha256",
+ 	0x081B: "ecdsa_brainpoolP384r1tls13_sha384",
+ 	0x081C: "ecdsa_brainpoolP512r1tls13_sha512",
++	0x0904: "mldsa44",
++	0x0905: "mldsa65",
++	0x0906: "mldsa87",
+ }
+ 
+ var DictSignatureSchemeNameIndexed = map[string]uint16{
+@@ -113,4 +119,7 @@
+ 	"ecdsa_brainpoolP256r1tls13_sha256":   0x081A,
+ 	"ecdsa_brainpoolP384r1tls13_sha384":   0x081B,
+ 	"ecdsa_brainpoolP512r1tls13_sha512":   0x081C,
++	"mldsa44":                             0x0904,
++	"mldsa65":                             0x0905,
++	"mldsa87":                             0x0906,
+ }
+--- /dev/null
++++ b/u_chrome155.go
+@@ -0,0 +1,50 @@
++// Copyright 2026 The uTLS Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style
++// license that can be found in the LICENSE file.
++
++package tls
++
++// Wire identifiers used by the browser ClientHello preset. Full ML-DSA X.509
++// certificate handling remains a capability of the native Xray core.
++const (
++    MLDSA44 SignatureScheme = 0x0904
++    MLDSA65 SignatureScheme = 0x0905
++    MLDSA87 SignatureScheme = 0x0906
++)
++
++// chrome155TrustAnchorIDs returns the Chrome Root Store IDs advertised by a fresh
++// Google Chrome 155.0.8059.40 (macOS) connection. Chrome encodes the IDs in
++// lexicographic order. Return fresh slices because ClientHelloSpec is mutable.
++// Source: https://chromium.googlesource.com/chromium/src/+/refs/tags/155.0.8059.40/net/data/ssl/chrome_root_store/root_store.textproto
++func chrome155TrustAnchorIDs() [][]byte {
++	return [][]byte{
++		{0x82, 0xdf, 0x13, 0x02, 0x01},
++		{0x82, 0xdf, 0x13, 0x02, 0x06},
++		{0x82, 0xdf, 0x13, 0x02, 0x0d},
++		{0x82, 0xdf, 0x13, 0x02, 0x0e},
++		{0x82, 0xdf, 0x13, 0x02, 0x0f},
++		{0x82, 0xdf, 0x13, 0x02, 0x12},
++		{0x82, 0xdf, 0x13, 0x02, 0x13},
++		{0x82, 0xdf, 0x13, 0x02, 0x14},
++		{0x83, 0x9a, 0x64, 0x8c, 0x9b, 0x2d, 0x01, 0x07},
++		{0x83, 0x9a, 0x64, 0x8c, 0x9b, 0x2d, 0x01, 0x08},
++		{0x83, 0x9a, 0x64, 0x8c, 0x9b, 0x2d, 0x01, 0x09},
++		{0x83, 0x9a, 0x64, 0x8c, 0x9b, 0x2d, 0x01, 0x0a},
++		{0x83, 0x9a, 0x64, 0x8c, 0x9b, 0x2d, 0x01, 0x0b},
++		{0x83, 0x9a, 0x64, 0x8c, 0x9b, 0x2d, 0x01, 0x0c},
++		{0x83, 0x9a, 0x64, 0x8c, 0x9b, 0x2d, 0x01, 0x0d},
++		{0x83, 0x9a, 0x64, 0x8c, 0x9b, 0x2d, 0x01, 0x12},
++		{0x83, 0x9a, 0x64, 0x8c, 0x9b, 0x2d, 0x01, 0x13},
++		{0xd6, 0x79, 0x09, 0x01},
++		{0xd6, 0x79, 0x09, 0x04},
++		{0xd6, 0x79, 0x09, 0x05},
++		{0xd6, 0x79, 0x09, 0x06},
++		{0xd6, 0x79, 0x09, 0x07},
++		{0xd6, 0x79, 0x09, 0x08},
++		{0xd6, 0x79, 0x09, 0x0a},
++		{0xd6, 0x79, 0x09, 0x0b},
++		{0xd6, 0x79, 0x09, 0x0c},
++		{0xd6, 0x79, 0x09, 0x0d},
++		{0xd6, 0x79, 0x09, 0x0f},
++	}
++}
+--- a/u_common.go
++++ b/u_common.go
+@@ -41,6 +41,7 @@
+ 	utlsFakeExtensionCustom             uint16 = 1234   // not IANA assigned, for ALPS
+ 	utlsExtensionECH                    uint16 = 0xfe0d // draft-ietf-tls-esni-17
+ 	utlsExtensionECHOuterExtensions     uint16 = 0xfd00 // draft-ietf-tls-esni-17
++	utlsExtensionTrustAnchors           uint16 = 0xca34 // draft-ietf-tls-trust-anchor-ids
+ 
+ 	// extensions with 'fake' prefix break connection, if server echoes them back
+ 	fakeExtensionEncryptThenMAC       uint16 = 22
+@@ -613,7 +614,7 @@
+ 	HelloFirefox_148  = ClientHelloID{helloFirefox, "148", nil, nil}
+ 	HelloFirefox_120  = ClientHelloID{helloFirefox, "120", nil, nil}
+ 
+-	HelloChrome_Auto        = HelloChrome_133
++	HelloChrome_Auto        = HelloChrome_155
+ 	HelloChrome_58          = ClientHelloID{helloChrome, "58", nil, nil}
+ 	HelloChrome_62          = ClientHelloID{helloChrome, "62", nil, nil}
+ 	HelloChrome_70          = ClientHelloID{helloChrome, "70", nil, nil}
+@@ -645,6 +646,9 @@
+ 	HelloChrome_131 = ClientHelloID{helloChrome, "131", nil, nil}
+ 	// Chrome w/ New ALPS codepoint
+ 	HelloChrome_133 = ClientHelloID{helloChrome, "133", nil, nil}
++	// Chrome 155.0.8059.40 on macOS, with ML-DSA signatures and a snapshot of
++	// the Chrome Root Store trust anchor IDs. See testdata/chrome155_clienthello.md.
++	HelloChrome_155 = ClientHelloID{helloChrome, "155", nil, nil}
+ 
+ 	HelloIOS_Auto = HelloIOS_14
+ 	HelloIOS_11_1 = ClientHelloID{helloIOS, "111", nil, nil} // legacy "111" means 11.1
+--- a/u_conn.go
++++ b/u_conn.go
+@@ -38,7 +38,7 @@
+ 
+ 	HandshakeState PubClientHandshakeState
+ 
+-	greaseSeed [ssl_grease_last_index]uint16
++	greaseSeed [ssl_grease_seed_count]uint16
+ 
+ 	omitSNIExtension bool
+ 
+--- a/u_parrots.go
++++ b/u_parrots.go
+@@ -961,6 +961,84 @@
+ 					CertCompressionBrotli,
+ 				}},
+ 				&ApplicationSettingsExtensionNew{SupportedProtocols: []string{"h2"}},
++				BoringGREASEECH(),
++				&UtlsGREASEExtension{},
++			}),
++		}, nil
++	case HelloChrome_155:
++		return ClientHelloSpec{
++			CipherSuites: []uint16{
++				GREASE_PLACEHOLDER,
++				TLS_AES_128_GCM_SHA256,
++				TLS_AES_256_GCM_SHA384,
++				TLS_CHACHA20_POLY1305_SHA256,
++				TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
++				TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
++				TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
++				TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
++				TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
++				TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
++				TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
++				TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
++				TLS_RSA_WITH_AES_128_GCM_SHA256,
++				TLS_RSA_WITH_AES_256_GCM_SHA384,
++				TLS_RSA_WITH_AES_128_CBC_SHA,
++				TLS_RSA_WITH_AES_256_CBC_SHA,
++			},
++			CompressionMethods: []byte{
++				0x00, // compressionNone
++			},
++			Extensions: ShuffleChromeTLSExtensions([]TLSExtension{
++				&UtlsGREASEExtension{},
++				&SNIExtension{},
++				&ExtendedMasterSecretExtension{},
++				&RenegotiationInfoExtension{Renegotiation: RenegotiateOnceAsClient},
++				&SupportedCurvesExtension{[]CurveID{
++					GREASE_PLACEHOLDER,
++					X25519MLKEM768,
++					X25519,
++					CurveP256,
++					CurveP384,
++				}},
++				&SupportedPointsExtension{SupportedPoints: []byte{
++					0x00, // pointFormatUncompressed
++				}},
++				&SessionTicketExtension{},
++				&ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
++				&StatusRequestExtension{},
++				&SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []SignatureScheme{
++					GREASE_PLACEHOLDER,
++					MLDSA44,
++					MLDSA65,
++					MLDSA87,
++					ECDSAWithP256AndSHA256,
++					PSSWithSHA256,
++					PKCS1WithSHA256,
++					ECDSAWithP384AndSHA384,
++					PSSWithSHA384,
++					PKCS1WithSHA384,
++					PSSWithSHA512,
++					PKCS1WithSHA512,
++				}},
++				&SCTExtension{},
++				&KeyShareExtension{[]KeyShare{
++					{Group: CurveID(GREASE_PLACEHOLDER), Data: []byte{0}},
++					{Group: X25519MLKEM768},
++					{Group: X25519},
++				}},
++				&PSKKeyExchangeModesExtension{[]uint8{
++					PskModeDHE,
++				}},
++				&SupportedVersionsExtension{[]uint16{
++					GREASE_PLACEHOLDER,
++					VersionTLS13,
++					VersionTLS12,
++				}},
++				&UtlsCompressCertExtension{[]CertCompressionAlgo{
++					CertCompressionBrotli,
++				}},
++				&ApplicationSettingsExtensionNew{SupportedProtocols: []string{"h2"}},
++				&TrustAnchorsExtension{TrustAnchorIDs: chrome155TrustAnchorIDs()},
+ 				BoringGREASEECH(),
+ 				&UtlsGREASEExtension{},
+ 			}),
+@@ -3048,7 +3126,7 @@
+ 	}
+ 
+ 	// Currently, GREASE is assumed to come from BoringSSL
+-	grease_bytes := make([]byte, 2*ssl_grease_last_index)
++	grease_bytes := make([]byte, 2*ssl_grease_seed_count)
+ 	grease_extensions_seen := 0
+ 	_, err = io.ReadFull(uconn.config.rand(), grease_bytes)
+ 	if err != nil {
+@@ -3057,7 +3135,7 @@
+ 	for i := range uconn.greaseSeed {
+ 		uconn.greaseSeed[i] = binary.LittleEndian.Uint16(grease_bytes[2*i : 2*i+2])
+ 	}
+-	if GetBoringGREASEValue(uconn.greaseSeed, ssl_grease_extension1) == GetBoringGREASEValue(uconn.greaseSeed, ssl_grease_extension2) {
++	if getBoringGREASEValue(uconn.greaseSeed[:], ssl_grease_extension1) == getBoringGREASEValue(uconn.greaseSeed[:], ssl_grease_extension2) {
+ 		uconn.greaseSeed[ssl_grease_extension2] ^= 0x1010
+ 	}
+ 
+@@ -3065,7 +3143,7 @@
+ 	copy(hello.CipherSuites, p.CipherSuites)
+ 	for i := range hello.CipherSuites {
+ 		if isGREASEUint16(hello.CipherSuites[i]) { // just in case the user set a GREASE value instead of unGREASEd
+-			hello.CipherSuites[i] = GetBoringGREASEValue(uconn.greaseSeed, ssl_grease_cipher)
++			hello.CipherSuites[i] = getBoringGREASEValue(uconn.greaseSeed[:], ssl_grease_cipher)
+ 		}
+ 	}
+ 
+@@ -3102,9 +3180,9 @@
+ 		case *UtlsGREASEExtension:
+ 			switch grease_extensions_seen {
+ 			case 0:
+-				ext.Value = GetBoringGREASEValue(uconn.greaseSeed, ssl_grease_extension1)
++				ext.Value = getBoringGREASEValue(uconn.greaseSeed[:], ssl_grease_extension1)
+ 			case 1:
+-				ext.Value = GetBoringGREASEValue(uconn.greaseSeed, ssl_grease_extension2)
++				ext.Value = getBoringGREASEValue(uconn.greaseSeed[:], ssl_grease_extension2)
+ 				ext.Body = []byte{0}
+ 			default:
+ 				return errors.New("at most 2 grease extensions are supported")
+@@ -3113,7 +3191,13 @@
+ 		case *SupportedCurvesExtension:
+ 			for i := range ext.Curves {
+ 				if isGREASEUint16(uint16(ext.Curves[i])) {
+-					ext.Curves[i] = CurveID(GetBoringGREASEValue(uconn.greaseSeed, ssl_grease_group))
++					ext.Curves[i] = CurveID(getBoringGREASEValue(uconn.greaseSeed[:], ssl_grease_group))
++				}
++			}
++		case *SignatureAlgorithmsExtension:
++			for i, scheme := range ext.SupportedSignatureAlgorithms {
++				if isGREASEUint16(uint16(scheme)) {
++					ext.SupportedSignatureAlgorithms[i] = SignatureScheme(getBoringGREASEValue(uconn.greaseSeed[:], ssl_grease_signature_algorithm))
+ 				}
+ 			}
+ 		case *KeyShareExtension:
+@@ -3122,7 +3206,7 @@
+ 			for i := range ext.KeyShares {
+ 				curveID := ext.KeyShares[i].Group
+ 				if isGREASEUint16(uint16(curveID)) { // just in case the user set a GREASE value instead of unGREASEd
+-					ext.KeyShares[i].Group = CurveID(GetBoringGREASEValue(uconn.greaseSeed, ssl_grease_group))
++					ext.KeyShares[i].Group = CurveID(getBoringGREASEValue(uconn.greaseSeed[:], ssl_grease_group))
+ 					continue
+ 				}
+ 				if len(ext.KeyShares[i].Data) > 1 {
+@@ -3209,7 +3293,7 @@
+ 		case *SupportedVersionsExtension:
+ 			for i := range ext.Versions {
+ 				if isGREASEUint16(ext.Versions[i]) { // just in case the user set a GREASE value instead of unGREASEd
+-					ext.Versions[i] = GetBoringGREASEValue(uconn.greaseSeed, ssl_grease_version)
++					ext.Versions[i] = getBoringGREASEValue(uconn.greaseSeed[:], ssl_grease_version)
+ 				}
+ 			}
+ 		case *NPNExtension:
+--- a/u_tls_extensions.go
++++ b/u_tls_extensions.go
+@@ -79,6 +79,8 @@
+ 		return &FakeChannelIDExtension{}
+ 	case utlsExtensionECH:
+ 		return &GREASEEncryptedClientHelloExtension{}
++	case utlsExtensionTrustAnchors:
++		return &TrustAnchorsExtension{}
+ 	case extensionRenegotiationInfo:
+ 		return &RenegotiationInfoExtension{}
+ 	default:
+@@ -966,8 +968,13 @@
+ 	ssl_grease_extension2
+ 	ssl_grease_version
+ 	ssl_grease_ticket_extension
+-	ssl_grease_last_index = ssl_grease_ticket_extension
++	ssl_grease_ech_config_id
++	ssl_grease_signature_algorithm
++	ssl_grease_seed_count
+ )
++
++// Preserve the array size accepted by the exported GetBoringGREASEValue helper.
++const ssl_grease_last_index = ssl_grease_ticket_extension
+ 
+ // it is responsibility of user not to generate multiple grease extensions with same value
+ type UtlsGREASEExtension struct {
+@@ -981,6 +988,10 @@
+ 
+ // will panic if ssl_grease_last_index[index] is out of bounds.
+ func GetBoringGREASEValue(greaseSeed [ssl_grease_last_index]uint16, index int) uint16 {
++	return getBoringGREASEValue(greaseSeed[:], index)
++}
++
++func getBoringGREASEValue(greaseSeed []uint16, index int) uint16 {
+ 	// GREASE value is back from deterministic to random.
+ 	// https://github.com/google/boringssl/blob/a365138ac60f38b64bfc608b493e0f879845cb88/ssl/handshake_client.c#L530
+ 	ret := uint16(greaseSeed[index])
+--- /dev/null
++++ b/u_trust_anchors.go
+@@ -0,0 +1,107 @@
++// Copyright 2026 The uTLS Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style
++// license that can be found in the LICENSE file.
++
++package tls
++
++import (
++	"encoding/json"
++	"errors"
++	"fmt"
++	"io"
++
++	"golang.org/x/crypto/cryptobyte"
++)
++
++// TrustAnchorsExtension implements the draft trust_anchors ClientHello extension
++// (0xca34). Each TrustAnchorID contains 1 to 255 bytes; an empty list is valid.
++// The IDs are advertised to the server and do not change Config.RootCAs.
++type TrustAnchorsExtension struct {
++	TrustAnchorIDs [][]byte `json:"trust_anchor_ids"`
++}
++
++func (e *TrustAnchorsExtension) writeToUConn(_ *UConn) error {
++	return nil
++}
++
++func (e *TrustAnchorsExtension) Len() int {
++	n := 6 // Extension header and RequestedTrustAnchorList length.
++	for _, id := range e.TrustAnchorIDs {
++		n += 1 + len(id)
++	}
++	return n
++}
++
++func (e *TrustAnchorsExtension) validate() error {
++	listLen := 0
++	for _, id := range e.TrustAnchorIDs {
++		if len(id) == 0 || len(id) > 255 {
++			return fmt.Errorf("tls: trust anchor ID length %d is outside 1..255", len(id))
++		}
++		listLen += 1 + len(id)
++		// The extension_data length also includes the two-byte list length.
++		if listLen > (1<<16)-3 {
++			return errors.New("tls: trust anchors extension data exceeds 65535 bytes")
++		}
++	}
++	return nil
++}
++
++func (e *TrustAnchorsExtension) Read(b []byte) (int, error) {
++	if err := e.validate(); err != nil {
++		return 0, err
++	}
++	if len(b) < e.Len() {
++		return 0, io.ErrShortBuffer
++	}
++	listLen := e.Len() - 6
++	b[0] = byte(utlsExtensionTrustAnchors >> 8)
++	b[1] = byte(utlsExtensionTrustAnchors & 0xff)
++	b[2] = byte((2 + listLen) >> 8)
++	b[3] = byte(2 + listLen)
++	b[4] = byte(listLen >> 8)
++	b[5] = byte(listLen)
++	offset := 6
++	for _, id := range e.TrustAnchorIDs {
++		b[offset] = byte(len(id))
++		offset++
++		offset += copy(b[offset:], id)
++	}
++	return offset, io.EOF
++}
++
++func (e *TrustAnchorsExtension) Write(b []byte) (int, error) {
++	if len(b) > (1<<16)-1 {
++		return 0, errors.New("tls: trust anchors extension data exceeds 65535 bytes")
++	}
++	extData := cryptobyte.String(b)
++	var list cryptobyte.String
++	if !extData.ReadUint16LengthPrefixed(&list) || !extData.Empty() {
++		return 0, errors.New("tls: unable to read trust anchors extension data")
++	}
++	ids := make([][]byte, 0)
++	for !list.Empty() {
++		var id cryptobyte.String
++		if !list.ReadUint8LengthPrefixed(&id) || id.Empty() {
++			return 0, errors.New("tls: unable to read trust anchor ID")
++		}
++		ids = append(ids, append([]byte(nil), id...))
++	}
++	e.TrustAnchorIDs = ids
++	return len(b), nil
++}
++
++func (e *TrustAnchorsExtension) UnmarshalJSON(data []byte) error {
++	var value struct {
++		TrustAnchorIDs [][]byte `json:"trust_anchor_ids"`
++	}
++	if err := json.Unmarshal(data, &value); err != nil {
++		return err
++	}
++	parsed := TrustAnchorsExtension{TrustAnchorIDs: value.TrustAnchorIDs}
++	if err := parsed.validate(); err != nil {
++		return err
++	}
++	e.TrustAnchorIDs = parsed.TrustAnchorIDs
++	return nil
++}

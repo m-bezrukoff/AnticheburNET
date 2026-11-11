@@ -1,4 +1,7 @@
 function check(value, message) { if (!value) die(message); }
+for (let alias in [ "chrome155", "chrome_155", "hellochrome_155", "HelloChrome_155" ])
+    check(normalize_utls_fingerprint(alias) == "chrome155", "Chrome 155 fingerprint alias lost");
+check(normalize_utls_fingerprint("hellochrome_133") == "chrome133", "explicit legacy Chrome fingerprint lost");
 let original = {
     protocol: "vless", settings: {vnext:[{address:"example.com",port:443,users:[{id:"00000000-0000-4000-8000-000000000001",encryption:"none"}]}]},
     streamSettings: {network:"raw",security:"reality",realitySettings:{password:"new-key",publicKey:"old-key",shortId:"01",mldsa65Verify:"signature-key"}}
@@ -39,4 +42,11 @@ check(converted.transport.uplink_http_method == "OPTIONS", "XHTTP OPTIONS method
 original.streamSettings = {network:"xdrive",security:"tls",xdriveSettings:{service:"s3",
     s3:{endpoint:"https://s3.example",bucket:"test",region:"test"}}};
 check(convert_xray_vless(original, "s3-test") == null, "XDRIVE S3 silently became RAW");
+check(index(xray_native_requirements([{outbounds:[original]}]), "XDRIVE") >= 0, "native XDRIVE requirement was not diagnosed");
+let hints = {source_format:"xray-json",skipped:1,native_requirements:["XDRIVE","https://private-token.invalid"]};
+let hints_path=temp_path("native-xray-hint-test");
+fs.writefile(hints_path,sprintf("%J",hints));
+let message=normalized_skipped_message(hints_path);
+fs.unlink(hints_path);
+check(index(message,"XDRIVE")>=0 && index(message,"private-token")<0,"native hint lost its reason or leaked untrusted metadata");
 print("Xray password, ML-DSA, XHTTP split download and unsupported transport checks passed\n");

@@ -269,7 +269,7 @@ function anticheburnet_core_asset_pair(release, package_name, arch, asset_ext) {
     return selected != null && selected.url != "" ? selected : null;
 }
 
-function anticheburnet_release_plan(latest_version, asset_ext, i18n_required, arch, cores_required) {
+function anticheburnet_release_plan(latest_version, asset_ext, i18n_required, arch, cores_required, xray_required) {
     let release = object_or_empty(read_stdin_json());
 
     if (as_string(release.tag_name || "") != as_string(latest_version))
@@ -300,6 +300,11 @@ function anticheburnet_release_plan(latest_version, asset_ext, i18n_required, ar
             if (asset == null) exit(1);
             push(fields, asset.name, asset.url);
         }
+    }
+    if (arg_bool(xray_required)) {
+        let asset = anticheburnet_core_asset_pair(release, "anticheburnet-xray", arch, asset_ext);
+        if (asset == null) exit(1);
+        push(fields, asset.name, asset.url);
     }
     print(join("\t", fields), "\n");
 }
@@ -1166,7 +1171,7 @@ else if (mode == "release-asset-name-by-suffix")
 else if (mode == "release-asset-url-by-suffix")
     release_asset_url_by_suffix(ARGV[1]);
 else if (mode == "anticheburnet-release-plan")
-    anticheburnet_release_plan(ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5]);
+    anticheburnet_release_plan(ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6]);
 else if (mode == "release-metadata-tsv")
     release_metadata_tsv();
 else if (mode == "openwrt-release-value")

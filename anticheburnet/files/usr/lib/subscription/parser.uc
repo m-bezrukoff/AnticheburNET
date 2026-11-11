@@ -310,7 +310,10 @@ function normalize_utls_fingerprint(value) {
         randomizednoalpn: true
     };
 
-    value = as_string(value);
+    value = lc(as_string(value));
+    if (value == "chrome_155" || value == "hellochrome_155") return "chrome155";
+    if (value == "chrome_133" || value == "hellochrome_133") return "chrome133";
+    if (value == "chrome155" || value == "chrome133") return value;
     if (value == "randomizedalpn" || value == "randomizednoalpn")
         return "randomized";
 
@@ -2746,6 +2749,17 @@ function xray_skipped_configs(configs) {
     return skipped;
 }
 
+function xray_native_requirements(configs) {
+    let result = [];
+    for (let config in configs) for (let outbound in array_or_empty(object_or_empty(config).outbounds)) {
+        let stream = object_or_empty(object_or_empty(outbound).streamSettings);
+        if (lc(as_string(stream.network || "")) == "xdrive" && index(result, "XDRIVE") < 0) push(result, "XDRIVE");
+        if (length(keys(object_or_empty(stream.finalmask || stream.finalMask))) > 0 && index(result, "Finalmask") < 0) push(result, "Finalmask");
+        if (object_or_empty(object_or_empty(outbound).mux).enabled === true && index(result, "mux.cool") < 0) push(result, "mux.cool");
+    }
+    return result;
+}
+
 function normalize_sing_box_xhttp_transport(outbound) {
     if (type(outbound) != "object" || type(outbound.transport) != "object")
         return outbound;
@@ -2830,12 +2844,17 @@ function normalize_sing_box_json_value(value, output_file) {
 
     if (xray_configs != null) {
         outbounds = normalize_xray_configs(xray_configs);
-        if (length(outbounds) == 0) { fs.unlink(output_file); return false; }
+        let native_requirements = xray_native_requirements(xray_configs);
+        if (length(outbounds) == 0) {
+            if (length(native_requirements)) warn("Xray-specific profile requires native Xray: ", join(", ", native_requirements), "\n");
+            fs.unlink(output_file); return false;
+        }
         return write_json_file(output_file, {
             version: 1,
             format: "sing-box-json",
             source_format: "xray-json",
             skipped: xray_skipped_configs(xray_configs),
+            native_requirements,
             outbounds: outbounds
         });
     }
@@ -2922,13 +2941,19 @@ function normalized_skipped_message(path) {
         return "";
 
     let skipped = as_string(value.skipped != null ? value.skipped : "0");
+    let requirements = [];
+    for (let name in array_or_empty(value.native_requirements))
+        if (index([ "XDRIVE", "Finalmask", "mux.cool" ], name) >= 0 && index(requirements, name) < 0) push(requirements, name);
+    if (value.source_format == "xray-json" && skipped == "0" && length(requirements))
+        return "Use a native Xray JSON profile to retain Xray-specific options: " + join(", ", requirements);
     if (match(skipped, /^[0-9]+$/) == null || int(skipped) <= 0)
         return "";
 
     if (as_string(value.format != null ? value.format : "") == "clash-yaml")
         return "Skipped " + skipped + " invalid or unsupported Clash proxy entries";
     if (value.source_format == "xray-json")
-        return "Skipped " + skipped + " invalid or unsupported Xray proxy entries; native Xray may be required";
+        return "Skipped " + skipped + " invalid or unsupported Xray proxy entries; native Xray may be required" +
+            (length(requirements) ? " (" + join(", ", requirements) + ")" : "");
 
     return "Skipped " + skipped + " invalid or unsupported subscription links";
 }

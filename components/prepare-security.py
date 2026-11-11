@@ -17,6 +17,10 @@ def edit(file, before, after):
     path.write_text(text.replace(before, after), encoding="utf-8", newline="\n")
 
 
+edit("common/tls/utls_client.go", 'case "chrome", "":',
+     'case "chrome155", "chrome_155", "hellochrome_155":\n\t\treturn utls.HelloChrome_155, nil\n\tcase "chrome133", "chrome_133", "hellochrome_133":\n\t\treturn utls.HelloChrome_133, nil\n\tcase "chrome", "":')
+
+
 edit("option/tls.go", 'SupportX25519MLKEM768 bool   `json:"support_x25519mlkem768,omitempty"`',
      'SupportX25519MLKEM768 bool   `json:"support_x25519mlkem768,omitempty"`\n\tMLDSA65Verify string `json:"mldsa65_verify,omitempty"`')
 edit("common/tls/reality_client.go", "supportX25519MLKEM768 bool", "supportX25519MLKEM768 bool\n\tmldsa65Verify []byte")

@@ -1366,6 +1366,25 @@ function installer_prepare_full_suite() {
     return true;
 }
 
+function installer_xray_required() {
+    if (uci_get("anticheburnet_xray.settings.enabled") == "1") return true;
+    let cursor = uci_cursor();
+    if (cursor == null || !uci_load("anticheburnet")) return false;
+    let required = false;
+    cursor.foreach("anticheburnet", "section", function(section) {
+        if ((section.enabled != null && index([ "1", "true", "yes", "on" ], as_string(section.enabled)) < 0) ||
+            index([ "connection", "proxy", "outbound", "vpn" ], as_string(section.action)) < 0) return;
+        let values = section.outbound_jsons || section.outbound_json || [];
+        if (type(values) != "array") values = [ values ];
+        for (let text in values) {
+            let item;
+            try { item = json(text); } catch (error) { continue; }
+            if (type(item) == "object" && item.type == "xray") required = true;
+        }
+    });
+    return required;
+}
+
 function installer_full_suite_plan(uninstall) {
     let installed = installer_installed_package_names();
     let roots = [
@@ -1727,6 +1746,8 @@ else if (mode == "installer-post-install")
     exit(installer_post_install() ? 0 : 1);
 else if (mode == "installer-prepare-full-suite")
     exit(installer_prepare_full_suite() ? 0 : 1);
+else if (mode == "installer-xray-required")
+    print(installer_xray_required() ? "1\n" : "0\n");
 else if (mode == "installer-full-suite-plan")
     exit(installer_full_suite_plan() ? 0 : 1);
 else if (mode == "installer-uninstall-plan")
@@ -1954,7 +1975,10 @@ check_full_suite_platform() {
 
 download_full_suite() {
     FULL_COMPONENT_FILES=""
-    for suite_kind in sing-box awg checksums; do
+    suite_kinds="sing-box awg checksums"
+    suite_xray_required="$(install_json_ucode installer-xray-required)" || fail "Failed to check native Xray profiles"
+    [ "$suite_xray_required" != "1" ] || suite_kinds="sing-box awg xray checksums"
+    for suite_kind in $suite_kinds; do
         suite_url="$(printf '%s' "$ANTICHEBURNET_RELEASE_JSON" | install_json_ucode release-asset-url "$suite_kind" apk)" ||
             fail "Failed to read the $suite_kind release asset"
         case "$suite_url" in

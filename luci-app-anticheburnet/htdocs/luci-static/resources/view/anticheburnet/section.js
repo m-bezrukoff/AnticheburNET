@@ -3901,21 +3901,50 @@ function showOutboundJsonSettingsModal(
   itemNode,
   context = {},
 ) {
+  let existing = null;
+  try {
+    existing = JSON.parse(`${itemValue || ""}`);
+  } catch (_error) {}
+  const native = existing && existing.type === "xray";
   const data = {
     settings: {
-      outbound_json: `${itemValue || ""}`,
+      outbound_json: native
+        ? JSON.stringify(existing.config, null, 2)
+        : `${itemValue || ""}`,
+      engine: native ? "xray" : "sing-box",
+      native_tag: native ? existing.tag : "Xray",
     },
   };
   const map = new form.JSONMap(data);
   const itemSection = map.section(form.NamedSection, "settings");
   itemSection.anonymous = true;
   itemSection.addremove = false;
+  const engineOption = itemSection.option(
+    form.ListValue,
+    "engine",
+    _("Execution engine"),
+    _(
+      "Native Xray requires the optional Xray component. Save the profile, check the complete release in Components, then Apply. XDRIVE requires matching client and server versions.",
+    ),
+  );
+  engineOption.value("sing-box", "sing-box");
+  engineOption.value("xray", "Xray 26.11.9");
+  engineOption.rmempty = false;
+  const tagOption = itemSection.option(
+    form.Value,
+    "native_tag",
+    _("Profile name"),
+  );
+  tagOption.depends("engine", "xray");
+  tagOption.rmempty = false;
 
   const jsonOption = itemSection.option(
     form.TextValue,
     "outbound_json",
     _("JSON outbound"),
-    _("Enter a complete sing-box outbound object"),
+    _(
+      "Enter a sing-box outbound object or a complete native Xray config with an outbounds array",
+    ),
   );
   jsonOption.rows = 12;
   jsonOption.wrap = "soft";
@@ -3932,7 +3961,19 @@ function showOutboundJsonSettingsModal(
             )
             .filter(Boolean)
         : [];
-    const validation = main.validateOutboundJson(`${value || ""}`, usedTags);
+    let candidate = `${value || ""}`;
+    if (engineOption.formvalue("settings") === "xray") {
+      try {
+        candidate = JSON.stringify({
+          type: "xray",
+          tag: tagOption.formvalue("settings"),
+          config: JSON.parse(candidate),
+        });
+      } catch (_error) {
+        return _("Invalid JSON format");
+      }
+    }
+    const validation = main.validateOutboundJson(candidate, usedTags);
     return validation.valid ? true : validation.message;
   };
   configureTextareaOption(jsonOption);
@@ -3941,7 +3982,15 @@ function showOutboundJsonSettingsModal(
     _("JSON outbound settings"),
     map,
     (settings) => {
-      const value = `${settings.outbound_json || ""}`.trim();
+      const raw = `${settings.outbound_json || ""}`.trim();
+      const value =
+        settings.engine === "xray"
+          ? JSON.stringify({
+              type: "xray",
+              tag: settings.native_tag.trim(),
+              config: JSON.parse(raw),
+            })
+          : raw;
       if (context.adding) {
         addDynamicListItem(widget, value);
         return;
@@ -7402,7 +7451,7 @@ function createSectionContent(section) {
     ButtonAddSettingsDynamicList,
     "outbound_jsons",
     _("JSON outbound"),
-    _("Custom outbound configurations in JSON format"),
+    _("Custom sing-box outbounds or native Xray profiles in JSON format"),
   );
   o.depends("action", "connection");
   o.rmempty = true;

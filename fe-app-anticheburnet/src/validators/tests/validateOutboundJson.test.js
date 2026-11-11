@@ -2,6 +2,46 @@ import { describe, expect, it } from 'vitest';
 import { validateOutboundJson } from '../validateOutboundJson';
 
 describe('validateOutboundJson', () => {
+  it('accepts full native Xray profiles with XDRIVE and rejects incomplete wrappers', () => {
+    const profile = {
+      type: 'xray',
+      tag: 'XDRIVE',
+      config: {
+        outbounds: [
+          {
+            protocol: 'vless',
+            streamSettings: {
+              network: 'xdrive',
+              xdriveSettings: { service: 'google-drive' },
+              finalmask: { tcp: [{ type: 'fragment' }] },
+            },
+            mux: { enabled: true, concurrency: 128 },
+          },
+        ],
+      },
+    };
+    const serialized = JSON.stringify(profile);
+    expect(validateOutboundJson(serialized).valid).toBe(true);
+    expect(validateOutboundJson(serialized, ['XDRIVE']).valid).toBe(false);
+    expect(
+      validateOutboundJson(JSON.stringify({ ...profile, detour: 'remote' }))
+        .valid,
+    ).toBe(false);
+    expect(
+      validateOutboundJson(
+        JSON.stringify({ ...profile, config: { outbounds: [] } }),
+      ).valid,
+    ).toBe(false);
+    expect(
+      validateOutboundJson(
+        JSON.stringify({
+          ...profile,
+          config: { outbounds: [{ type: 'vless' }] },
+        }),
+      ).valid,
+    ).toBe(false);
+    expect(JSON.stringify(profile)).toBe(serialized);
+  });
   it('accepts a direct outbound with type and tag', () => {
     expect(validateOutboundJson('{"type":"direct","tag":"direct"}').valid).toBe(
       true,

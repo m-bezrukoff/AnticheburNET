@@ -3,80 +3,66 @@
     "call": "-- Select --",
     "key": "-- Select --",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1983",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2360",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2741",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2756",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2954",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2969",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3205",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3357",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3367"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2013",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2367",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2749",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2764",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2963",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2978",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3214",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3367",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3377"
     ]
   },
   {
     "call": "+ Add JSON outbound",
     "key": "+ Add JSON outbound",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7400"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7459"
     ]
   },
   {
     "call": "+ Add level",
     "key": "+ Add level",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3121"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3130"
     ]
   },
   {
     "call": "+ Add priority",
     "key": "+ Add priority",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7486"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7545"
     ]
   },
   {
     "call": "+ Add URLTest",
     "key": "+ Add URLTest",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7427"
-    ]
-  },
-  {
-    "call": "Matching public IPs are expected with tunnel routing",
-    "key": "Matching public IPs are expected with tunnel routing",
-    "places": [
-      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:107"
-    ]
-  },
-  {
-    "call": "Update subscriptions daily at 03:00 (router time)",
-    "key": "Update subscriptions daily at 03:00 (router time)",
-    "places": [
-      "src/anticheburnet/tabs/dashboard/subscriptionAutoUpdate.ts:18"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7486"
     ]
   },
   {
     "call": "✔ Running",
     "key": "✔ Running",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1751",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1762"
+      "src/anticheburnet/tabs/dashboard/initController.ts:1754",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1765"
     ]
   },
   {
     "call": "✘ Stopped",
     "key": "✘ Stopped",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1752",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1763"
+      "src/anticheburnet/tabs/dashboard/initController.ts:1755",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1766"
     ]
   },
   {
     "call": "Accept external proxy connections and route them with sing-box.",
     "key": "Accept external proxy connections and route them with sing-box.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:407"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:496"
     ]
   },
   {
@@ -90,8 +76,8 @@
     "call": "Action",
     "key": "Action",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7041",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7070"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7100",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7129"
     ]
   },
   {
@@ -113,7 +99,7 @@
     "call": "Active Connections",
     "key": "Active Connections",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1709"
+      "src/anticheburnet/tabs/dashboard/initController.ts:1712"
     ]
   },
   {
@@ -127,14 +113,14 @@
     "call": "Add a section",
     "key": "Add a section",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:396"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:484"
     ]
   },
   {
     "call": "Add a server inbound",
     "key": "Add a server inbound",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:413"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:502"
     ]
   },
   {
@@ -148,42 +134,42 @@
     "call": "Add prefix to nodes",
     "key": "Add prefix to nodes",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2450"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2457"
     ]
   },
   {
     "call": "Add URLs or local paths to .lst lists containing domains and subnets.",
     "key": "Add URLs or local paths to .lst lists containing domains and subnets.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7863"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7922"
     ]
   },
   {
     "call": "Add URLs or local paths to .lst lists containing domains. IP entries are ignored.",
     "key": "Add URLs or local paths to .lst lists containing domains. IP entries are ignored.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7886"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7945"
     ]
   },
   {
     "call": "Add URLs or local paths to .srs / .json lists. Only domain rules are supported.",
     "key": "Add URLs or local paths to .srs / .json lists. Only domain rules are supported.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7838"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7897"
     ]
   },
   {
     "call": "Add URLs or local paths to .srs / .json lists. Subnets are ignored by default.",
     "key": "Add URLs or local paths to .srs / .json lists. Subnets are ignored by default.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7809"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7868"
     ]
   },
   {
     "call": "Add URLTest / Priority group",
     "key": "Add URLTest / Priority group",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3379"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3389"
     ]
   },
   {
@@ -197,30 +183,30 @@
     "call": "Additionally exclude servers by protocol, transport, and security. Exclude only servers matching the specified parameters.",
     "key": "Additionally exclude servers by protocol, transport, and security. Exclude only servers matching the specified parameters.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2671",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2881"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2679",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2890"
     ]
   },
   {
     "call": "Additionally filter servers by protocol, transport, and security. Add only servers matching the specified parameters.",
     "key": "Additionally filter servers by protocol, transport, and security. Add only servers matching the specified parameters.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2654",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2863"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2662",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2872"
     ]
   },
   {
     "call": "Additionally hide servers by protocol, transport, and security. Hide servers matching the specified parameters.",
     "key": "Additionally hide servers by protocol, transport, and security. Hide servers matching the specified parameters.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3279"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3289"
     ]
   },
   {
     "call": "Additionally show servers by protocol, transport, and security. Add only servers matching the specified parameters.",
     "key": "Additionally show servers by protocol, transport, and security. Add only servers matching the specified parameters.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3259"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3269"
     ]
   },
   {
@@ -256,49 +242,56 @@
     "call": "All except selected",
     "key": "All except selected",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1880"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1909"
     ]
   },
   {
     "call": "All remaining except selected",
     "key": "All remaining except selected",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1890"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1919"
     ]
   },
   {
     "call": "All remaining servers",
     "key": "All remaining servers",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1888"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1917"
     ]
   },
   {
     "call": "All remaining servers means every server not already assigned to a higher-priority level.",
     "key": "All remaining servers means every server not already assigned to a higher-priority level.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2837"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2845"
     ]
   },
   {
     "call": "All servers",
     "key": "All servers",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1879"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1908"
+    ]
+  },
+  {
+    "call": "All through the tunnel",
+    "key": "All through the tunnel",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:125"
     ]
   },
   {
     "call": "All traffic from these IP addresses will be routed through the section unconditionally, ignoring all other conditions.",
     "key": "All traffic from these IP addresses will be routed through the section unconditionally, ignoring all other conditions.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7918"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7977"
     ]
   },
   {
     "call": "Allowed domain prefixes are full:, keyword:, and regex:",
     "key": "Allowed domain prefixes are full:, keyword:, and regex:",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5156"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5215"
     ]
   },
   {
@@ -312,7 +305,7 @@
     "call": "Allows limiting the list of servers for URLTest",
     "key": "Allows limiting the list of servers for URLTest",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2631"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2638"
     ]
   },
   {
@@ -344,31 +337,59 @@
     ]
   },
   {
+    "call": "AnticheburNET is applying configuration",
+    "key": "AnticheburNET is applying configuration",
+    "places": [
+      "src/anticheburnet/partials/serviceTransitionBanner.ts:12"
+    ]
+  },
+  {
+    "call": "AnticheburNET is restarting",
+    "key": "AnticheburNET is restarting",
+    "places": [
+      "src/anticheburnet/partials/serviceTransitionBanner.ts:14"
+    ]
+  },
+  {
+    "call": "AnticheburNET is starting",
+    "key": "AnticheburNET is starting",
+    "places": [
+      "src/anticheburnet/partials/serviceTransitionBanner.ts:8"
+    ]
+  },
+  {
+    "call": "AnticheburNET is stopping",
+    "key": "AnticheburNET is stopping",
+    "places": [
+      "src/anticheburnet/partials/serviceTransitionBanner.ts:10"
+    ]
+  },
+  {
     "call": "AnticheburNET manages ciadpi pid files itself, so pidfile options are not allowed here.",
     "key": "AnticheburNET manages ciadpi pid files itself, so pidfile options are not allowed here.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6337"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6396"
     ]
   },
   {
     "call": "AnticheburNET manages the ciadpi process lifecycle itself, so daemon mode is not allowed here.",
     "key": "AnticheburNET manages the ciadpi process lifecycle itself, so daemon mode is not allowed here.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6334"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6393"
     ]
   },
   {
     "call": "AnticheburNET manages the nfqws process lifecycle itself, so daemon mode is not allowed here.",
     "key": "AnticheburNET manages the nfqws process lifecycle itself, so daemon mode is not allowed here.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5481"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5540"
     ]
   },
   {
     "call": "AnticheburNET manages the nfqws2 process lifecycle itself, so daemon mode is not allowed here.",
     "key": "AnticheburNET manages the nfqws2 process lifecycle itself, so daemon mode is not allowed here.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5932"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5991"
     ]
   },
   {
@@ -389,7 +410,7 @@
     "call": "AnticheburNET Settings",
     "key": "AnticheburNET Settings",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:341"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:429"
     ]
   },
   {
@@ -473,21 +494,21 @@
     "call": "Apply section rules only to the specified local IP addresses",
     "key": "Apply section rules only to the specified local IP addresses",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7909"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7968"
     ]
   },
   {
     "call": "At least one valid domain must be specified.",
     "key": "At least one valid domain must be specified.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5187"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5246"
     ]
   },
   {
     "call": "At least one valid IP or subnet must be specified.",
     "key": "At least one valid IP or subnet must be specified.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5269"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5328"
     ]
   },
   {
@@ -508,7 +529,7 @@
     "call": "Auto-generate HWID",
     "key": "Auto-generate HWID",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2376"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2383"
     ]
   },
   {
@@ -522,14 +543,14 @@
     "call": "Automatic User-Agent selection",
     "key": "Automatic User-Agent selection",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2345"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2352"
     ]
   },
   {
     "call": "Automatically add text to the name of each server from this subscription for convenient filtering.",
     "key": "Automatically add text to the name of each server from this subscription for convenient filtering.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2451"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2458"
     ]
   },
   {
@@ -543,8 +564,8 @@
     "call": "Automatically select the fastest node in the current level",
     "key": "Automatically select the fastest node in the current level",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3071",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1230"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3080",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1233"
     ]
   },
   {
@@ -565,9 +586,16 @@
     "call": "Backend validation failed: %s",
     "key": "Backend validation failed: %s",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5402",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5847",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6259"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5461",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5906",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6318"
+    ]
+  },
+  {
+    "call": "Block",
+    "key": "Block",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:179"
     ]
   },
   {
@@ -588,67 +616,74 @@
     "call": "Browser FakeIP check could not be completed",
     "key": "Browser FakeIP check could not be completed",
     "places": [
-      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:51",
-      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:79"
+      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:65",
+      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:93"
     ]
   },
   {
     "call": "Browser is not using FakeIP",
     "key": "Browser is not using FakeIP",
     "places": [
-      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:82"
+      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:96"
     ]
   },
   {
     "call": "Browser is using FakeIP correctly",
     "key": "Browser is using FakeIP correctly",
     "places": [
-      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:81"
+      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:95"
     ]
   },
   {
     "call": "Built-in rule sets",
     "key": "Built-in rule sets",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7788"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7847"
     ]
   },
   {
     "call": "By flag emoji from name",
     "key": "By flag emoji from name",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1897"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1926"
+    ]
+  },
+  {
+    "call": "By local GeoIP database",
+    "key": "By local GeoIP database",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1928"
     ]
   },
   {
     "call": "ByeDPI listen address and port are assigned by AnticheburNET and must not be set in the strategy.",
     "key": "ByeDPI listen address and port are assigned by AnticheburNET and must not be set in the strategy.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6328"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6387"
     ]
   },
   {
     "call": "ByeDPI option does not accept a compact value: %s",
     "key": "ByeDPI option does not accept a compact value: %s",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6505"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6564"
     ]
   },
   {
     "call": "ByeDPI option does not accept a value: %s",
     "key": "ByeDPI option does not accept a value: %s",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6434"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6493"
     ]
   },
   {
     "call": "ByeDPI option requires a value: %s",
     "key": "ByeDPI option requires a value: %s",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6426",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6452",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6486",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6495"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6485",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6511",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6545",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6554"
     ]
   },
   {
@@ -697,14 +732,21 @@
     "call": "ByeDPI Strategy",
     "key": "ByeDPI Strategy",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7242"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7301"
     ]
   },
   {
     "call": "ByeDPI strategy cannot be empty",
     "key": "ByeDPI strategy cannot be empty",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6531"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6590"
+    ]
+  },
+  {
+    "call": "Cache expired",
+    "key": "Cache expired",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:155"
     ]
   },
   {
@@ -719,6 +761,20 @@
     "key": "Cache file path cannot be empty",
     "places": [
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/settings.js:664"
+    ]
+  },
+  {
+    "call": "Cached",
+    "key": "Cached",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:154"
+    ]
+  },
+  {
+    "call": "Cached normalized rules are shown. Refresh the subscription to show exactly which rules were received.",
+    "key": "Cached normalized rules are shown. Refresh the subscription to show exactly which rules were received.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:290"
     ]
   },
   {
@@ -746,14 +802,14 @@
     "call": "Cannot save settings",
     "key": "Cannot save settings",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3507"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3517"
     ]
   },
   {
     "call": "Cascade connection",
     "key": "Cascade connection",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7519"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7578"
     ]
   },
   {
@@ -774,16 +830,16 @@
     "call": "Check interval",
     "key": "Check interval",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2557",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3022",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1217"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2564",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3031",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1220"
     ]
   },
   {
     "call": "Check timeout after which the server is considered dead",
     "key": "Check timeout after which the server is considered dead",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3035"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3044"
     ]
   },
   {
@@ -797,9 +853,9 @@
     "call": "Check URL",
     "key": "Check URL",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2583",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3009",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1215"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2590",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3018",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1218"
     ]
   },
   {
@@ -809,7 +865,7 @@
       "src/anticheburnet/tabs/diagnostic/initController.ts:1022",
       "src/anticheburnet/tabs/diagnostic/checks/runByedpiCheck.ts:14",
       "src/anticheburnet/tabs/diagnostic/checks/runDnsCheck.ts:15",
-      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:15",
+      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:18",
       "src/anticheburnet/tabs/diagnostic/checks/runInboundsCheck.ts:160",
       "src/anticheburnet/tabs/diagnostic/checks/runNftCheck.ts:13",
       "src/anticheburnet/tabs/diagnostic/checks/runSectionsCheck.ts:34",
@@ -839,7 +895,7 @@
     "places": [
       "src/anticheburnet/tabs/diagnostic/helpers/getMeta.ts:13",
       "src/anticheburnet/tabs/diagnostic/checks/getCheckItemsMeta.ts:23",
-      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:43"
+      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:57"
     ]
   },
   {
@@ -888,13 +944,13 @@
     "call": "Close",
     "key": "Close",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3574",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3584",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/server.js:1714",
       "src/partials/modal/renderModal.ts:263",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1111",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1361",
       "src/anticheburnet/tabs/monitoring/initController.ts:832",
-      "src/anticheburnet/tabs/monitoring/initController.ts:882",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1108",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1358"
+      "src/anticheburnet/tabs/monitoring/initController.ts:882"
     ]
   },
   {
@@ -939,7 +995,7 @@
     "call": "Components",
     "key": "Components",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:472"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:561"
     ]
   },
   {
@@ -960,7 +1016,7 @@
     "call": "Conditions",
     "key": "Conditions",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7029"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7088"
     ]
   },
   {
@@ -974,28 +1030,28 @@
     "call": "Configuration for AnticheburNET service",
     "key": "Configuration for AnticheburNET service",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:342"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:430"
     ]
   },
   {
     "call": "Configure User-Agent in the item settings",
     "key": "Configure User-Agent in the item settings",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4582"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4641"
     ]
   },
   {
     "call": "Connect through",
     "key": "Connect through",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7557"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7616"
     ]
   },
   {
     "call": "Connection URL",
     "key": "Connection URL",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7280"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7339"
     ]
   },
   {
@@ -1032,8 +1088,8 @@
     "call": "Copy proxy link",
     "key": "Copy proxy link",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1078",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1328",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1081",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1331",
       "src/anticheburnet/tabs/dashboard/partials/renderSections.ts:361",
       "src/anticheburnet/tabs/dashboard/partials/renderSections.ts:362"
     ]
@@ -1042,21 +1098,21 @@
     "call": "Could not compare FakeIP and control public IPs",
     "key": "Could not compare FakeIP and control public IPs",
     "places": [
-      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:89"
+      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:103"
     ]
   },
   {
     "call": "Current section cannot be used as its own transit section",
     "key": "Current section cannot be used as its own transit section",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7574"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7633"
     ]
   },
   {
     "call": "Current section cannot download its own subscription",
     "key": "Current section cannot download its own subscription",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2337"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2344"
     ]
   },
   {
@@ -1070,21 +1126,21 @@
     "call": "Custom device headers",
     "key": "Custom device headers",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2413"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2420"
     ]
   },
   {
-    "call": "Custom outbound configurations in JSON format",
-    "key": "Custom outbound configurations in JSON format",
+    "call": "Custom sing-box outbounds or native Xray profiles in JSON format",
+    "key": "Custom sing-box outbounds or native Xray profiles in JSON format",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7395"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7454"
     ]
   },
   {
     "call": "Dashboard",
     "key": "Dashboard",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:448"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:537"
     ]
   },
   {
@@ -1126,30 +1182,30 @@
     "call": "Detect server country",
     "key": "Detect server country",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2641",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2850",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3246"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2648",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2858",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3255"
     ]
   },
   {
     "call": "detour must be a non-empty string",
     "key": "detour must be a non-empty string",
     "places": [
-      "src/validators/validateOutboundJson.ts:115"
+      "src/validators/validateOutboundJson.ts:150"
     ]
   },
   {
     "call": "Device filter",
     "key": "Device filter",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7908"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7967"
     ]
   },
   {
     "call": "Device or IP",
     "key": "Device or IP",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6797"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6856"
     ]
   },
   {
@@ -1170,21 +1226,30 @@
     "call": "Diagnostics",
     "key": "Diagnostics",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:436"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:525"
     ]
   },
   {
     "call": "Direct",
     "key": "Direct",
     "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:179",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:269",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/server.js:2559"
+    ]
+  },
+  {
+    "call": "Direct by default, exceptions through the tunnel",
+    "key": "Direct by default, exceptions through the tunnel",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:123"
     ]
   },
   {
     "call": "Direct connection",
     "key": "Direct connection",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2827"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2835"
     ]
   },
   {
@@ -1212,15 +1277,15 @@
     "call": "Disabling interception is incompatible with action=zapret2 because AnticheburNET sends matched traffic through NFQUEUE.",
     "key": "Disabling interception is incompatible with action=zapret2 because AnticheburNET sends matched traffic through NFQUEUE.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5929"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5988"
     ]
   },
   {
     "call": "Display name",
     "key": "Display name",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2539",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2998"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2546",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3007"
     ]
   },
   {
@@ -1248,7 +1313,7 @@
     "call": "DNS over HTTPS (DoH)",
     "key": "DNS over HTTPS (DoH)",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1765",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1794",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/settings.js:170"
     ]
   },
@@ -1256,7 +1321,7 @@
     "call": "DNS over TLS (DoT)",
     "key": "DNS over TLS (DoT)",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1766",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1795",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/settings.js:171"
     ]
   },
@@ -1264,8 +1329,8 @@
     "call": "DNS protocol",
     "key": "DNS protocol",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2506",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7091"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2513",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7150"
     ]
   },
   {
@@ -1279,15 +1344,15 @@
     "call": "DNS protocol used by the resolver",
     "key": "DNS protocol used by the resolver",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2507",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7092"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2514",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7151"
     ]
   },
   {
     "call": "DNS requests through section",
     "key": "DNS requests through section",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7135",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7194",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/settings.js:286"
     ]
   },
@@ -1302,15 +1367,15 @@
     "call": "DNS server",
     "key": "DNS server",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2516",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7104"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2523",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7163"
     ]
   },
   {
     "call": "DNS server address cannot be empty",
     "key": "DNS server address cannot be empty",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7113",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7172",
       "src/validators/validateDns.ts:8"
     ]
   },
@@ -1318,8 +1383,8 @@
     "call": "DNS server used by the resolver",
     "key": "DNS server used by the resolver",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2517",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7105"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2524",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7164"
     ]
   },
   {
@@ -1361,7 +1426,7 @@
     "call": "DNS through section",
     "key": "DNS through section",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7123"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7182"
     ]
   },
   {
@@ -1382,42 +1447,42 @@
     "call": "Do not test servers from these countries.",
     "key": "Do not test servers from these countries.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2714"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2722"
     ]
   },
   {
     "call": "Do not test servers whose names match the expression.",
     "key": "Do not test servers whose names match the expression.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2730"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2738"
     ]
   },
   {
     "call": "Do not test servers with one of the selected protocols.",
     "key": "Do not test servers with one of the selected protocols.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2675"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2683"
     ]
   },
   {
     "call": "Do not test servers with one of the selected security types.",
     "key": "Do not test servers with one of the selected security types.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2681"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2689"
     ]
   },
   {
     "call": "Do not test servers with one of the selected transports.",
     "key": "Do not test servers with one of the selected transports.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2678"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2686"
     ]
   },
   {
     "call": "Do not test specified servers.",
     "key": "Do not test specified servers.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2722"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2730"
     ]
   },
   {
@@ -1431,28 +1496,49 @@
     "call": "Domain and IP lists",
     "key": "Domain and IP lists",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7862"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7921"
     ]
   },
   {
     "call": "Domain lists",
     "key": "Domain lists",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7885"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7944"
     ]
   },
   {
     "call": "Domain Resolver",
     "key": "Domain Resolver",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2497"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2504"
+    ]
+  },
+  {
+    "call": "domain rules",
+    "key": "domain rules",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:293"
+    ]
+  },
+  {
+    "call": "Domain rules",
+    "key": "Domain rules",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:249"
+    ]
+  },
+  {
+    "call": "Domain strategy",
+    "key": "Domain strategy",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:286"
     ]
   },
   {
     "call": "Domains",
     "key": "Domains",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7749"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7808"
     ]
   },
   {
@@ -1466,8 +1552,8 @@
     "call": "Downlink",
     "key": "Downlink",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1635",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1673"
+      "src/anticheburnet/tabs/dashboard/initController.ts:1638",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1676"
     ]
   },
   {
@@ -1499,6 +1585,20 @@
     ]
   },
   {
+    "call": "Download failed.",
+    "key": "Download failed.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:171"
+    ]
+  },
+  {
+    "call": "Download interrupted",
+    "key": "Download interrupted",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:158"
+    ]
+  },
+  {
     "call": "Download lists through",
     "key": "Download lists through",
     "places": [
@@ -1520,39 +1620,61 @@
     ]
   },
   {
+    "call": "Download route",
+    "key": "Download route",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:286"
+    ]
+  },
+  {
     "call": "Download subscription through a section",
     "key": "Download subscription through a section",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2311"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2318"
     ]
   },
   {
     "call": "Download subscriptions via the selected section",
     "key": "Download subscriptions via the selected section",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2312"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2319"
     ]
   },
   {
     "call": "Download through",
     "key": "Download through",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2320"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2327"
+    ]
+  },
+  {
+    "call": "Download through the selected connection failed. Direct fallback is disabled.",
+    "key": "Download through the selected connection failed. Direct fallback is disabled.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:170"
     ]
   },
   {
     "call": "Downloaded",
     "key": "Downloaded",
     "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:153",
       "src/anticheburnet/tabs/monitoring/initController.ts:825",
       "src/anticheburnet/tabs/monitoring/initController.ts:879"
+    ]
+  },
+  {
+    "call": "Downloading",
+    "key": "Downloading",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:152"
     ]
   },
   {
     "call": "Drag rows to change priority. The rule at the top is checked first.",
     "key": "Drag rows to change priority. The rule at the top is checked first.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:390"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:478"
     ]
   },
   {
@@ -1566,14 +1688,14 @@
     "call": "Duplicate value",
     "key": "Duplicate value",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4628"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4687"
     ]
   },
   {
     "call": "Edit rule action",
     "key": "Edit rule action",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:67",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:68",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/server.js:1734"
     ]
   },
@@ -1581,7 +1703,7 @@
     "call": "Enable",
     "key": "Enable",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7031",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7090",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/server.js:2476"
     ]
   },
@@ -1610,7 +1732,7 @@
     "call": "Enable built-in DNS resolver for domains handled by this section",
     "key": "Enable built-in DNS resolver for domains handled by this section",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2498"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2505"
     ]
   },
   {
@@ -1624,14 +1746,14 @@
     "call": "Enable Mixed Proxy",
     "key": "Enable Mixed Proxy",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7595"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7654"
     ]
   },
   {
     "call": "Enable Mixed Proxy Authentication",
     "key": "Enable Mixed Proxy Authentication",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7636"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7695"
     ]
   },
   {
@@ -1663,83 +1785,90 @@
     ]
   },
   {
-    "call": "Enter a complete sing-box outbound object",
-    "key": "Enter a complete sing-box outbound object",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3908"
-    ]
-  },
-  {
     "call": "Enter a display name",
     "key": "Enter a display name",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2551",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3003",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3863",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3879"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2558",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3012",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3873",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3889"
     ]
   },
   {
     "call": "Enter a level name",
     "key": "Enter a level name",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2800",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2821"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2808",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2829"
+    ]
+  },
+  {
+    "call": "Enter a sing-box outbound object or a complete native Xray config with an outbounds array",
+    "key": "Enter a sing-box outbound object or a complete native Xray config with an outbounds array",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3945"
     ]
   },
   {
     "call": "Enter a valid DNS server address",
     "key": "Enter a valid DNS server address",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7116"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7175"
     ]
   },
   {
     "call": "Enter HWID",
     "key": "Enter HWID",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2394"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2401"
     ]
   },
   {
     "call": "Enter the HWID sent with subscription requests",
     "key": "Enter the HWID sent with subscription requests",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2386"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2393"
     ]
   },
   {
     "call": "Enter the subscription URL",
     "key": "Enter the subscription URL",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7306"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7365"
+    ]
+  },
+  {
+    "call": "Error",
+    "key": "Error",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:159"
     ]
   },
   {
     "call": "Exclude by proxy parameters",
     "key": "Exclude by proxy parameters",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2670",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2880",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3278"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2678",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2889",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3288"
     ]
   },
   {
     "call": "Exclude by regular expression",
     "key": "Exclude by regular expression",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2729",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2942",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3338"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2737",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2951",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3348"
     ]
   },
   {
     "call": "Exclude countries",
     "key": "Exclude countries",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2713",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2926",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3322"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2721",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2935",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3332"
     ]
   },
   {
@@ -1760,44 +1889,51 @@
     "call": "Exclude servers",
     "key": "Exclude servers",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2721",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2934",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3330"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2729",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2943",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3340"
     ]
   },
   {
     "call": "Exclude servers with one of the selected protocols from this level.",
     "key": "Exclude servers with one of the selected protocols from this level.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2888"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2897"
     ]
   },
   {
     "call": "Exclude servers with one of the selected security types from this level.",
     "key": "Exclude servers with one of the selected security types from this level.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2894"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2903"
     ]
   },
   {
     "call": "Exclude servers with one of the selected transports from this level.",
     "key": "Exclude servers with one of the selected transports from this level.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2891"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2900"
     ]
   },
   {
     "call": "Exclude URLTest / Priority group",
     "key": "Exclude URLTest / Priority group",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3393"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3403"
+    ]
+  },
+  {
+    "call": "Execution engine",
+    "key": "Execution engine",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3925"
     ]
   },
   {
     "call": "Expecting: %s",
     "key": "Expecting: %s",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:53"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:54"
     ]
   },
   {
@@ -1811,21 +1947,21 @@
     "call": "Expose this section as a local HTTP+SOCKS proxy",
     "key": "Expose this section as a local HTTP+SOCKS proxy",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7596"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7655"
     ]
   },
   {
     "call": "External nfqws config files bypass AnticheburNET queue management and explicit validation.",
     "key": "External nfqws config files bypass AnticheburNET queue management and explicit validation.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5463"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5522"
     ]
   },
   {
     "call": "External nfqws2 config files bypass AnticheburNET queue management and explicit validation.",
     "key": "External nfqws2 config files bypass AnticheburNET queue management and explicit validation.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5908"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5967"
     ]
   },
   {
@@ -1875,6 +2011,7 @@
     "call": "Failed to load automatic update settings",
     "key": "Failed to load automatic update settings",
     "places": [
+      "src/anticheburnet/tabs/dashboard/subscriptionAutoUpdate.ts:31",
       "src/anticheburnet/tabs/updates/initController.ts:104"
     ]
   },
@@ -1882,6 +2019,7 @@
     "call": "Failed to save automatic update settings",
     "key": "Failed to save automatic update settings",
     "places": [
+      "src/anticheburnet/tabs/dashboard/subscriptionAutoUpdate.ts:48",
       "src/anticheburnet/tabs/updates/initController.ts:120",
       "src/anticheburnet/tabs/updates/initController.ts:127"
     ]
@@ -1890,34 +2028,34 @@
     "call": "Failed to update subscriptions",
     "key": "Failed to update subscriptions",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:363",
-      "src/anticheburnet/tabs/dashboard/initController.ts:364",
-      "src/anticheburnet/tabs/dashboard/initController.ts:392",
-      "src/anticheburnet/tabs/dashboard/initController.ts:439",
-      "src/anticheburnet/tabs/dashboard/initController.ts:443",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1416",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1421"
+      "src/anticheburnet/tabs/dashboard/initController.ts:366",
+      "src/anticheburnet/tabs/dashboard/initController.ts:367",
+      "src/anticheburnet/tabs/dashboard/initController.ts:395",
+      "src/anticheburnet/tabs/dashboard/initController.ts:442",
+      "src/anticheburnet/tabs/dashboard/initController.ts:446",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1419",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1424"
     ]
   },
   {
     "call": "FakeIP and control checks use different public IPs",
     "key": "FakeIP and control checks use different public IPs",
     "places": [
-      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:91"
+      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:105"
     ]
   },
   {
     "call": "FakeIP and control checks use the same public IP",
     "key": "FakeIP and control checks use the same public IP",
     "places": [
-      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:92"
+      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:108"
     ]
   },
   {
     "call": "FakeIP works; public IP comparison is inconclusive",
     "key": "FakeIP works; public IP comparison is inconclusive",
     "places": [
-      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:46"
+      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:60"
     ]
   },
   {
@@ -1938,8 +2076,8 @@
     "call": "Faster server search interval",
     "key": "Faster server search interval",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3082",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1236"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3091",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1239"
     ]
   },
   {
@@ -1953,7 +2091,7 @@
     "call": "Filter the servers that will be displayed on the dashboard. Excluded servers are also removed from the URLTest and Priority groups of this section.",
     "key": "Filter the servers that will be displayed on the dashboard. Excluded servers are also removed from the URLTest and Priority groups of this section.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3235"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3244"
     ]
   },
   {
@@ -1964,10 +2102,18 @@
     ]
   },
   {
+    "call": "First enabled connection",
+    "key": "First enabled connection",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:137",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:144"
+    ]
+  },
+  {
     "call": "Fix the highlighted fields and save again.",
     "key": "Fix the highlighted fields and save again.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3508",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3518",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/server.js:2238"
     ]
   },
@@ -1975,7 +2121,7 @@
     "call": "Forced device routing",
     "key": "Forced device routing",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7917"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7976"
     ]
   },
   {
@@ -2003,29 +2149,29 @@
     "call": "Fuzzing is not supported here because AnticheburNET needs deterministic runtime validation.",
     "key": "Fuzzing is not supported here because AnticheburNET needs deterministic runtime validation.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5926"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5985"
     ]
   },
   {
     "call": "Generate a random 16-character hexadecimal HWID",
     "key": "Generate a random 16-character hexadecimal HWID",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2401"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2408"
     ]
   },
   {
     "call": "Generate HWID",
     "key": "Generate HWID",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2400",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2405"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2407",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2412"
     ]
   },
   {
     "call": "Generate HWID from router hardware information for this subscription",
     "key": "Generate HWID from router hardware information for this subscription",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2377"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2384"
     ]
   },
   {
@@ -2050,6 +2196,13 @@
     ]
   },
   {
+    "call": "Global tunnel strategies ignore section lists. In HAPP mode, manual domains of the tunnel connection bypass the tunnel.",
+    "key": "Global tunnel strategies ignore section lists. In HAPP mode, manual domains of the tunnel connection bypass the tunnel.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:133"
+    ]
+  },
+  {
     "call": "gRPC service",
     "key": "gRPC service",
     "places": [
@@ -2064,80 +2217,102 @@
     ]
   },
   {
+    "call": "HAPP routing is disabled in this subscription.",
+    "key": "HAPP routing is disabled in this subscription.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:289"
+    ]
+  },
+  {
+    "call": "HAPP rules and resources",
+    "key": "HAPP rules and resources",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:155",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:361"
+    ]
+  },
+  {
+    "call": "HAPP rules: all through the tunnel except exclusions",
+    "key": "HAPP rules: all through the tunnel except exclusions",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:119"
+    ]
+  },
+  {
     "call": "Hide cascade connection nodes",
     "key": "Hide cascade connection nodes",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2486"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2493"
     ]
   },
   {
     "call": "Hide individual nodes that are already included in imported subscription URLTest groups",
     "key": "Hide individual nodes that are already included in imported subscription URLTest groups",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2475"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2482"
     ]
   },
   {
     "call": "Hide intermediate nodes used as detours by other subscription nodes",
     "key": "Hide intermediate nodes used as detours by other subscription nodes",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2487"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2494"
     ]
   },
   {
     "call": "Hide selected servers.",
     "key": "Hide selected servers.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3331"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3341"
     ]
   },
   {
     "call": "Hide servers from selected groups without repeating their filtering criteria.",
     "key": "Hide servers from selected groups without repeating their filtering criteria.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3394"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3404"
     ]
   },
   {
     "call": "Hide servers from the specified countries.",
     "key": "Hide servers from the specified countries.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3323"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3333"
     ]
   },
   {
     "call": "Hide servers whose names match the expression.",
     "key": "Hide servers whose names match the expression.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3339"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3349"
     ]
   },
   {
     "call": "Hide servers with one of the selected protocols.",
     "key": "Hide servers with one of the selected protocols.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3286"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3296"
     ]
   },
   {
     "call": "Hide servers with one of the selected security types.",
     "key": "Hide servers with one of the selected security types.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3290"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3300"
     ]
   },
   {
     "call": "Hide servers with one of the selected transports.",
     "key": "Hide servers with one of the selected transports.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3287"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3297"
     ]
   },
   {
     "call": "Hide URLTest group nodes",
     "key": "Hide URLTest group nodes",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2474"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2481"
     ]
   },
   {
@@ -2151,8 +2326,8 @@
     "call": "Higher-level check interval",
     "key": "Higher-level check interval",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3046",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1222"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3055",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1225"
     ]
   },
   {
@@ -2174,14 +2349,14 @@
     "call": "How often higher priority levels are checked while a lower level is active",
     "key": "How often higher priority levels are checked while a lower level is active",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3047"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3056"
     ]
   },
   {
     "call": "How often the currently selected server is checked",
     "key": "How often the currently selected server is checked",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3023"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3032"
     ]
   },
   {
@@ -2216,30 +2391,30 @@
     "call": "HWID",
     "key": "HWID",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2385"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2392"
     ]
   },
   {
     "call": "Idle timeout",
     "key": "Idle timeout",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2596",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2603",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/server.js:3059",
-      "src/anticheburnet/tabs/dashboard/initController.ts:997"
+      "src/anticheburnet/tabs/dashboard/initController.ts:1000"
     ]
   },
   {
     "call": "Import subscription URLTest groups",
     "key": "Import subscription URLTest groups",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2465"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2472"
     ]
   },
   {
     "call": "Import URLTest groups returned by this subscription provider",
     "key": "Import URLTest groups returned by this subscription provider",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2466"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2473"
     ]
   },
   {
@@ -2274,43 +2449,43 @@
     "call": "Include by proxy parameters",
     "key": "Include by proxy parameters",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2653",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2862",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3258"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2661",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2871",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3268"
     ]
   },
   {
     "call": "Include by regular expression",
     "key": "Include by regular expression",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2705",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2918",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3314"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2713",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2927",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3324"
     ]
   },
   {
     "call": "Include countries",
     "key": "Include countries",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2689",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2902",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3298"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2697",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2911",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3308"
     ]
   },
   {
     "call": "Include IP addresses and subnets",
     "key": "Include IP addresses and subnets",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3983"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4042"
     ]
   },
   {
     "call": "Include servers",
     "key": "Include servers",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2697",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2910",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3306"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2705",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2919",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3316"
     ]
   },
   {
@@ -2360,24 +2535,24 @@
     "call": "Interrupt connections",
     "key": "Interrupt connections",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2610",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3098",
-      "src/anticheburnet/tabs/dashboard/initController.ts:999",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1242"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2617",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3107",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1002",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1245"
     ]
   },
   {
     "call": "Interrupt connections when priority failover switches server",
     "key": "Interrupt connections when priority failover switches server",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3099"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3108"
     ]
   },
   {
     "call": "Interrupt connections when URLTest switches the selected server",
     "key": "Interrupt connections when URLTest switches the selected server",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2611"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2618"
     ]
   },
   {
@@ -2391,14 +2566,14 @@
     "call": "Interval",
     "key": "Interval",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:995"
+      "src/anticheburnet/tabs/dashboard/initController.ts:998"
     ]
   },
   {
     "call": "Invalid ByeDPI strategy",
     "key": "Invalid ByeDPI strategy",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7263"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7322"
     ]
   },
   {
@@ -2426,7 +2601,7 @@
     "call": "Invalid domain address",
     "key": "Invalid domain address",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5136",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5195",
       "src/validators/validateDomain.ts:67",
       "src/validators/validateDomain.ts:73"
     ]
@@ -2548,15 +2723,23 @@
     "call": "Invalid JSON format",
     "key": "Invalid JSON format",
     "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3973",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/server.js:1980",
       "src/validators/validateOutboundJson.ts:58"
+    ]
+  },
+  {
+    "call": "Invalid native Xray outbound",
+    "key": "Invalid native Xray outbound",
+    "places": [
+      "src/validators/validateOutboundJson.ts:105"
     ]
   },
   {
     "call": "Invalid NFQWS2 strategy",
     "key": "Invalid NFQWS2 strategy",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7220"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7279"
     ]
   },
   {
@@ -2570,7 +2753,7 @@
     "call": "Invalid port number. Must be between 1 and 65535",
     "key": "Invalid port number. Must be between 1 and 65535",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7629",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7688",
       "src/validators/validateShadowsocksUrl.ts:91"
     ]
   },
@@ -2578,14 +2761,14 @@
     "call": "Invalid port or range. Use 80 or 1000-2000",
     "key": "Invalid port or range. Use 80 or 1000-2000",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5285"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5344"
     ]
   },
   {
     "call": "Invalid regular expression",
     "key": "Invalid regular expression",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4511"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4570"
     ]
   },
   {
@@ -2725,21 +2908,21 @@
     "call": "Invalid Trojan URL: must not contain spaces",
     "key": "Invalid Trojan URL: must not contain spaces",
     "places": [
-      "src/validators/validateTrojanUrl.ts:16"
+      "src/validators/validateTrojanUrl.ts:18"
     ]
   },
   {
     "call": "Invalid Trojan URL: must start with trojan://",
     "key": "Invalid Trojan URL: must start with trojan://",
     "places": [
-      "src/validators/validateTrojanUrl.ts:9"
+      "src/validators/validateTrojanUrl.ts:11"
     ]
   },
   {
     "call": "Invalid Trojan URL: parsing failed",
     "key": "Invalid Trojan URL: parsing failed",
     "places": [
-      "src/validators/validateTrojanUrl.ts:61"
+      "src/validators/validateTrojanUrl.ts:69"
     ]
   },
   {
@@ -2755,7 +2938,7 @@
     "call": "Invalid VLESS URL: parsing failed",
     "key": "Invalid VLESS URL: parsing failed",
     "places": [
-      "src/validators/validateVlessUrl.ts:117"
+      "src/validators/validateVlessUrl.ts:102"
     ]
   },
   {
@@ -2766,10 +2949,18 @@
     ]
   },
   {
+    "call": "IP rules",
+    "key": "IP rules",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:249",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:293"
+    ]
+  },
+  {
     "call": "IPs",
     "key": "IPs",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7778"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7837"
     ]
   },
   {
@@ -2798,10 +2989,10 @@
     "call": "JSON outbound",
     "key": "JSON outbound",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1058",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3907",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4143",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7394"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1087",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3944",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4202",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7453"
     ]
   },
   {
@@ -2836,21 +3027,21 @@
     "call": "JSON outbound settings",
     "key": "JSON outbound settings",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3931"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3982"
     ]
   },
   {
     "call": "Keep Priority before latency-sorted servers",
     "key": "Keep Priority before latency-sorted servers",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3108"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3117"
     ]
   },
   {
     "call": "Keep URLTest before latency-sorted servers",
     "key": "Keep URLTest before latency-sorted servers",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2622"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2629"
     ]
   },
   {
@@ -2864,7 +3055,7 @@
     "call": "Keyword must not contain spaces or commas",
     "key": "Keyword must not contain spaces or commas",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4521"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4580"
     ]
   },
   {
@@ -2872,6 +3063,20 @@
     "key": "Last automatic update:",
     "places": [
       "src/anticheburnet/tabs/updates/autoUpdateHistory.ts:7"
+    ]
+  },
+  {
+    "call": "Last check",
+    "key": "Last check",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:234"
+    ]
+  },
+  {
+    "call": "Last successful download",
+    "key": "Last successful download",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:233"
     ]
   },
   {
@@ -2908,28 +3113,28 @@
     "call": "Leave empty to omit this header",
     "key": "Leave empty to omit this header",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2431"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2438"
     ]
   },
   {
     "call": "Level",
     "key": "Level",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1178"
+      "src/anticheburnet/tabs/dashboard/initController.ts:1181"
     ]
   },
   {
     "call": "Level name",
     "key": "Level name",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2816"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2824"
     ]
   },
   {
     "call": "List must be an HTTP(S) URL or a local .lst path",
     "key": "List must be an HTTP(S) URL or a local .lst path",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6962"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7021"
     ]
   },
   {
@@ -2987,6 +3192,13 @@
     ]
   },
   {
+    "call": "Loading…",
+    "key": "Loading…",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:309"
+    ]
+  },
+  {
     "call": "Log Level",
     "key": "Log Level",
     "places": [
@@ -3011,14 +3223,21 @@
     "call": "Match destination IPs or subnets",
     "key": "Match destination IPs or subnets",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7779"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7838"
     ]
   },
   {
     "call": "Match destination ports. Use a single port or a range",
     "key": "Match destination ports. Use a single port or a range",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7929"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7988"
+    ]
+  },
+  {
+    "call": "Matching public IPs are expected with tunnel routing",
+    "key": "Matching public IPs are expected with tunnel routing",
+    "places": [
+      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:107"
     ]
   },
   {
@@ -3032,7 +3251,7 @@
     "call": "Memory Usage",
     "key": "Memory Usage",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1713"
+      "src/anticheburnet/tabs/dashboard/initController.ts:1716"
     ]
   },
   {
@@ -3046,28 +3265,28 @@
     "call": "Minimum latency difference in milliseconds that triggers switching to a faster server.",
     "key": "Minimum latency difference in milliseconds that triggers switching to a faster server.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2570"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2577"
     ]
   },
   {
     "call": "Mixed Proxy Password",
     "key": "Mixed Proxy Password",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7687"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7746"
     ]
   },
   {
     "call": "Mixed Proxy Port",
     "key": "Mixed Proxy Port",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7610"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7669"
     ]
   },
   {
     "call": "Mixed Proxy Username",
     "key": "Mixed Proxy Username",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7651"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7710"
     ]
   },
   {
@@ -3081,45 +3300,73 @@
     "call": "Monitoring",
     "key": "Monitoring",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:460"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:549"
     ]
   },
   {
     "call": "Must be a number in the range of 0 - 10000",
     "key": "Must be a number in the range of 0 - 10000",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1995",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2010"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2025",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2040"
     ]
   },
   {
     "call": "Name displayed on the dashboard",
     "key": "Name displayed on the dashboard",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2540",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2999"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2547",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3008"
     ]
   },
   {
     "call": "Name shown in the priority level list",
     "key": "Name shown in the priority level list",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2817"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2825"
+    ]
+  },
+  {
+    "call": "Native Xray config exceeds 1 MB",
+    "key": "Native Xray config exceeds 1 MB",
+    "places": [
+      "src/validators/validateOutboundJson.ts:110"
+    ]
+  },
+  {
+    "call": "Native Xray config must contain a non-empty outbounds array",
+    "key": "Native Xray config must contain a non-empty outbounds array",
+    "places": [
+      "src/validators/validateOutboundJson.ts:96"
+    ]
+  },
+  {
+    "call": "Native Xray profile accepts only type, tag and config",
+    "key": "Native Xray profile accepts only type, tag and config",
+    "places": [
+      "src/validators/validateOutboundJson.ts:87"
+    ]
+  },
+  {
+    "call": "Native Xray requires the optional Xray component. Save the profile, check the complete release in Components, then Apply. XDRIVE requires matching client and server versions.",
+    "key": "Native Xray requires the optional Xray component. Save the profile, check the complete release in Components, then Apply. XDRIVE requires matching client and server versions.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3926"
     ]
   },
   {
     "call": "Network Interface",
     "key": "Network Interface",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1810",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7353"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1839",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7412"
     ]
   },
   {
     "call": "Network interface settings",
     "key": "Network interface settings",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3698"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3708"
     ]
   },
   {
@@ -3149,38 +3396,39 @@
     "call": "NFQWS Strategy",
     "key": "NFQWS Strategy",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7152"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7211"
     ]
   },
   {
     "call": "NFQWS strategy cannot be empty",
     "key": "NFQWS strategy cannot be empty",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5593"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5652"
     ]
   },
   {
     "call": "NFQWS2 Strategy",
     "key": "NFQWS2 Strategy",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7199"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7258"
     ]
   },
   {
     "call": "NFQWS2 strategy cannot be empty",
     "key": "NFQWS2 strategy cannot be empty",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6067"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6126"
     ]
   },
   {
     "call": "No",
     "key": "No",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:846",
-      "src/anticheburnet/tabs/dashboard/initController.ts:850",
-      "src/anticheburnet/tabs/dashboard/initController.ts:926",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1133"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:217",
+      "src/anticheburnet/tabs/dashboard/initController.ts:849",
+      "src/anticheburnet/tabs/dashboard/initController.ts:853",
+      "src/anticheburnet/tabs/dashboard/initController.ts:929",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1136"
     ]
   },
   {
@@ -3205,10 +3453,24 @@
     ]
   },
   {
+    "call": "No connection selected",
+    "key": "No connection selected",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:269"
+    ]
+  },
+  {
     "call": "No enabled server inbounds configured",
     "key": "No enabled server inbounds configured",
     "places": [
       "src/anticheburnet/tabs/diagnostic/checks/runInboundsCheck.ts:187"
+    ]
+  },
+  {
+    "call": "No HAPP routing profile is available in the current subscription cache.",
+    "key": "No HAPP routing profile is available in the current subscription cache.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:304"
     ]
   },
   {
@@ -3233,6 +3495,14 @@
     ]
   },
   {
+    "call": "No rules",
+    "key": "No rules",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:254",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:262"
+    ]
+  },
+  {
     "call": "No rules use ByeDPI",
     "key": "No rules use ByeDPI",
     "places": [
@@ -3254,19 +3524,26 @@
     ]
   },
   {
+    "call": "No source",
+    "key": "No source",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:201"
+    ]
+  },
+  {
     "call": "Node list is empty",
     "key": "Node list is empty",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1093",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1343"
+      "src/anticheburnet/tabs/dashboard/initController.ts:1096",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1346"
     ]
   },
   {
     "call": "Nodes",
     "key": "Nodes",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1023",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1266"
+      "src/anticheburnet/tabs/dashboard/initController.ts:1026",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1269"
     ]
   },
   {
@@ -3295,6 +3572,13 @@
     ]
   },
   {
+    "call": "Not downloaded",
+    "key": "Not downloaded",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:150"
+    ]
+  },
+  {
     "call": "Not implement yet",
     "key": "Not implement yet",
     "places": [
@@ -3313,10 +3597,24 @@
     ]
   },
   {
+    "call": "Not prepared",
+    "key": "Not prepared",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:157"
+    ]
+  },
+  {
     "call": "Not public",
     "key": "Not public",
     "places": [
       "src/anticheburnet/tabs/diagnostic/checks/runInboundsCheck.ts:62"
+    ]
+  },
+  {
+    "call": "Not required",
+    "key": "Not required",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:151"
     ]
   },
   {
@@ -3345,6 +3643,20 @@
       "src/anticheburnet/tabs/diagnostic/initController.ts:346",
       "src/anticheburnet/tabs/diagnostic/initController.ts:403",
       "src/anticheburnet/tabs/diagnostic/initController.ts:489"
+    ]
+  },
+  {
+    "call": "Not selected",
+    "key": "Not selected",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:283"
+    ]
+  },
+  {
+    "call": "Not yet",
+    "key": "Not yet",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:164"
     ]
   },
   {
@@ -3379,58 +3691,58 @@
     "call": "Only from the specified countries.",
     "key": "Only from the specified countries.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2903"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2912"
     ]
   },
   {
     "call": "Only selected",
     "key": "Only selected",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1881",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1889"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1910",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1918"
     ]
   },
   {
     "call": "Only selected except exclusions",
     "key": "Only selected except exclusions",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1882",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1891"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1911",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1920"
     ]
   },
   {
     "call": "Only servers whose names match the expression.",
     "key": "Only servers whose names match the expression.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2919"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2928"
     ]
   },
   {
     "call": "Only servers with one of the selected protocols.",
     "key": "Only servers with one of the selected protocols.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2870"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2879"
     ]
   },
   {
     "call": "Only servers with one of the selected security types.",
     "key": "Only servers with one of the selected security types.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2874"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2883"
     ]
   },
   {
     "call": "Only servers with one of the selected transports.",
     "key": "Only servers with one of the selected transports.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2871"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2880"
     ]
   },
   {
     "call": "Only the specified servers.",
     "key": "Only the specified servers.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2911"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2920"
     ]
   },
   {
@@ -3445,7 +3757,7 @@
     "call": "Open priority settings and enter a display name",
     "key": "Open priority settings and enter a display name",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3875"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3885"
     ]
   },
   {
@@ -3468,29 +3780,29 @@
     "call": "Option \"%s\" contains an invalid input value.",
     "key": "Option \"%s\" contains an invalid input value.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1375",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6672"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1404",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6731"
     ]
   },
   {
     "call": "Optional values must be attached with '=' here; a separate token would be ignored by nfqws.",
     "key": "Optional values must be attached with '=' here; a separate token would be ignored by nfqws.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5671"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5730"
     ]
   },
   {
     "call": "Optional values must be attached with '=' here; a separate token would be ignored by nfqws2.",
     "key": "Optional values must be attached with '=' here; a separate token would be ignored by nfqws2.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6145"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6204"
     ]
   },
   {
     "call": "outbounds must be a non-empty array of strings",
     "key": "outbounds must be a non-empty array of strings",
     "places": [
-      "src/validators/validateOutboundJson.ts:111"
+      "src/validators/validateOutboundJson.ts:146"
     ]
   },
   {
@@ -3504,7 +3816,7 @@
     "call": "Override the default OpenWrt device headers for this subscription",
     "key": "Override the default OpenWrt device headers for this subscription",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2414"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2421"
     ]
   },
   {
@@ -3525,7 +3837,7 @@
     "call": "Password cannot be empty",
     "key": "Password cannot be empty",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7713"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7772"
     ]
   },
   {
@@ -3576,22 +3888,29 @@
     "call": "Periodically check the current level and switch to a faster server even when the current one works.",
     "key": "Periodically check the current level and switch to a faster server even when the current one works.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3072"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3081"
     ]
   },
   {
     "call": "Pin on dashboard",
     "key": "Pin on dashboard",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2621",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3107"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2628",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3116"
+    ]
+  },
+  {
+    "call": "Please wait. Connections may be briefly interrupted.",
+    "key": "Please wait. Connections may be briefly interrupted.",
+    "places": [
+      "src/anticheburnet/partials/serviceTransitionBanner.ts:57"
     ]
   },
   {
     "call": "Port cannot be empty",
     "key": "Port cannot be empty",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7621"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7680"
     ]
   },
   {
@@ -3605,14 +3924,14 @@
     "call": "Port for the local mixed proxy of this section",
     "key": "Port for the local mixed proxy of this section",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7611"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7670"
     ]
   },
   {
     "call": "Port must be between 1 and 65535",
     "key": "Port must be between 1 and 65535",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5292",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5351",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/server.js:1810"
     ]
   },
@@ -3620,14 +3939,14 @@
     "call": "Port range start must be less than or equal to end",
     "key": "Port range start must be less than or equal to end",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5296"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5355"
     ]
   },
   {
     "call": "Ports",
     "key": "Ports",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7928"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7987"
     ]
   },
   {
@@ -3655,21 +3974,28 @@
     "call": "Prefix text",
     "key": "Prefix text",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2458"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2465"
+    ]
+  },
+  {
+    "call": "Preparation",
+    "key": "Preparation",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:215"
     ]
   },
   {
     "call": "Priority",
     "key": "Priority",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7480"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7539"
     ]
   },
   {
     "call": "Priority details",
     "key": "Priority details",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1370",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1373",
       "src/anticheburnet/tabs/dashboard/partials/renderSections.ts:399",
       "src/anticheburnet/tabs/dashboard/partials/renderSections.ts:400"
     ]
@@ -3678,47 +4004,61 @@
     "call": "Priority details are unavailable",
     "key": "Priority details are unavailable",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1203"
+      "src/anticheburnet/tabs/dashboard/initController.ts:1206"
     ]
   },
   {
     "call": "Priority level settings",
     "key": "Priority level settings",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3762",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3763"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3772",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3773"
     ]
   },
   {
     "call": "Priority levels",
     "key": "Priority levels",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3116"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3125"
     ]
   },
   {
     "call": "Priority settings",
     "key": "Priority settings",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3820",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3825",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3826"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3830",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3835",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3836"
+    ]
+  },
+  {
+    "call": "Profile name",
+    "key": "Profile name",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3936"
     ]
   },
   {
     "call": "Protocol",
     "key": "Protocol",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1951",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1981",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/server.js:2482",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/server.js:2516"
+    ]
+  },
+  {
+    "call": "Proxy",
+    "key": "Proxy",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:179"
     ]
   },
   {
     "call": "Proxy link is unavailable",
     "key": "Proxy link is unavailable",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:841"
+      "src/anticheburnet/tabs/dashboard/initController.ts:844"
     ]
   },
   {
@@ -3734,6 +4074,13 @@
     "key": "QR code is too large",
     "places": [
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/server.js:1609"
+    ]
+  },
+  {
+    "call": "Ready",
+    "key": "Ready",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:156"
     ]
   },
   {
@@ -3793,10 +4140,17 @@
     ]
   },
   {
+    "call": "Refresh",
+    "key": "Refresh",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:358"
+    ]
+  },
+  {
     "call": "Regular expression must not contain spaces or commas",
     "key": "Regular expression must not contain spaces or commas",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5178"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5237"
     ]
   },
   {
@@ -3810,70 +4164,78 @@
     "call": "Remove servers from the specified countries from this level.",
     "key": "Remove servers from the specified countries from this level.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2927"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2936"
     ]
   },
   {
     "call": "Remove servers whose names match the expression from this level.",
     "key": "Remove servers whose names match the expression from this level.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2943"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2952"
     ]
   },
   {
     "call": "Remove the specified servers from this level.",
     "key": "Remove the specified servers from this level.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2935"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2944"
     ]
   },
   {
     "call": "Require a username and password for the local mixed proxy",
     "key": "Require a username and password for the local mixed proxy",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7637"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7696"
     ]
   },
   {
     "call": "Resolve domain names before routing so sing-box can use real destination IPs.",
     "key": "Resolve domain names before routing so sing-box can use real destination IPs.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7724"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7783"
     ]
   },
   {
     "call": "Resolve real IP for routing",
     "key": "Resolve real IP for routing",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7723"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7782"
     ]
   },
   {
     "call": "Resource selection by hostname inside nfqws is not supported here; sing-box selects resources before NFQUEUE.",
     "key": "Resource selection by hostname inside nfqws is not supported here; sing-box selects resources before NFQUEUE.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5466"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5525"
     ]
   },
   {
     "call": "Resource selection by hostname inside nfqws2 is not supported here; sing-box selects resources before NFQUEUE.",
     "key": "Resource selection by hostname inside nfqws2 is not supported here; sing-box selects resources before NFQUEUE.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5911"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5970"
     ]
   },
   {
     "call": "Resource selection by IP or CIDR inside nfqws is not supported here; sing-box selects resources before NFQUEUE.",
     "key": "Resource selection by IP or CIDR inside nfqws is not supported here; sing-box selects resources before NFQUEUE.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5469"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5528"
     ]
   },
   {
     "call": "Resource selection by IP or CIDR inside nfqws2 is not supported here; sing-box selects resources before NFQUEUE.",
     "key": "Resource selection by IP or CIDR inside nfqws2 is not supported here; sing-box selects resources before NFQUEUE.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5914"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5973"
+    ]
+  },
+  {
+    "call": "Resources",
+    "key": "Resources",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:296",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:297"
     ]
   },
   {
@@ -3909,7 +4271,7 @@
     "call": "Route requests to this DNS server through another section.",
     "key": "Route requests to this DNS server through another section.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7124"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7183"
     ]
   },
   {
@@ -3923,6 +4285,7 @@
     "call": "Routing rules",
     "key": "Routing rules",
     "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:292",
       "src/anticheburnet/tabs/diagnostic/checks/runInboundsCheck.ts:103",
       "src/anticheburnet/tabs/diagnostic/checks/runInboundsCheck.ts:114",
       "src/anticheburnet/tabs/diagnostic/checks/runInboundsCheck.ts:144"
@@ -3936,25 +4299,53 @@
     ]
   },
   {
+    "call": "Routing strategy",
+    "key": "Routing strategy",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:106"
+    ]
+  },
+  {
+    "call": "Rule groups",
+    "key": "Rule groups",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:215"
+    ]
+  },
+  {
+    "call": "Rule order",
+    "key": "Rule order",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:286"
+    ]
+  },
+  {
     "call": "Rule set must be an HTTP(S) URL or a local .srs / .json path",
     "key": "Rule set must be an HTTP(S) URL or a local .srs / .json path",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6953"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7012"
     ]
   },
   {
     "call": "Rule set settings",
     "key": "Rule set settings",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3990"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4049"
     ]
   },
   {
     "call": "Rule sets",
     "key": "Rule sets",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7808",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7837"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7867",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7896"
+    ]
+  },
+  {
+    "call": "rules",
+    "key": "rules",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:255"
     ]
   },
   {
@@ -4017,7 +4408,14 @@
     "call": "Save",
     "key": "Save",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3583"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3593"
+    ]
+  },
+  {
+    "call": "Saved configuration",
+    "key": "Saved configuration",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:215"
     ]
   },
   {
@@ -4045,28 +4443,28 @@
     "call": "Section",
     "key": "Section",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:395"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:483"
     ]
   },
   {
     "call": "Section name",
     "key": "Section name",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7057"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7116"
     ]
   },
   {
     "call": "Sections",
     "key": "Sections",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:389"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:477"
     ]
   },
   {
     "call": "Security",
     "key": "Security",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1963",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1993",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/server.js:2593"
     ]
   },
@@ -4074,28 +4472,28 @@
     "call": "Select a common client profile or enter a custom User-Agent",
     "key": "Select a common client profile or enter a custom User-Agent",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2357"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2364"
     ]
   },
   {
     "call": "Select a network interface",
     "key": "Select a network interface",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7359"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7418"
     ]
   },
   {
     "call": "Select a predefined domain list",
     "key": "Select a predefined domain list",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7789"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7848"
     ]
   },
   {
     "call": "Select a section",
     "key": "Select a section",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7145",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7204",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/settings.js:84"
     ]
   },
@@ -4103,35 +4501,35 @@
     "call": "Select a section for downloading this subscription",
     "key": "Select a section for downloading this subscription",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2334"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2341"
     ]
   },
   {
     "call": "Select a transit section",
     "key": "Select a transit section",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7558"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7617"
     ]
   },
   {
     "call": "Select an existing network interface",
     "key": "Select an existing network interface",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1861"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1890"
     ]
   },
   {
     "call": "Select an existing URLTest or Priority group",
     "key": "Select an existing URLTest or Priority group",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3218"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3227"
     ]
   },
   {
     "call": "Select an intermediate section",
     "key": "Select an intermediate section",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7571"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7630"
     ]
   },
   {
@@ -4145,14 +4543,14 @@
     "call": "Select network interface for VPN connection",
     "key": "Select network interface for VPN connection",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7354"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7413"
     ]
   },
   {
     "call": "Select or enter a User-Agent",
     "key": "Select or enter a User-Agent",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2370"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2377"
     ]
   },
   {
@@ -4170,11 +4568,18 @@
     ]
   },
   {
+    "call": "Select routing strategy",
+    "key": "Select routing strategy",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:114"
+    ]
+  },
+  {
     "call": "Select the fastest node",
     "key": "Select the fastest node",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3060",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1226"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3069",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1229"
     ]
   },
   {
@@ -4209,8 +4614,9 @@
     "call": "Selected",
     "key": "Selected",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:991",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1212"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:283",
+      "src/anticheburnet/tabs/dashboard/initController.ts:994",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1215"
     ]
   },
   {
@@ -4224,36 +4630,36 @@
     "call": "Selector and URLTest outbounds must contain a non-empty outbounds array",
     "key": "Selector and URLTest outbounds must contain a non-empty outbounds array",
     "places": [
-      "src/validators/validateOutboundJson.ts:85"
+      "src/validators/validateOutboundJson.ts:120"
     ]
   },
   {
     "call": "Server",
     "key": "Server",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:412"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:501"
     ]
   },
   {
     "call": "Server filtering",
     "key": "Server filtering",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2630",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2836"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2637",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2844"
     ]
   },
   {
     "call": "Server group for automatic lowest-latency selection",
     "key": "Server group for automatic lowest-latency selection",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7422"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7481"
     ]
   },
   {
     "call": "Server group for priority failover",
     "key": "Server group for priority failover",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7481"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7540"
     ]
   },
   {
@@ -4282,35 +4688,35 @@
     "call": "Server outbound must contain a non-empty server field",
     "key": "Server outbound must contain a non-empty server field",
     "places": [
-      "src/validators/validateOutboundJson.ts:94"
+      "src/validators/validateOutboundJson.ts:129"
     ]
   },
   {
     "call": "Server outbound must contain a numeric server_port from 1 to 65535",
     "key": "Server outbound must contain a numeric server_port from 1 to 65535",
     "places": [
-      "src/validators/validateOutboundJson.ts:100"
+      "src/validators/validateOutboundJson.ts:135"
     ]
   },
   {
     "call": "server_port must be a number from 1 to 65535",
     "key": "server_port must be a number from 1 to 65535",
     "places": [
-      "src/validators/validateOutboundJson.ts:107"
+      "src/validators/validateOutboundJson.ts:142"
     ]
   },
   {
     "call": "Servers",
     "key": "Servers",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:406"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:495"
     ]
   },
   {
     "call": "Servers on dashboard",
     "key": "Servers on dashboard",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3234"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3243"
     ]
   },
   {
@@ -4326,79 +4732,79 @@
     "call": "Service list",
     "key": "Service list",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7792"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7851"
     ]
   },
   {
     "call": "Services info",
     "key": "Services info",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1746"
+      "src/anticheburnet/tabs/dashboard/initController.ts:1749"
     ]
   },
   {
     "call": "Settings",
     "key": "Settings",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:424",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1119",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7028"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:513",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1148",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7087"
     ]
   },
   {
     "call": "Show metadata on dashboard",
     "key": "Show metadata on dashboard",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2441"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2448"
     ]
   },
   {
     "call": "Show only selected servers.",
     "key": "Show only selected servers.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3307"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3317"
     ]
   },
   {
     "call": "Show only servers with one of the selected protocols.",
     "key": "Show only servers with one of the selected protocols.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3266"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3276"
     ]
   },
   {
     "call": "Show only servers with one of the selected security types.",
     "key": "Show only servers with one of the selected security types.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3272"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3282"
     ]
   },
   {
     "call": "Show only servers with one of the selected transports.",
     "key": "Show only servers with one of the selected transports.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3269"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3279"
     ]
   },
   {
     "call": "Show servers from selected groups without repeating their filtering criteria.",
     "key": "Show servers from selected groups without repeating their filtering criteria.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3380"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3390"
     ]
   },
   {
     "call": "Show servers only from the specified countries.",
     "key": "Show servers only from the specified countries.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3299"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3309"
     ]
   },
   {
     "call": "Show servers whose names match the expression.",
     "key": "Show servers whose names match the expression.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3315"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3325"
     ]
   },
   {
@@ -4413,7 +4819,7 @@
     "call": "Show subscription metadata for this source on the dashboard",
     "key": "Show subscription metadata for this source on the dashboard",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2442"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2449"
     ]
   },
   {
@@ -4427,14 +4833,14 @@
     "call": "Sing-box FakeIP DNS does not work",
     "key": "Sing-box FakeIP DNS does not work",
     "places": [
-      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:69"
+      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:83"
     ]
   },
   {
     "call": "Sing-box FakeIP DNS works",
     "key": "Sing-box FakeIP DNS works",
     "places": [
-      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:68"
+      "src/anticheburnet/tabs/diagnostic/checks/runFakeIPCheck.ts:82"
     ]
   },
   {
@@ -4476,20 +4882,22 @@
     "call": "Sort by latency",
     "key": "Sort by latency",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7583"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7642"
     ]
   },
   {
     "call": "Sorts servers in this section by lowest latency in the dashboard.",
     "key": "Sorts servers in this section by lowest latency in the dashboard.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7584"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7643"
     ]
   },
   {
     "call": "Source",
     "key": "Source",
     "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:208",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:209",
       "src/anticheburnet/tabs/monitoring/initController.ts:831",
       "src/anticheburnet/tabs/monitoring/initController.ts:881"
     ]
@@ -4611,21 +5019,14 @@
     "call": "Stop checking when URLTest group is not used. Use sing-box duration format like 1d, 12h or 30m.",
     "key": "Stop checking when URLTest group is not used. Use sing-box duration format like 1d, 12h or 30m.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2597"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2604"
     ]
   },
   {
     "call": "Subnets from the list will be extracted and added to nftables",
     "key": "Subnets from the list will be extracted and added to nftables",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3984"
-    ]
-  },
-  {
-    "call": "Subscription auto update",
-    "key": "Subscription auto update",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2288"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4043"
     ]
   },
   {
@@ -4639,43 +5040,36 @@
     "call": "Subscription update failed",
     "key": "Subscription update failed",
     "places": [
-      "src/anticheburnet/methods/shell/index.ts:754",
-      "src/anticheburnet/methods/shell/index.ts:774"
-    ]
-  },
-  {
-    "call": "Subscription update interval",
-    "key": "Subscription update interval",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2297"
+      "src/anticheburnet/methods/shell/index.ts:759",
+      "src/anticheburnet/methods/shell/index.ts:779"
     ]
   },
   {
     "call": "Subscription URL",
     "key": "Subscription URL",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7305"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7364"
     ]
   },
   {
     "call": "Subscription URL settings",
     "key": "Subscription URL settings",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3687"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3697"
     ]
   },
   {
     "call": "Subscriptions updated",
     "key": "Subscriptions updated",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:398"
+      "src/anticheburnet/tabs/dashboard/initController.ts:401"
     ]
   },
   {
     "call": "System info",
     "key": "System info",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1706"
+      "src/anticheburnet/tabs/dashboard/initController.ts:1709"
     ]
   },
   {
@@ -4733,72 +5127,93 @@
     "call": "Test only selected servers.",
     "key": "Test only selected servers.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2698"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2706"
     ]
   },
   {
     "call": "Test only servers with one of the selected protocols.",
     "key": "Test only servers with one of the selected protocols.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2658"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2666"
     ]
   },
   {
     "call": "Test only servers with one of the selected security types.",
     "key": "Test only servers with one of the selected security types.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2664"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2672"
     ]
   },
   {
     "call": "Test only servers with one of the selected transports.",
     "key": "Test only servers with one of the selected transports.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2661"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2669"
     ]
   },
   {
     "call": "Test servers only from the specified countries.",
     "key": "Test servers only from the specified countries.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2690"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2698"
     ]
   },
   {
     "call": "Test servers whose names match the expression.",
     "key": "Test servers whose names match the expression.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2706"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2714"
     ]
   },
   {
     "call": "Testing URL",
     "key": "Testing URL",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:994"
+      "src/anticheburnet/tabs/dashboard/initController.ts:997"
     ]
   },
   {
     "call": "The desync fwmark is managed by AnticheburNET for loop prevention and must not be overridden here.",
     "key": "The desync fwmark is managed by AnticheburNET for loop prevention and must not be overridden here.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5478",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5923"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5537",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5982"
+    ]
+  },
+  {
+    "call": "The downloaded database is invalid.",
+    "key": "The downloaded database is invalid.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:172"
     ]
   },
   {
     "call": "The NFQUEUE number is assigned by AnticheburNET for each rule and must not be overridden here.",
     "key": "The NFQUEUE number is assigned by AnticheburNET for each rule and must not be overridden here.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5475",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5920"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5534",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5979"
+    ]
+  },
+  {
+    "call": "The requested zone is missing or invalid in this database.",
+    "key": "The requested zone is missing or invalid in this database.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:174"
     ]
   },
   {
     "call": "The rule applies to the domain and all its subdomains. Use full:, keyword:, or regex: prefixes for exact match, keyword match, or regular expression.",
     "key": "The rule applies to the domain and all its subdomains. Use full:, keyword:, or regex: prefixes for exact match, keyword match, or regular expression.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7750"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7809"
+    ]
+  },
+  {
+    "call": "The selected connection could not be prepared.",
+    "key": "The selected connection could not be prepared.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:169"
     ]
   },
   {
@@ -4823,6 +5238,13 @@
     ]
   },
   {
+    "call": "This action has no rules in the received profile.",
+    "key": "This action has no rules in the received profile.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:264"
+    ]
+  },
+  {
     "call": "This field is required",
     "key": "This field is required",
     "places": [
@@ -4837,51 +5259,58 @@
     "call": "This field must start a working ciadpi strategy; help/version options exit immediately and are not allowed here.",
     "key": "This field must start a working ciadpi strategy; help/version options exit immediately and are not allowed here.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6340"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6399"
     ]
   },
   {
     "call": "This field must start a working nfqws strategy; --dry-run exits immediately and is not allowed here.",
     "key": "This field must start a working nfqws strategy; --dry-run exits immediately and is not allowed here.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5484"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5543"
     ]
   },
   {
     "call": "This field must start a working nfqws strategy; --version exits immediately and is not allowed here.",
     "key": "This field must start a working nfqws strategy; --version exits immediately and is not allowed here.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5487"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5546"
     ]
   },
   {
     "call": "This field must start a working nfqws2 strategy; --dry-run exits immediately and is not allowed here.",
     "key": "This field must start a working nfqws2 strategy; --dry-run exits immediately and is not allowed here.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5935"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5994"
     ]
   },
   {
     "call": "This field must start a working nfqws2 strategy; --version exits immediately and is not allowed here.",
     "key": "This field must start a working nfqws2 strategy; --version exits immediately and is not allowed here.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5938"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5997"
     ]
   },
   {
     "call": "This flag does not accept a value.",
     "key": "This flag does not accept a value.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5656",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6130"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5715",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6189"
     ]
   },
   {
     "call": "This option requires a value.",
     "key": "This option requires a value.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5687",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6161"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5746",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6220"
+    ]
+  },
+  {
+    "call": "This profile does not reference zones in this resource.",
+    "key": "This profile does not reference zones in this resource.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:240"
     ]
   },
   {
@@ -4917,22 +5346,29 @@
     "call": "Tolerance",
     "key": "Tolerance",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2569",
-      "src/anticheburnet/tabs/dashboard/initController.ts:996"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2576",
+      "src/anticheburnet/tabs/dashboard/initController.ts:999"
     ]
   },
   {
     "call": "Top level has the highest priority; lower levels are used as fallback",
     "key": "Top level has the highest priority; lower levels are used as fallback",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3117"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3126"
+    ]
+  },
+  {
+    "call": "Detected BitTorrent goes directly. Encrypted peer connections, DHT and HTTP(S) trackers follow the routing rules.",
+    "key": "Detected BitTorrent goes directly. Encrypted peer connections, DHT and HTTP(S) trackers follow the routing rules.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:115"
     ]
   },
   {
     "call": "Traffic",
     "key": "Traffic",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1632",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1635",
       "src/anticheburnet/tabs/dashboard/partials/renderSections.ts:125"
     ]
   },
@@ -4940,28 +5376,28 @@
     "call": "Traffic for this level goes directly.",
     "key": "Traffic for this level goes directly.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2828"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2836"
     ]
   },
   {
     "call": "Traffic Total",
     "key": "Traffic Total",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1666"
+      "src/anticheburnet/tabs/dashboard/initController.ts:1669"
     ]
   },
   {
     "call": "Transparent proxy mode is incompatible with action=byedpi because AnticheburNET connects to ciadpi through SOCKS.",
     "key": "Transparent proxy mode is incompatible with action=byedpi because AnticheburNET connects to ciadpi through SOCKS.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6331"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6390"
     ]
   },
   {
     "call": "Transport",
     "key": "Transport",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1957",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1987",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/server.js:2760"
     ]
   },
@@ -4997,7 +5433,7 @@
     "call": "Try compatible User-Agent profiles automatically when downloading this subscription",
     "key": "Try compatible User-Agent profiles automatically when downloading this subscription",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2346"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2353"
     ]
   },
   {
@@ -5012,6 +5448,13 @@
     "key": "TTL value cannot be empty",
     "places": [
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/settings.js:256"
+    ]
+  },
+  {
+    "call": "Tunnel connection",
+    "key": "Tunnel connection",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:132"
     ]
   },
   {
@@ -5031,35 +5474,50 @@
     ]
   },
   {
+    "call": "Unable to load HAPP rules and resources.",
+    "key": "Unable to load HAPP rules and resources.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:327",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:351"
+    ]
+  },
+  {
+    "call": "Unable to save the database cache.",
+    "key": "Unable to save the database cache.",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:173"
+    ]
+  },
+  {
     "call": "Unable to validate the ByeDPI strategy through the backend parser.",
     "key": "Unable to validate the ByeDPI strategy through the backend parser.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6255"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6314"
     ]
   },
   {
     "call": "Unable to validate the NFQWS strategy through the backend parser.",
     "key": "Unable to validate the NFQWS strategy through the backend parser.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5398",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6736",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7179"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5457",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6795",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7238"
     ]
   },
   {
     "call": "Unable to validate the NFQWS2 strategy through the backend parser.",
     "key": "Unable to validate the NFQWS2 strategy through the backend parser.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5843",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6745"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5902",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6804"
     ]
   },
   {
     "call": "Unavailability timeout",
     "key": "Unavailability timeout",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3034",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1220"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3043",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1223"
     ]
   },
   {
@@ -5087,23 +5545,23 @@
     "call": "Unexpected ByeDPI strategy argument: %s",
     "key": "Unexpected ByeDPI strategy argument: %s",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6472",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6521"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6531",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6580"
     ]
   },
   {
     "call": "Unexpected standalone token. Use explicit flags such as --name or --name=value.",
     "key": "Unexpected standalone token. Use explicit flags such as --name or --name=value.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5636",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6110"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5695",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6169"
     ]
   },
   {
     "call": "unique UCI identifier",
     "key": "unique UCI identifier",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:53"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:54"
     ]
   },
   {
@@ -5125,19 +5583,28 @@
     ]
   },
   {
+    "call": "Unknown",
+    "key": "Unknown",
+    "places": [
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:160",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:275",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:286"
+    ]
+  },
+  {
     "call": "Unknown ByeDPI option: %s",
     "key": "Unknown ByeDPI option: %s",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6441",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6463",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6514"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6500",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6522",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6573"
     ]
   },
   {
     "call": "Unknown country",
     "key": "Unknown country",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:598"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:627"
     ]
   },
   {
@@ -5151,14 +5618,14 @@
     "call": "Unknown NFQWS flag.",
     "key": "Unknown NFQWS flag.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5647"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5706"
     ]
   },
   {
     "call": "Unknown NFQWS2 flag.",
     "key": "Unknown NFQWS2 flag.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6121"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:6180"
     ]
   },
   {
@@ -5206,10 +5673,10 @@
     ]
   },
   {
-    "call": "Update this subscription automatically",
-    "key": "Update this subscription automatically",
+    "call": "Update subscriptions daily at 03:00 (router time)",
+    "key": "Update subscriptions daily at 03:00 (router time)",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2289"
+      "src/anticheburnet/tabs/dashboard/subscriptionAutoUpdate.ts:15"
     ]
   },
   {
@@ -5223,8 +5690,8 @@
     "call": "Uplink",
     "key": "Uplink",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1634",
-      "src/anticheburnet/tabs/dashboard/initController.ts:1669"
+      "src/anticheburnet/tabs/dashboard/initController.ts:1637",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1672"
     ]
   },
   {
@@ -5253,28 +5720,28 @@
     "call": "URL used to check whether a server is alive",
     "key": "URL used to check whether a server is alive",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3010"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3019"
     ]
   },
   {
     "call": "URL used to test server latency",
     "key": "URL used to test server latency",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2584"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2591"
     ]
   },
   {
     "call": "URLTest",
     "key": "URLTest",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7421"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7480"
     ]
   },
   {
     "call": "URLTest details",
     "key": "URLTest details",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:1120",
+      "src/anticheburnet/tabs/dashboard/initController.ts:1123",
       "src/anticheburnet/tabs/dashboard/partials/renderSections.ts:380",
       "src/anticheburnet/tabs/dashboard/partials/renderSections.ts:381"
     ]
@@ -5283,15 +5750,15 @@
     "call": "URLTest details are unavailable",
     "key": "URLTest details are unavailable",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:982"
+      "src/anticheburnet/tabs/dashboard/initController.ts:985"
     ]
   },
   {
     "call": "URLTest settings",
     "key": "URLTest settings",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3719",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3720"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3729",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3730"
     ]
   },
   {
@@ -5358,7 +5825,7 @@
     "call": "Use another section as an intermediate hop to connect to servers in this section. Does not apply to network interfaces or JSON outbounds.",
     "key": "Use another section as an intermediate hop to connect to servers in this section. Does not apply to network interfaces or JSON outbounds.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7520"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7579"
     ]
   },
   {
@@ -5393,12 +5860,11 @@
     "call": "Use sing-box duration format like 1d, 12h or 30m",
     "key": "Use sing-box duration format like 1d, 12h or 30m",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2298",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2558",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3083",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4555",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4562",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4569",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2565",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3092",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4614",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4621",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4628",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/settings.js:493",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/settings.js:515",
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/settings.js:522",
@@ -5417,7 +5883,7 @@
     "call": "User-Agent",
     "key": "User-Agent",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2356"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:2363"
     ]
   },
   {
@@ -5431,29 +5897,30 @@
     "call": "Username cannot be empty",
     "key": "Username cannot be empty",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7677"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7736"
     ]
   },
   {
     "call": "Valid",
     "key": "Valid",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5171",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5184",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5230",
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5243",
       "src/validators/validateDns.ts:25",
       "src/validators/validateDns.ts:29",
       "src/validators/validateDomain.ts:57",
       "src/validators/validateDomain.ts:76",
       "src/validators/validateHysteriaUrl.ts:151",
       "src/validators/validateIp.ts:25",
-      "src/validators/validateOutboundJson.ts:118",
+      "src/validators/validateOutboundJson.ts:112",
+      "src/validators/validateOutboundJson.ts:153",
       "src/validators/validatePath.ts:16",
       "src/validators/validateShadowsocksUrl.ts:101",
       "src/validators/validateSocksUrl.ts:75",
       "src/validators/validateSubnet.ts:42",
-      "src/validators/validateTrojanUrl.ts:64",
+      "src/validators/validateTrojanUrl.ts:72",
       "src/validators/validateUrl.ts:32",
-      "src/validators/validateVlessUrl.ts:115",
+      "src/validators/validateVlessUrl.ts:100",
       "src/validators/validateVmessUrl.ts:66"
     ]
   },
@@ -5461,14 +5928,14 @@
     "call": "Validation errors:",
     "key": "Validation errors:",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4624"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:4683"
     ]
   },
   {
     "call": "Value cannot be empty",
     "key": "Value cannot be empty",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5161"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5220"
     ]
   },
   {
@@ -5476,13 +5943,6 @@
     "key": "Value must not contain control characters",
     "places": [
       "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/server.js:1834"
-    ]
-  },
-  {
-    "call": "By local GeoIP database",
-    "key": "By local GeoIP database",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:1898"
     ]
   },
   {
@@ -5497,7 +5957,7 @@
     "call": "Visible name of this section",
     "key": "Visible name of this section",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7058"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7117"
     ]
   },
   {
@@ -5511,7 +5971,14 @@
     "call": "vless://, vmess://, ss://, trojan://, socks4/5://, hy2/hysteria2:// links",
     "key": "vless://, vmess://, ss://, trojan://, socks4/5://, hy2/hysteria2:// links",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7281"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7340"
+    ]
+  },
+  {
+    "call": "Waiting for the service to stop.",
+    "key": "Waiting for the service to stop.",
+    "places": [
+      "src/anticheburnet/partials/serviceTransitionBanner.ts:56"
     ]
   },
   {
@@ -5532,14 +5999,14 @@
     "call": "What AnticheburNET should do when this section matches",
     "key": "What AnticheburNET should do when this section matches",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7071"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:7130"
     ]
   },
   {
     "call": "When switching to another level, test every server and select the fastest instead of the first working one.",
     "key": "When switching to another level, test every server and select the fastest instead of the first working one.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3061"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:3070"
     ]
   },
   {
@@ -5560,7 +6027,8 @@
     "call": "Yes",
     "key": "Yes",
     "places": [
-      "src/anticheburnet/tabs/dashboard/initController.ts:846"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:217",
+      "src/anticheburnet/tabs/dashboard/initController.ts:849"
     ]
   },
   {
@@ -5574,7 +6042,7 @@
     "call": "Zapret hostlist templates are not supported here because AnticheburNET does not expand them for per-rule NFQWS strategies.",
     "key": "Zapret hostlist templates are not supported here because AnticheburNET does not expand them for per-rule NFQWS strategies.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5472"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5531"
     ]
   },
   {
@@ -5623,7 +6091,7 @@
     "call": "Zapret2 hostlist templates are not supported here because AnticheburNET does not expand them for per-rule NFQWS2 strategies.",
     "key": "Zapret2 hostlist templates are not supported here because AnticheburNET does not expand them for per-rule NFQWS2 strategies.",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5917"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/section.js:5976"
     ]
   },
   {
@@ -5669,461 +6137,10 @@
     ]
   },
   {
-    "call": "Routing strategy",
-    "key": "Routing strategy",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:105"
-    ]
-  },
-  {
-    "call": "Select routing strategy",
-    "key": "Select routing strategy",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:113"
-    ]
-  },
-  {
-    "call": "HAPP rules: all through the tunnel except exclusions",
-    "key": "HAPP rules: all through the tunnel except exclusions",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:117"
-    ]
-  },
-  {
-    "call": "Direct by default, exceptions through the tunnel",
-    "key": "Direct by default, exceptions through the tunnel",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:121"
-    ]
-  },
-  {
-    "call": "All through the tunnel",
-    "key": "All through the tunnel",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:123"
-    ]
-  },
-  {
-    "call": "Tunnel connection",
-    "key": "Tunnel connection",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:130"
-    ]
-  },
-  {
-    "call": "Global tunnel strategies ignore section lists. In HAPP mode, manual domains of the tunnel connection bypass the tunnel.",
-    "key": "Global tunnel strategies ignore section lists. In HAPP mode, manual domains of the tunnel connection bypass the tunnel.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:132"
-    ]
-  },
-  {
-    "call": "First enabled connection",
-    "key": "First enabled connection",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:135",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:142"
-    ]
-  },
-  {
-    "call": "Torrent traffic always goes directly.",
-    "key": "Torrent traffic always goes directly.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:114"
-    ]
-  },
-  {
-    "call": "Not downloaded",
-    "key": "Not downloaded",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:8"
-    ]
-  },
-  {
-    "call": "Not required",
-    "key": "Not required",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:9"
-    ]
-  },
-  {
-    "call": "Downloading",
-    "key": "Downloading",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:10"
-    ]
-  },
-  {
-    "call": "Cached",
-    "key": "Cached",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:12"
-    ]
-  },
-  {
-    "call": "Ready",
-    "key": "Ready",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:13"
-    ]
-  },
-  {
-    "call": "Not prepared",
-    "key": "Not prepared",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:14"
-    ]
-  },
-  {
-    "call": "Download interrupted",
-    "key": "Download interrupted",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:15"
-    ]
-  },
-  {
-    "call": "Error",
-    "key": "Error",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:16"
-    ]
-  },
-  {
-    "call": "Unknown",
-    "key": "Unknown",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:17"
-    ]
-  },
-  {
-    "call": "The selected connection could not be prepared.",
-    "key": "The selected connection could not be prepared.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:26"
-    ]
-  },
-  {
-    "call": "Download through the selected connection failed. Direct fallback is disabled.",
-    "key": "Download through the selected connection failed. Direct fallback is disabled.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:27"
-    ]
-  },
-  {
-    "call": "Download failed.",
-    "key": "Download failed.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:28"
-    ]
-  },
-  {
-    "call": "The downloaded database is invalid.",
-    "key": "The downloaded database is invalid.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:29"
-    ]
-  },
-  {
-    "call": "Unable to save the database cache.",
-    "key": "Unable to save the database cache.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:30"
-    ]
-  },
-  {
-    "call": "The requested zone is missing or invalid in this database.",
-    "key": "The requested zone is missing or invalid in this database.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:31"
-    ]
-  },
-  {
-    "call": "Last successful download",
-    "key": "Last successful download",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:53"
-    ]
-  },
-  {
-    "call": "Last check",
-    "key": "Last check",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:54"
-    ]
-  },
-  {
     "call": "Zone",
     "key": "Zone",
     "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:59"
-    ]
-  },
-  {
-    "call": "Rule groups",
-    "key": "Rule groups",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:59"
-    ]
-  },
-  {
-    "call": "In saved runtime configuration",
-    "key": "In saved runtime configuration",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:60"
-    ]
-  },
-  {
-    "call": "Preparation",
-    "key": "Preparation",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:60"
-    ]
-  },
-  {
-    "call": "This profile does not reference zones in this resource.",
-    "key": "This profile does not reference zones in this resource.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:62"
-    ]
-  },
-  {
-    "call": "Not selected",
-    "key": "Not selected",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:77"
-    ]
-  },
-  {
-    "call": "Rule order",
-    "key": "Rule order",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:78"
-    ]
-  },
-  {
-    "call": "Domain strategy",
-    "key": "Domain strategy",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:78"
-    ]
-  },
-  {
-    "call": "HAPP routing is disabled in this subscription.",
-    "key": "HAPP routing is disabled in this subscription.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:79"
-    ]
-  },
-  {
-    "call": "Cached normalized rules are shown. Refresh the subscription to show exactly which rules were received.",
-    "key": "Cached normalized rules are shown. Refresh the subscription to show exactly which rules were received.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:80"
-    ]
-  },
-  {
-    "call": "Domain rules",
-    "key": "Domain rules",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:82"
-    ]
-  },
-  {
-    "call": "IP rules",
-    "key": "IP rules",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:82"
-    ]
-  },
-  {
-    "call": "Received subscription rules and saved runtime configuration. Apply changes to update the configured zones.",
-    "key": "Received subscription rules and saved runtime configuration. Apply changes to update the configured zones.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:89"
-    ]
-  },
-  {
-    "call": "Download route",
-    "key": "Download route",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:90"
-    ]
-  },
-  {
-    "call": "No connection selected",
-    "key": "No connection selected",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:90"
-    ]
-  },
-  {
-    "call": "No HAPP routing profile is available in the current subscription cache.",
-    "key": "No HAPP routing profile is available in the current subscription cache.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:92"
-    ]
-  },
-  {
-    "call": "Loading…",
-    "key": "Loading…",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:97"
-    ]
-  },
-  {
-    "call": "Unable to load HAPP rules and resources.",
-    "key": "Unable to load HAPP rules and resources.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:104"
-    ]
-  },
-  {
-    "call": "Refresh",
-    "key": "Refresh",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:114"
-    ]
-  },
-  {
-    "call": "HAPP rules and resources",
-    "key": "HAPP rules and resources",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/anticheburnet.js:155"
-    ]
-  },
-  {
-    "call": "Cache expired",
-    "key": "Cache expired",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:14"
-    ]
-  },
-  {
-    "call": "Not yet",
-    "key": "Not yet",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:181"
-    ]
-  },
-  {
-    "call": "Proxy",
-    "key": "Proxy",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:196"
-    ]
-  },
-  {
-    "call": "Block",
-    "key": "Block",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:196"
-    ]
-  },
-  {
-    "call": "No source",
-    "key": "No source",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:218"
-    ]
-  },
-  {
-    "call": "Saved configuration",
-    "key": "Saved configuration",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:232"
-    ]
-  },
-  {
-    "call": "No rules",
-    "key": "No rules",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:271",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:279"
-    ]
-  },
-  {
-    "call": "rules",
-    "key": "rules",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:272"
-    ]
-  },
-  {
-    "call": "This action has no rules in the received profile.",
-    "key": "This action has no rules in the received profile.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:281"
-    ]
-  },
-  {
-    "call": "domain rules",
-    "key": "domain rules",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:310"
-    ]
-  },
-  {
-    "call": "Resources",
-    "key": "Resources",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:313",
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:314"
-    ]
-  },
-  {
-    "call": "Received subscription rules and saved runtime configuration.",
-    "key": "Received subscription rules and saved runtime configuration.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:321"
-    ]
-  },
-  {
-    "call": "Apply changes to update the configured zones.",
-    "key": "Apply changes to update the configured zones.",
-    "places": [
-      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:322"
-    ]
-  },
-  {
-    "call": "AnticheburNET is applying configuration",
-    "key": "AnticheburNET is applying configuration",
-    "places": [
-      "src/anticheburnet/partials/serviceTransitionBanner.ts:12"
-    ]
-  },
-  {
-    "call": "AnticheburNET is restarting",
-    "key": "AnticheburNET is restarting",
-    "places": [
-      "src/anticheburnet/partials/serviceTransitionBanner.ts:14"
-    ]
-  },
-  {
-    "call": "AnticheburNET is starting",
-    "key": "AnticheburNET is starting",
-    "places": [
-      "src/anticheburnet/partials/serviceTransitionBanner.ts:8"
-    ]
-  },
-  {
-    "call": "AnticheburNET is stopping",
-    "key": "AnticheburNET is stopping",
-    "places": [
-      "src/anticheburnet/partials/serviceTransitionBanner.ts:10"
-    ]
-  },
-  {
-    "call": "Please wait. Connections may be briefly interrupted.",
-    "key": "Please wait. Connections may be briefly interrupted.",
-    "places": [
-      "src/anticheburnet/partials/serviceTransitionBanner.ts:57"
-    ]
-  },
-  {
-    "call": "Waiting for the service to stop.",
-    "key": "Waiting for the service to stop.",
-    "places": [
-      "src/anticheburnet/partials/serviceTransitionBanner.ts:56"
+      "../luci-app-anticheburnet/htdocs/luci-static/resources/view/anticheburnet/happ.js:215"
     ]
   }
 ]

@@ -6,6 +6,7 @@ let common = require("core.common");
 let read_json_file = common.read_json_file;
 let runtime_dns = require("singbox.dns");
 let runtime_awg = require("singbox.awg");
+let runtime_xray = require("singbox.xray");
 let selection = require("singbox.selection");
 let core_version = require("singbox.version");
 
@@ -864,7 +865,7 @@ function init_config(populate_nft, caches_prepared, no_refresh, prepared_deferre
     let temp_config = temp_path();
     let runtime_log = temp_path();
     if (temp_config == "" || runtime_log == "") {
-        remove_files([ temp_config, temp_config + ".awg.json", runtime_log ]);
+        remove_files([ temp_config, temp_config + ".awg.json", temp_config + ".xray.json", runtime_log ]);
         exit(1);
     }
 
@@ -883,15 +884,21 @@ function init_config(populate_nft, caches_prepared, no_refresh, prepared_deferre
     if (generate_status != 0) {
         let reason = generator_failure_reason(runtime_log, generate_status);
         log_message("Failed to generate sing-box configuration: " + reason, "fatal");
-        remove_files([ temp_config, temp_config + ".awg.json", runtime_log ]);
+        remove_files([ temp_config, temp_config + ".awg.json", temp_config + ".xray.json", runtime_log ]);
         exit(1);
     }
     log_file_lines(runtime_log, "warn", "sing-box config generator: ");
 
+    if (!runtime_xray.check_profiles(temp_config + ".xray.json")) {
+        remove_files([ temp_config, temp_config + ".awg.json", temp_config + ".xray.json", runtime_log ]);
+        log_message("Native Xray configuration was rejected; the current sing-box configuration was preserved", "fatal");
+        exit(1);
+    }
+
     let check_result = sing_box_check(temp_config, runtime_log);
     if (check_result.status != 0) {
         log_message("Generated sing-box configuration is invalid: " + check_result.reason + ". Aborted.", "fatal");
-        remove_files([ temp_config, temp_config + ".awg.json", runtime_log ]);
+        remove_files([ temp_config, temp_config + ".awg.json", temp_config + ".xray.json", runtime_log ]);
         exit(1);
     }
 
@@ -912,18 +919,24 @@ function init_config(populate_nft, caches_prepared, no_refresh, prepared_deferre
         NFT_LOCALV6_SET_NAME
     ])) {
         log_message("Failed to update nftables runtime sets from the generated sing-box configuration. Aborted.", "fatal");
-        remove_files([ temp_config, temp_config + ".awg.json", runtime_log ]);
+        remove_files([ temp_config, temp_config + ".awg.json", temp_config + ".xray.json", runtime_log ]);
         exit(1);
     }
 
     if (!install_provider_file(temp_config, config_path) || !save_config_file(temp_config, config_path)) {
-        remove_file(temp_config + ".awg.json");
+        remove_files([ temp_config + ".awg.json", temp_config + ".xray.json" ]);
         remove_file(runtime_log);
         exit(1);
     }
     if (!save_config_file(temp_config + ".awg.json", config_path + ".awg.json")) {
         remove_file(runtime_log);
         log_message("Failed to save native AWG subscription profiles. Aborted.", "fatal");
+        exit(1);
+    }
+    if (!save_config_file(temp_config + ".xray.json", config_path + ".xray.json") ||
+        !runtime_xray.sync(config_path + ".xray.json")) {
+        remove_file(runtime_log);
+        log_message("Native Xray profiles are not ready. Aborted.", "fatal");
         exit(1);
     }
     // Subscription updates rebuild directly through this owner, bypassing the
@@ -938,7 +951,7 @@ function init_config(populate_nft, caches_prepared, no_refresh, prepared_deferre
 }
 
 function remove_provider_stage(path) {
-    remove_files([ path, path + ".awg.json", path + ".providers.json", path + ".log" ]);
+    remove_files([ path, path + ".awg.json", path + ".xray.json", path + ".providers.json", path + ".log" ]);
     for (let item in fs.glob(path + ".section-cache/*.json")) remove_file(item);
     fs.rmdir(path + ".section-cache");
 }
@@ -978,6 +991,12 @@ function update_providers(only_if_pending) {
         return false;
     }
     let candidate = read_json_file(candidate_path);
+    if (sprintf("%J", runtime_xray.profiles(config_path + ".xray.json")) !=
+        sprintf("%J", runtime_xray.profiles(candidate_path + ".xray.json"))) {
+        log_message("Native Xray profiles changed; Apply configuration is required. Running services were preserved", "error");
+        remove_provider_stage(candidate_path);
+        return false;
+    }
     if (!provider_update_compatible(current, candidate)) {
         log_message("Subscription routing changed; Apply configuration is required. Running services were preserved", "error");
         remove_provider_stage(candidate_path);

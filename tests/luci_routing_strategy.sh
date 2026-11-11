@@ -54,7 +54,7 @@ assert.equal(registered[0][1], 'settings');
 assert.deepEqual(options.routing_strategy.keylist, ['happ', 'selected', 'tunnel']);
 assert.equal(options.routing_strategy.default, 'tunnel');
 assert.equal(options.routing_strategy.rmempty, false);
-assert.equal(options.routing_strategy.description, 'Torrent traffic always goes directly.');
+assert.equal(options.routing_strategy.description, 'Detected BitTorrent goes directly. Encrypted peer connections, DHT and HTTP(S) trackers follow the routing rules.');
 assert.equal(options.routing_strategy.dependencies.length, 0, 'Torrent notice must remain visible for every strategy');
 assert.deepEqual(options._happ_status.dependencies.map(row => Array.from(row)), [['routing_strategy','happ']]);
 assert.equal(typeof options._happ_status.renderWidget, 'function');

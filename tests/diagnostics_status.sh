@@ -170,8 +170,8 @@ case "$*" in
   *'127.0.0.1:9090/proxies') printf '%s\n' '{"proxies":{"urltest":{"type":"URLTest"},"provider-urltest":{"type":"urltest"},"proxy-a":{"type":"VLESS"},"proxy-b":{"type":"Trojan"}}}' ;;
   *'127.0.0.1:9090/connections') printf '%s\n' '{"connections":[]}' ;;
   *'providers/proxies/provider?revision=true') printf '%s\n' '{"revision":"test","capabilities":["happ-ruleset-update-v1"]}' ;;
-  *'/proxies/error/delay') printf '%s\n' '{"message":"Timeout"}' ;;
-  *'/group/empty/delay') printf '%s\n' '{}' ;;
+  *'/proxies/error/delay?'*) printf '%s\n' '{"message":"Timeout"}' ;;
+  *'/group/empty/delay?'*) printf '%s\n' '{}' ;;
   *) printf '%s\n' '{"delay":1}' ;;
 esac
 SH

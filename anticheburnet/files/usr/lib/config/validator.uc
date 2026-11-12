@@ -10,7 +10,6 @@ let byedpi_validator_module = null;
 let constants_module = null;
 let core_url = require("core.url");
 let core_ip = require("core.ip");
-let core_version = require("singbox.version");
 let rule_config = require("config.rule");
 let connections = require("config.connections");
 
@@ -1899,6 +1898,7 @@ function service_exists(service) {
 
 function validate_extended_server_features(ctx, sing_box_version, sing_box_version_output) {
     let is_extended = sing_box_is_extended(ctx, sing_box_version);
+    let core_version = require("singbox.version");
     let tailscale = core_version.has_build_tag(core_version.build_tags(sing_box_version_output), "with_tailscale");
 
     for (let section in sections_by_type("server")) {

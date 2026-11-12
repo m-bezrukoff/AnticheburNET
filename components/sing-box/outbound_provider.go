@@ -32,6 +32,10 @@ func (m *Manager) ReplaceProvider(ctx context.Context, router adapter.Router, fa
 	for _, tag := range previousTags {
 		previous[tag] = true
 	}
+	endpoints := make(map[string]adapter.Endpoint)
+	for _, endpoint := range m.endpoint.Endpoints() {
+		endpoints[endpoint.Tag()] = endpoint
+	}
 	for tag, ob := range old {
 		if !previous[tag] {
 			pool.outboundByTag[tag] = ob
@@ -57,6 +61,9 @@ func (m *Manager) ReplaceProvider(ctx context.Context, router adapter.Router, fa
 		}
 		if _, exists := pool.outboundByTag[opt.Tag]; exists {
 			return fmt.Errorf("provider outbound collides with an external outbound: %s", opt.Tag)
+		}
+		if _, exists := endpoints[opt.Tag]; exists {
+			return fmt.Errorf("provider outbound collides with an endpoint: %s", opt.Tag)
 		}
 		newOptions[opt.Tag] = opt
 		changed[opt.Tag] = old[opt.Tag] == nil || !reflect.DeepEqual(opt, oldOptions[opt.Tag])
@@ -93,38 +100,18 @@ func (m *Manager) ReplaceProvider(ctx context.Context, router adapter.Router, fa
 			}
 		}
 	}
-	// Topological order also validates missing references and cycles before start.
-	ordered := make([]adapter.Outbound, 0, len(pool.outboundByTag))
-	ready := make(map[string]bool)
-	for len(ready) < len(pool.outboundByTag) {
-		progress := false
-		for tag, ob := range pool.outboundByTag {
-			if ready[tag] {
-				continue
-			}
-			canStart := true
-			for _, dependency := range ob.Dependencies() {
-				if _, exists := pool.outboundByTag[dependency]; !exists {
-					return fmt.Errorf("outbound %s: missing dependency %s", tag, dependency)
-				}
-				if !ready[dependency] {
-					canStart = false
-				}
-			}
-			if canStart {
-				ordered = append(ordered, ob)
-				ready[tag] = true
-				progress = true
-			}
-		}
-		if !progress {
-			return fmt.Errorf("provider outbound dependency cycle")
-		}
+	ordered, dependencies, err := orderProviderOutbounds(pool.outboundByTag, endpoints)
+	if err != nil {
+		return err
 	}
 	pool.outbounds = ordered
 	pool.defaultOutbound = pool.outboundByTag[m.defaultTag]
 	if m.defaultTag != "" && pool.defaultOutbound == nil {
-		return fmt.Errorf("provider cannot remove the default outbound: %s", m.defaultTag)
+		if endpoint, exists := endpoints[m.defaultTag]; exists {
+			pool.defaultOutbound = endpoint
+		} else {
+			return fmt.Errorf("provider cannot remove the default outbound: %s", m.defaultTag)
+		}
 	}
 	if pool.defaultOutbound == nil {
 		pool.defaultOutbound = m.defaultOutbound
@@ -167,12 +154,6 @@ func (m *Manager) ReplaceProvider(ctx context.Context, router adapter.Router, fa
 			return fmt.Errorf("restore provider selector %s: %s", tag, selected)
 		}
 	}
-	dependencies := make(map[string][]string)
-	for _, ob := range ordered {
-		for _, dependency := range ob.Dependencies() {
-			dependencies[dependency] = append(dependencies[dependency], ob.Tag())
-		}
-	}
 	// Rule files and all outbounds have been validated and started. No failing
 	// operation remains between committing the rules and publishing the graph.
 	commitRules()
@@ -205,4 +186,57 @@ func (m *Manager) ReplaceProvider(ctx context.Context, router adapter.Router, fa
 		}
 	}
 	return nil
+}
+
+// Endpoints participate in dependency validation, but their lifecycle belongs
+// to the endpoint manager. Only ordinary outbounds are returned for startup.
+func orderProviderOutbounds(outbounds map[string]adapter.Outbound, endpoints map[string]adapter.Endpoint) ([]adapter.Outbound, map[string][]string, error) {
+	const (
+		visiting = 1
+		visited  = 2
+	)
+	state := make(map[string]int, len(outbounds)+len(endpoints))
+	ordered := make([]adapter.Outbound, 0, len(outbounds))
+	dependencies := make(map[string][]string)
+	var visit func(adapter.Outbound) error
+	visit = func(ob adapter.Outbound) error {
+		tag := ob.Tag()
+		switch state[tag] {
+		case visiting:
+			return fmt.Errorf("provider outbound dependency cycle at %s", tag)
+		case visited:
+			return nil
+		}
+		state[tag] = visiting
+		for _, dependency := range ob.Dependencies() {
+			next := outbounds[dependency]
+			if next == nil {
+				endpoint, exists := endpoints[dependency]
+				if !exists {
+					return fmt.Errorf("outbound %s: missing dependency %s", tag, dependency)
+				}
+				next = endpoint
+			}
+			if err := visit(next); err != nil {
+				return err
+			}
+			dependencies[dependency] = append(dependencies[dependency], tag)
+		}
+		state[tag] = visited
+		if outbounds[tag] != nil {
+			ordered = append(ordered, ob)
+		}
+		return nil
+	}
+	for _, ob := range outbounds {
+		if err := visit(ob); err != nil {
+			return nil, nil, err
+		}
+	}
+	for _, endpoint := range endpoints {
+		if err := visit(endpoint); err != nil {
+			return nil, nil, err
+		}
+	}
+	return ordered, dependencies, nil
 }

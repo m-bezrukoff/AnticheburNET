@@ -39,6 +39,18 @@ for(let mode in ["selected","happ","tunnel"]){
    die("SMTP bypass must cover both IP versions\n");
  }else if(length(smtp)!=0)
   die("SMTP bypass must not change other routing strategies\n");
+ let quic=filter(config.rules, rule => rule.protocol=="quic");
+ if(length(quic)!=0)die("QUIC must be allowed by default\n");
+ config=route.config({routing_strategy:mode,disable_quic:"1",exclude_ntp:"1"},{});
+ quic=filter(config.rules, rule => rule.protocol=="quic");
+ let tags=require("singbox.constants");
+ if(length(quic)!=1||quic[0].action!="reject"||length(quic[0].inbound)!=2||
+    index(quic[0].inbound,tags.TPROXY_INBOUND_TAG)<0||index(quic[0].inbound,tags.TPROXY_INBOUND6_TAG)<0)
+  die("Disable QUIC must reject both transparent inbound families\n");
+ let ntp=filter(config.rules, rule => rule.port==123);
+ if(length(ntp)!=1||ntp[0].action!="route"||ntp[0].network!="udp"||ntp[0].outbound!="direct-out"||
+    index(ntp[0].inbound,tags.TPROXY_INBOUND_TAG)<0||index(ntp[0].inbound,tags.TPROXY_INBOUND6_TAG)<0)
+  die("Exclude NTP must restore a FakeIP and route its real destination directly\n");
 }
 print("Routing strategy selection checks passed\n");
 '

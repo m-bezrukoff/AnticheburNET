@@ -276,28 +276,8 @@ function sing_box_is_extended(value) {
     return sing_box_version_is_extended(value != "" ? value : sing_box_version());
 }
 
-function output_has_build_tag(output, tag) {
-    tag = as_string(tag);
-    if (tag == "")
-        return false;
-
-    for (let item in split(trim(replace(as_string(output), /[,: \t\r\n]+/g, " ")), " "))
-        if (as_string(item) == tag)
-            return true;
-    return false;
-}
-
-function sing_box_supports_tailscale(version, version_output) {
-    version = as_string(version);
-    version_output = as_string(version_output);
-
-    if (command_exists("sing-box") && sing_box_marker_is("extended-compressed"))
-        return true;
-    if (sing_box_is_extended(version))
-        return true;
-    if (version_output != "")
-        return output_has_build_tag(version_output, "with_tailscale");
-    return output_has_build_tag(sing_box_version_output(), "with_tailscale");
+function sing_box_supports_tailscale(version_output) {
+    return core_version.has_build_tag(core_version.build_tags(version_output || sing_box_version_output()), "with_tailscale");
 }
 
 function module_command(args) {
@@ -327,7 +307,7 @@ function sing_box_is_tiny(version, version_output) {
         return true;
     if (!sing_box_marker_is("tiny"))
         return false;
-    return !sing_box_supports_tailscale(version, version_output);
+    return !sing_box_supports_tailscale(version_output);
 }
 
 function sing_box_variant() {
@@ -712,6 +692,12 @@ function replace_dns_server(config, replacement) {
     let servers = array_or_empty(object_or_empty(config.dns).servers);
     for (let i = 0; i < length(servers); i++) {
         if (as_string(object_or_empty(servers[i]).tag) == as_string(replacement.tag)) {
+            // A resolver switch changes the server address, while the running
+            // routing policy still determines the detour (including full tunnel).
+            if (servers[i].detour != null)
+                replacement.detour = servers[i].detour;
+            else
+                delete replacement.detour;
             servers[i] = replacement;
             return true;
         }
@@ -817,17 +803,44 @@ function provider_configuration(value, allow_ruleset_updates) {
     return result;
 }
 
-function provider_update_compatible(current, candidate, strict) {
-    if (managed_provider(current) == null || managed_provider(candidate) == null)
-        return false;
-    let old = read_json_file(managed_provider(current).path);
-    let fresh = read_json_file(managed_provider(candidate).path);
+function prepare_provider_update(current, candidate) {
+    let running = managed_provider(current);
+    let staged = managed_provider(candidate);
+    if (running == null || staged == null)
+        return null;
+    let previous_payload = fs.readfile(running.path);
+    let old;
+    try {
+        old = json(previous_payload);
+    }
+    catch (error) {
+        return null;
+    }
+    let fresh = read_json_file(staged.path);
     if (type(old) != "object" || type(fresh) != "object" ||
         type(old.configuration) != "object" || type(fresh.configuration) != "object" ||
         type(fresh.outbounds) != "array" || length(fresh.outbounds) == 0)
-        return false;
-    return sprintf("%J", provider_configuration(old.configuration, !strict)) ==
-        sprintf("%J", provider_configuration(fresh.configuration, !strict));
+        return null;
+
+    if (current.dns != null || candidate.dns != null) {
+        let applied_dns = sprintf("%J", canonical_value(current.dns));
+        if (applied_dns != sprintf("%J", canonical_value(candidate.dns)) ||
+            applied_dns != sprintf("%J", canonical_value(fresh.configuration.dns)))
+            return null;
+
+        // DNS failover updates the main config. The running provider still
+        // compares against the DNS snapshot in its own payload.
+        if (type(old.configuration.dns) == "object")
+            fresh.configuration.dns = old.configuration.dns;
+    }
+
+    let ruleset_update = sprintf("%J", provider_configuration(old.configuration, false)) !=
+        sprintf("%J", provider_configuration(fresh.configuration, false));
+    if (ruleset_update && sprintf("%J", provider_configuration(old.configuration, true)) !=
+        sprintf("%J", provider_configuration(fresh.configuration, true)))
+        return null;
+
+    return { previous_payload, payload: fresh, ruleset_update };
 }
 
 function install_provider_file(temp_config, config_path) {
@@ -997,12 +1010,13 @@ function update_providers(only_if_pending) {
         remove_provider_stage(candidate_path);
         return false;
     }
-    if (!provider_update_compatible(current, candidate)) {
+    let update = prepare_provider_update(current, candidate);
+    if (update == null) {
         log_message("Subscription routing changed; Apply configuration is required. Running services were preserved", "error");
         remove_provider_stage(candidate_path);
         return false;
     }
-    let ruleset_update = !provider_update_compatible(current, candidate, true);
+    let ruleset_update = update.ruleset_update;
     if (ruleset_update && !module_success([
         LIB_DIR + "/diagnostics/runtime.uc", "clash-api", "provider_supports_rulesets", provider.tag
     ])) {
@@ -1012,9 +1026,9 @@ function update_providers(only_if_pending) {
     }
     let manifest_path = config_path + ".awg.json";
     let candidate_provider_path = managed_provider(candidate).path;
-    let old_payload = fs.readfile(provider.path);
+    let old_payload = update.previous_payload;
     let old_config = ruleset_update ? fs.readfile(config_path) : null;
-    let payload = read_json_file(candidate_provider_path);
+    let payload = update.payload;
     let awg_plan;
     try {
         awg_plan = runtime_awg.plan_update(runtime_awg.profiles(manifest_path),
@@ -1027,7 +1041,7 @@ function update_providers(only_if_pending) {
     }
     // Start only new native instances before publishing their proxy references.
     // Existing instances retain their slots, processes and connections.
-    if (old_payload == null || (ruleset_update && old_config == null) ||
+    if ((ruleset_update && old_config == null) ||
         !runtime_awg.write_private(candidate_provider_path, sprintf("%J\n", payload)) ||
         !runtime_awg.begin_update(manifest_path, awg_plan)) {
         log_message("Native AWG subscription preparation failed; running provider was preserved", "error");
@@ -1107,7 +1121,7 @@ else if (mode == "init-config")
 else if (mode == "update-providers")
     exit(update_providers(arg_bool(ARGV[1] || "0")) ? 0 : 1);
 else if (mode == "provider-update-compatible-fixture")
-    exit(provider_update_compatible(read_json_file(ARGV[1]), read_json_file(ARGV[2])) ? 0 : 1);
+    exit(prepare_provider_update(read_json_file(ARGV[1]), read_json_file(ARGV[2])) != null ? 0 : 1);
 else if (mode == "save-config-file-fixture")
     exit(save_config_file(ARGV[1] || "", ARGV[2] || "") ? 0 : 1);
 else if (mode == "check-config-fixture") {
@@ -1173,7 +1187,7 @@ else if (mode == "is-extended")
 else if (mode == "is-tiny")
     exit(sing_box_is_tiny(ARGV[1], ARGV[2]) ? 0 : 1);
 else if (mode == "supports-tailscale")
-    exit(sing_box_supports_tailscale(ARGV[1], ARGV[2]) ? 0 : 1);
+    exit(sing_box_supports_tailscale(ARGV[2]) ? 0 : 1);
 else if (mode == "variant")
     print(sing_box_variant(), "\n");
 else {

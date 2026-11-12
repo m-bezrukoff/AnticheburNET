@@ -24,6 +24,7 @@ command_success_from_args = function(args) {
     assert(args[0] == "curl", "List downloads must support HTTPS CONNECT");
     assert(args[1] == "-q", "curl config must not override download routing");
     assert(index(args, "-fL") >= 0, "HTTP errors must fail and redirects must be followed");
+    assert(argument(args, "--proto-redir") == "=http,https", "List redirects must stay on HTTP(S)");
     assert(argument(args, "--noproxy") == "", "NO_PROXY must not bypass the selected tunnel");
     assert(int(argument(args, "--connect-timeout")) > 0, "Connect timeout required");
     assert(int(argument(args, "--max-time")) > 0, "Total timeout required");
@@ -51,9 +52,9 @@ assert(length(requests) == 3 && sleeps == 2, "Expected three attempts with two r
 for (let args in requests)
     assert(argument(args, "--proxy") == "http://" + proxy, "Retry bypassed tunnel");
 
-requests = []; failures = 3;
+requests = []; sleeps = 0; failures = 3;
 assert(!download_to_file("https://example.com/fail.lst", output, proxy), "Permanent failure must be reported");
-assert(length(requests) == 3, "Retries must be bounded");
+assert(length(requests) == 3 && sleeps == 2, "Retries must be bounded and stop after the last request");
 for (let args in requests)
     assert(argument(args, "--proxy") == "http://" + proxy, "Failed tunnel must not fall back to direct");
 
@@ -83,6 +84,25 @@ for (let entry in logs)
         assert(index(entry.message, "https://") >= 0, "Failure must identify the list URL");
     }
 assert(errors == 2, "Each failed Discord family must be reported");
-print("List download proxy checks passed\n");
+
+// A local list update must reach the configured sources without network preflight.
+let local_updated = false;
+settings.download_lists_via_proxy = "0";
+uci_settings = function() { return settings; };
+uci_sections = function() { return [ { ".name": "local" } ]; };
+list_update_pid_begin = function() { return true; };
+command_output_from_args = function(args) { die("Unexpected list preflight: " + args[0]); };
+command_success_from_args = command_output_from_args;
+rebuild_domain_ip_lists_from_rule = function(rule) { local_updated = rule[".name"] == "local"; return true; };
+import_builtin_subnets_from_rule = function() { return true; };
+import_domains_from_remote_domain_lists = function() { return true; };
+import_subnets_from_remote_subnet_lists = function() { return true; };
+import_rule_sets_with_subnets_from_rule = function() { return true; };
+write_list_update_timestamp = function() {};
+list_update_pid_end = function() {
+    assert(local_updated, "Local list must be processed");
+    print("List download proxy checks passed\n");
+};
+list_update();
 UC
-ucode -L "$LIB" "$WORK_DIR/download.uc" test "$WORK_DIR/list.lst"
+ucode -L "$LIB" "$WORK_DIR/download.uc" test "$WORK_DIR/list.lst" | grep -F 'List download proxy checks passed'

@@ -458,10 +458,11 @@ function source_dns_inbound_matcher() {
 }
 
 function base_config(settings, service_address, runtime_context) {
+    runtime_context = object_or_empty(runtime_context);
     let log_level = option(settings, "log_level", "warn");
     let rewrite_ttl = int_option(settings, "dns_rewrite_ttl", "60");
     let cache_path = option(settings, "cache_path", "/tmp/sing-box/cache.db");
-    let dns_config = runtime_dns.config(settings);
+    let dns_config = runtime_dns.config(settings, null, runtime_context.main_dns_detour);
     if (dns_config.unsupported)
         runtime_generate_unsupported(dns_config.unsupported);
 
@@ -490,7 +491,6 @@ function base_config(settings, service_address, runtime_context) {
         inet6_range: runtime_constants.FAKEIP_INET6_RANGE
     });
 
-    runtime_context = object_or_empty(runtime_context);
     let inbounds = [
         { type: "tproxy", tag: runtime_constants.TPROXY_INBOUND_TAG, listen: runtime_constants.TPROXY_INBOUND_ADDRESS, listen_port: runtime_constants.TPROXY_INBOUND_PORT, tcp_fast_open: true, udp_fragment: true },
         { type: "tproxy", tag: runtime_constants.TPROXY_INBOUND6_TAG, listen: runtime_constants.TPROXY_INBOUND6_ADDRESS, listen_port: runtime_constants.TPROXY_INBOUND_PORT, tcp_fast_open: true, udp_fragment: true },
@@ -1719,30 +1719,6 @@ function base64_decode_value(value) {
     }
 }
 
-function shadowsocks_userinfo_valid(value) {
-    value = as_string(value);
-    let first = index(value, ":");
-    if (first <= 0 || first >= length(value) - 1)
-        return false;
-    let rest = substr(value, first + 1);
-    let second = index(rest, ":");
-    return second < 0 || index(substr(rest, second + 1), ":") < 0;
-}
-
-function split_host_port(value) {
-    value = as_string(value);
-    if (substr(value, 0, 1) == "[") {
-        let close = index(value, "]");
-        if (close > 0 && substr(value, close + 1, 1) == ":")
-            return [ substr(value, 1, close - 1), substr(value, close + 2) ];
-    }
-
-    let colon = rindex(value, ":");
-    if (colon < 0)
-        return [ "", "" ];
-    return [ substr(value, 0, colon), substr(value, colon + 1) ];
-}
-
 function tls_alpn_array(value, transport) {
     value = as_string(value);
     transport = lc(as_string(transport));
@@ -1892,60 +1868,11 @@ function manual_socks_outbound(link, tag_name) {
 }
 
 function manual_shadowsocks_outbound(link, tag_name) {
-    let raw = url_strip_fragment_value(url_decode(link));
-    let body = substr(raw, 5);
-    let question = index(body, "?");
-    let query_string = "";
-    if (question >= 0) {
-        query_string = substr(body, question + 1);
-        body = substr(body, 0, question);
-    }
-
-    let at = rindex(body, "@");
-    let userinfo = "";
-    let hostport = "";
-    if (at >= 0) {
-        userinfo = substr(body, 0, at);
-        hostport = substr(body, at + 1);
-    }
-    else {
-        let decoded = base64_decode_value(body);
-        if (decoded == null)
-            runtime_generate_unsupported("manual Shadowsocks proxy link is invalid");
-        at = rindex(decoded, "@");
-        if (at < 0)
-            runtime_generate_unsupported("manual Shadowsocks proxy link is invalid");
-        userinfo = substr(decoded, 0, at);
-        hostport = substr(decoded, at + 1);
-    }
-
-    userinfo = url_decode(userinfo);
-    if (!shadowsocks_userinfo_valid(userinfo)) {
-        let decoded = base64_decode_value(userinfo);
-        if (decoded == null)
-            runtime_generate_unsupported("manual Shadowsocks proxy link is invalid");
-        userinfo = decoded;
-    }
-
-    let cred_colon = index(userinfo, ":");
-    let host_port = split_host_port(hostport);
-    let port = parse_port(host_port[1]);
-    if (cred_colon <= 0 || host_port[0] == "" || port == null)
+    let outbound = require("subscription.parser").process_shadowsocks(link);
+    if (outbound == null)
         runtime_generate_unsupported("manual Shadowsocks proxy link is invalid");
-
-    let outbound = {
-        type: "shadowsocks",
-        tag: tag_name,
-        server: host_port[0],
-        server_port: port,
-        method: substr(userinfo, 0, cred_colon),
-        password: substr(userinfo, cred_colon + 1)
-    };
-    let query = url_query_params("ss://placeholder/?" + query_string);
-    if (as_string(query.plugin || "") != "")
-        outbound.plugin = as_string(query.plugin);
-    if (as_string(query["plugin-opts"] || "") != "")
-        outbound.plugin_opts = as_string(query["plugin-opts"]);
+    delete outbound.share_link;
+    outbound.tag = tag_name;
     return outbound;
 }
 
@@ -2110,13 +2037,15 @@ function manual_link_outbound(link, tag_name) {
     let scheme = url_scheme(link);
     if (scheme == "vmess")
         return manual_vmess_outbound(link, tag_name);
+    if (scheme == "ss")
+        return manual_shadowsocks_outbound(link, tag_name);
 
     link = url_strip_fragment_value(url_decode(link));
     scheme = url_scheme(link);
-    if (scheme == "socks4" || scheme == "socks4a" || scheme == "socks5")
-        return manual_socks_outbound(link, tag_name);
     if (scheme == "ss")
         return manual_shadowsocks_outbound(link, tag_name);
+    if (scheme == "socks4" || scheme == "socks4a" || scheme == "socks5")
+        return manual_socks_outbound(link, tag_name);
     if (scheme == "vless")
         return manual_vless_outbound(link, tag_name);
     if (scheme == "trojan")
@@ -3179,13 +3108,9 @@ function generate_config(output_path, service_address, mwan3_active, supports_xh
     let source_aware_dns = strategy == "selected" ? source_aware_dns_sources(sections) : [];
     let config = base_config(settings, service_address, {
         mwan3_active: cli_bool(mwan3_active),
-        source_aware_dns: length(source_aware_dns) > 0
+        source_aware_dns: length(source_aware_dns) > 0,
+        main_dns_detour: strategy == "tunnel" ? outbound_tag(tunnel[".name"]) : null
     });
-    if (strategy == "tunnel") {
-        for (let server in config.dns.servers)
-            if (server.tag == runtime_constants.DNS_SERVER_TAG)
-                server.detour = outbound_tag(tunnel[".name"]);
-    }
     add_source_aware_dns_support(config, source_aware_dns);
     let taken = reserved_runtime_tag_set(config.outbounds);
     reserve_section_outbound_tags(sections, taken);

@@ -43,11 +43,12 @@ class Proxy(http.server.BaseHTTPRequestHandler):
         self.close_connection = True
 
     def do_GET(self):
-        credentials = base64.b64encode(("test:" + self.server.password).encode()).decode()
-        if self.headers.get("Proxy-Authorization") != "Basic " + credentials:
-            self.send_response(407)
-            self.end_headers()
-            return
+        if self.server.password is not None:
+            credentials = base64.b64encode(("test:" + self.server.password).encode()).decode()
+            if self.headers.get("Proxy-Authorization") != "Basic " + credentials:
+                self.send_response(407)
+                self.end_headers()
+                return
         body = self.server.label.encode()
         self.send_response(200)
         self.send_header("Content-Length", str(len(body)))
@@ -68,9 +69,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix="anticheburnet-provider-") as directory:
         work = Path(directory)
         servers = []
-        for label in ("A", "B", "C"):
+        for label in ("A", "B", "C", "DIRECT"):
             server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Proxy)
-            server.password, server.label = "old", label
+            server.password, server.label = (None if label == "DIRECT" else "old"), label
             server.stream_started, server.stream_release = threading.Event(), threading.Event()
             threading.Thread(target=server.serve_forever, daemon=True).start()
             servers.append(server)
@@ -94,14 +95,19 @@ def main():
                 {"type": "local", "tag": geoip_tag, "format": "source", "path": geoip_old},
                 {"type": "local", "tag": geosite_tag, "format": "source", "path": geosite_old},
             ],
-            "rules": [{"rule_set": [geoip_tag, geosite_tag], "outbound": "ruleset-out"}],
+            "rules": [
+                {"ip_cidr": ["127.0.0.1/32"], "outbound": "no-tunnel"},
+                {"rule_set": [geoip_tag, geosite_tag], "outbound": "ruleset-out"},
+            ],
         }}
 
         def node(tag="node-a", target=0, password="old"):
             return {"type": "http", "tag": tag, "server": "127.0.0.1", "server_port": servers[target].server_port, "username": "test", "password": password}
 
         def payload(nodes, members=None, configuration=None):
-            return {"outbounds": nodes + [{"type": "selector", "tag": "proxy-main", "outbounds": members or [item["tag"] for item in nodes], "default": "node-a"}], "configuration": json.loads(json.dumps(configuration if configuration is not None else provider_configuration))}
+            endpoint_detour = {**node("endpoint-detour"), "detour": "wg-endpoint"}
+            selector = {"type": "selector", "tag": "proxy-main", "outbounds": members or [item["tag"] for item in nodes], "default": "node-a"}
+            return {"outbounds": nodes + [selector, endpoint_detour], "configuration": json.loads(json.dumps(configuration if configuration is not None else provider_configuration))}
 
         def write(value):
             temporary = path.with_suffix(".tmp")
@@ -110,7 +116,16 @@ def main():
 
         write(payload([node()]))
         config = {"log": {"level": "error"}, "inbounds": [{"type": "http", "listen": "127.0.0.1", "listen_port": mixed_port}], "providers": [{"type": "anticheburnet", "tag": "anticheburnet-subscriptions", "path": str(path)}], "outbounds": [{"type": "http", "tag": "ruleset-out", "server": "127.0.0.1", "server_port": servers[2].server_port, "username": "test", "password": "old"}], "route": provider_configuration["route"], "experimental": {"clash_api": {"external_controller": f"127.0.0.1:{api_port}", "secret": "local-provider-test"}, "cache_file": {"enabled": False, "path": str(work / "cache.db")}}}
+        config["outbounds"].append({"type": "direct", "tag": "no-tunnel"})
+        config["endpoints"] = [{
+            "type": "wireguard", "tag": "wg-endpoint", "address": ["192.0.2.1/32"],
+            "private_key": base64.b64encode(bytes(range(32))).decode(),
+        }]
         config_path = work / "config.json"
+        endpoint_default = {**config, "route": {**config["route"], "final": "wg-endpoint"}}
+        config_path.write_text(json.dumps(endpoint_default), encoding="utf-8")
+        runner = ([args.runner] if args.runner else []) + [binary]
+        subprocess.run(runner + ["check", "-c", str(config_path)], check=True, timeout=30)
         config_path.write_text(json.dumps(config), encoding="utf-8")
         base = f"http://127.0.0.1:{api_port}"
         direct = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -137,7 +152,7 @@ def main():
                         break
                     chunks.append(chunk)
             response = b"".join(chunks)
-            assert response.startswith(b"HTTP/1.1 200"), response[:160]
+            assert response.startswith((b"HTTP/1.0 200 ", b"HTTP/1.1 200 ")), response[:160]
             return response.split(b"\r\n\r\n", 1)[1].decode()
 
         samples, failures, timings = [], [], []
@@ -152,7 +167,7 @@ def main():
                     failures.append(str(error))
 
         with (work / "runtime.log").open("w", encoding="utf-8") as log:
-            command = ([args.runner] if args.runner else []) + [binary, "run", "-c", str(config_path)]
+            command = runner + ["run", "-c", str(config_path)]
             process = subprocess.Popen(command, stdout=log, stderr=log, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
             try:
                 # UPX unpacking under ARM64 user-mode emulation takes longer
@@ -171,6 +186,8 @@ def main():
                     raise AssertionError("runtime did not start")
                 pid = process.pid
                 assert traffic() == "A"
+                direct_destination = f"127.0.0.1:{servers[3].server_port}"
+                assert traffic(destination=direct_destination) == "DIRECT"
                 monitor_thread = threading.Thread(target=monitor, daemon=True)
                 monitor_thread.start()
                 provider_url = "/providers/proxies/anticheburnet-subscriptions"
@@ -226,7 +243,7 @@ def main():
                 assert "node-b" not in proxies and "node-c" not in proxies
                 assert traffic() == "B"
                 revision = api(provider_url)["revision"]
-                invalid_values = ({"outbounds": []}, payload([node(target=1)], ["missing-node"]), {"outbounds": [node(), node()]}, {"outbounds": [{"type": "unknown", "tag": "bad"}]}, payload([node(target=1), {"type": "selector", "tag": "cycle", "outbounds": ["cycle"]}]), {"outbounds": [node(target=1)]})
+                invalid_values = ({"outbounds": []}, payload([node(target=1)], ["missing-node"]), {"outbounds": [node(), node()]}, {"outbounds": [{"type": "unknown", "tag": "bad"}]}, payload([node(target=1), {"type": "selector", "tag": "cycle", "outbounds": ["cycle"]}]), {"outbounds": [node(target=1)]}, payload([node(), node("wg-endpoint")]))
                 for invalid in invalid_values:
                     write(invalid)
                     try:
@@ -305,6 +322,7 @@ def main():
                 update(payload([node(target=1)]))
                 assert traffic(destination="198.51.100.8") == "B"
                 assert traffic(destination="oldsite.test") == "C"
+                assert traffic(destination=direct_destination) == "DIRECT"
                 stop.set()
                 monitor_thread.join(timeout=3)
                 assert samples and not failures, failures

@@ -192,11 +192,11 @@ function add_active_health_inbound(result) {
     push(result.sniff_inbounds, inbound_tag);
 }
 
-function add_health_candidate(result, kind, index_value, server) {
+function add_health_candidate(result, kind, index_value, server, main_detour) {
     let server_tag = health_tag(kind, index_value, "server");
     let inbound_tag = health_tag(kind, index_value, "in");
     let dns_server = kind == "main"
-        ? server_from_options(server_tag, result.state.dns_type, server, result.state.dns_detour)
+        ? server_from_options(server_tag, result.state.dns_type, server, main_detour)
         : bootstrap_server(server_tag, server);
 
     if (dns_server.unsupported) {
@@ -220,15 +220,16 @@ function add_health_candidate(result, kind, index_value, server) {
     push(result.sniff_inbounds, inbound_tag);
 }
 
-function config(settings, override_state) {
+function config(settings, override_state, main_detour) {
     let state = runtime_state(settings, override_state);
-    let main = server_config(settings, state);
+    main_detour = main_detour ?? state.dns_detour;
+    let main = server_from_options(runtime_constants.DNS_SERVER_TAG, state.dns_type, state.main_servers[state.main_index], main_detour);
     if (main.unsupported)
         return { unsupported: main.unsupported };
 
     let result = {
         state,
-        servers: [ bootstrap_config(settings, state), main ],
+        servers: [ bootstrap_server(runtime_constants.BOOTSTRAP_DNS_SERVER_TAG, state.bootstrap_servers[state.bootstrap_index]), main ],
         inbounds: [],
         rules: [],
         sniff_inbounds: []
@@ -239,7 +240,7 @@ function config(settings, override_state) {
 
     if (length(state.main_servers) > 1)
         for (let i = 0; i < length(state.main_servers); i++)
-            add_health_candidate(result, "main", i, state.main_servers[i]);
+            add_health_candidate(result, "main", i, state.main_servers[i], main_detour);
 
     if (length(state.bootstrap_servers) > 1)
         for (let i = 0; i < length(state.bootstrap_servers); i++)

@@ -346,6 +346,9 @@ function validateOutboundJson(value, usedTags = []) {
 }
 
 // src/validators/validateShadowsocksUrl.ts
+function decodeBase64(value) {
+  return atob(value.replace(/-/g, "+").replace(/_/g, "/"));
+}
 function validateShadowsocksUrl(url) {
   if (!url.startsWith("ss://")) {
     return {
@@ -360,56 +363,44 @@ function validateShadowsocksUrl(url) {
         message: _("Invalid Shadowsocks URL: must not contain spaces")
       };
     }
-    const mainPart = url.includes("?") ? url.split("?")[0] : url.split("#")[0];
-    const encryptedPart = mainPart.split("/")[2]?.split("@")[0];
-    if (!encryptedPart) {
-      return {
-        valid: false,
-        message: _("Invalid Shadowsocks URL: missing credentials")
-      };
-    }
-    try {
-      const decoded = atob(encryptedPart);
-      if (!decoded.includes(":")) {
-        return {
-          valid: false,
-          message: _(
-            "Invalid Shadowsocks URL: decoded credentials must contain method:password"
-          )
-        };
-      }
-    } catch (_e) {
-      if (!encryptedPart.includes(":") && !encryptedPart.includes("-")) {
-        return {
-          valid: false,
-          message: _(
-            'Invalid Shadowsocks URL: missing method and password separator ":"'
-          )
-        };
-      }
-    }
-    const serverPart = url.split("@")[1];
-    if (!serverPart) {
+    const body = url.slice("ss://".length).split(/[?#]/, 1)[0];
+    const authority = body.includes("@") ? body : decodeBase64(body);
+    const separator = authority.lastIndexOf("@");
+    if (separator < 0) {
       return {
         valid: false,
         message: _("Invalid Shadowsocks URL: missing server address")
       };
     }
-    const parsedHostPort = parseHostPort(serverPart);
+    const userInfo = authority.slice(0, separator).replace(
+      /%([\da-f]{2})/gi,
+      (_2, byte) => String.fromCharCode(Number.parseInt(byte, 16))
+    );
+    if (!userInfo) {
+      return {
+        valid: false,
+        message: _("Invalid Shadowsocks URL: missing credentials")
+      };
+    }
+    const credentials = userInfo.includes(":") ? userInfo : decodeBase64(userInfo);
+    const colon = credentials.indexOf(":");
+    if (colon <= 0 || colon === credentials.length - 1) {
+      return {
+        valid: false,
+        message: _(
+          "Invalid Shadowsocks URL: decoded credentials must contain method:password"
+        )
+      };
+    }
+    const hostPort = authority.slice(separator + 1).replace(/\/$/, "");
+    const parsedHostPort = parseHostPort(hostPort);
     if (!parsedHostPort) {
       return {
         valid: false,
         message: _("Invalid Shadowsocks URL: invalid server and port")
       };
     }
-    const { host: server, port: portAndRest } = parsedHostPort;
-    if (!server) {
-      return {
-        valid: false,
-        message: _("Invalid Shadowsocks URL: missing server")
-      };
-    }
-    const port = portAndRest ? portAndRest.split(/[?#]/)[0] : null;
+    const { port } = parsedHostPort;
     if (!port) {
       return {
         valid: false,
@@ -891,32 +882,13 @@ function renderFlagEmojis(value) {
   );
 }
 
-// src/helpers/downloadAsTxt.ts
-function downloadAsTxt(text, filename) {
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  const safeName = filename.endsWith(".txt") ? filename : `${filename}.txt`;
-  link.download = safeName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
-}
-
 // src/anticheburnet/services/logger.service.ts
 var Logger = class {
-  constructor() {
-    this.logs = [];
-    this.levels = ["debug", "info", "warn", "error"];
-  }
   format(level, ...args) {
     return `[${level.toUpperCase()}] ${args.join(" ")}`;
   }
   push(level, ...args) {
-    if (!this.levels.includes(level)) level = "info";
     const message = this.format(level, ...args);
-    this.logs.push(message);
     switch (level) {
       case "error":
         console.error(message);
@@ -942,19 +914,6 @@ var Logger = class {
   }
   error(...args) {
     this.push("error", ...args);
-  }
-  clear() {
-    this.logs = [];
-  }
-  getLogs() {
-    return this.logs.join("\n");
-  }
-  download(filename = "logs.txt") {
-    if (typeof document === "undefined") {
-      console.warn("Logger.download() \u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0442\u043E\u043B\u044C\u043A\u043E \u0432 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435");
-      return;
-    }
-    downloadAsTxt(this.getLogs(), filename);
   }
 };
 var logger = new Logger();
@@ -1096,11 +1055,13 @@ function getWindowLocation() {
 }
 function canUseDirectClashApi() {
   const location = getWindowLocation();
-  return typeof location?.hostname === "string" && location.hostname !== "" && location.protocol !== "https:";
+  return typeof location?.hostname === "string" && location.hostname !== "" && location.protocol === "http:";
 }
-function getClashWsUrl() {
+function getClashWsUrl(stream, secret) {
   const { hostname } = window.location;
-  return `ws://${hostname}:9090`;
+  const url = new URL(`ws://${hostname}:9090/${stream}`);
+  url.searchParams.set("token", secret);
+  return url.href;
 }
 function getClashHttpUrl() {
   const { hostname } = window.location;
@@ -4400,6 +4361,7 @@ function jsonStableStringify(obj) {
   });
 }
 function jsonEqual(a, b) {
+  if (Object.is(a, b)) return true;
   try {
     return jsonStableStringify(a) === jsonStableStringify(b);
   } catch {
@@ -4429,22 +4391,15 @@ var StoreService = class {
     this.listeners.forEach((cb) => cb(this.value, prev, diff));
   }
   reset(keys) {
-    const prev = this.value;
-    const next = structuredClone(this.value);
     if (keys && keys.length > 0) {
+      const next = {};
       keys.forEach((key) => {
         next[key] = structuredClone(this.initial[key]);
       });
+      this.set(next);
     } else {
-      Object.assign(next, structuredClone(this.initial));
+      this.set(structuredClone(this.initial));
     }
-    if (jsonEqual(prev, next)) return;
-    this.value = next;
-    const diff = {};
-    for (const key in next) {
-      if (!jsonEqual(next[key], prev[key])) diff[key] = next[key];
-    }
-    this.listeners.forEach((cb) => cb(this.value, prev, diff));
   }
   subscribe(cb) {
     this.listeners.add(cb);
@@ -5179,11 +5134,13 @@ function coreService(options = {}) {
 }
 
 // src/anticheburnet/services/socket.service.ts
+function logEndpoint(url) {
+  return url.split(/[?#]/, 1)[0];
+}
 var SocketManager = class _SocketManager {
   constructor() {
     this.sockets = /* @__PURE__ */ new Map();
     this.listeners = /* @__PURE__ */ new Map();
-    this.connected = /* @__PURE__ */ new Map();
     this.errorListeners = /* @__PURE__ */ new Map();
     this.reconnectAttempts = /* @__PURE__ */ new Map();
     this.reconnectTimers = /* @__PURE__ */ new Map();
@@ -5194,30 +5151,6 @@ var SocketManager = class _SocketManager {
     }
     return _SocketManager.instance;
   }
-  resetAll() {
-    const sockets = [...this.sockets.entries()];
-    for (const timer of this.reconnectTimers.values()) clearTimeout(timer);
-    this.sockets.clear();
-    this.listeners.clear();
-    this.errorListeners.clear();
-    this.connected.clear();
-    this.reconnectAttempts.clear();
-    this.reconnectTimers.clear();
-    for (const [url, ws] of sockets) {
-      try {
-        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-          ws.close();
-        }
-      } catch (err) {
-        logger.error(
-          "[SOCKET]",
-          `resetAll: failed to close socket ${url}`,
-          err
-        );
-      }
-    }
-    logger.info("[SOCKET]", "All connections and state have been reset.");
-  }
   connect(url) {
     if (this.sockets.has(url)) return;
     let ws;
@@ -5226,30 +5159,34 @@ var SocketManager = class _SocketManager {
     } catch (err) {
       logger.error(
         "[SOCKET]",
-        `failed to construct WebSocket for ${url}:`,
-        err
+        `failed to construct WebSocket for ${logEndpoint(url)}`
       );
       this.triggerError(url, err instanceof Event ? err : String(err));
       this.scheduleReconnect(url);
       return;
     }
     this.sockets.set(url, ws);
-    this.connected.set(url, false);
     if (!this.listeners.has(url)) this.listeners.set(url, /* @__PURE__ */ new Set());
     if (!this.errorListeners.has(url)) this.errorListeners.set(url, /* @__PURE__ */ new Set());
     ws.addEventListener("open", () => {
-      this.connected.set(url, true);
+      if (this.sockets.get(url) !== ws) return;
       this.reconnectAttempts.delete(url);
-      logger.info("[SOCKET]", "Connected to", url);
+      logger.info("[SOCKET]", "Connected to", logEndpoint(url));
     });
     ws.addEventListener("message", (event) => {
+      if (this.sockets.get(url) !== ws || typeof event.data !== "string")
+        return;
       const handlers = this.listeners.get(url);
       if (handlers) {
         for (const handler of handlers) {
           try {
             handler(event.data);
           } catch (err) {
-            logger.error("[SOCKET]", `Handler error for ${url}:`, err);
+            logger.error(
+              "[SOCKET]",
+              `Handler error for ${logEndpoint(url)}:`,
+              err
+            );
           }
         }
       }
@@ -5257,13 +5194,13 @@ var SocketManager = class _SocketManager {
     ws.addEventListener("close", () => {
       if (this.sockets.get(url) !== ws) return;
       this.sockets.delete(url);
-      this.connected.set(url, false);
-      logger.warn("[SOCKET]", `Disconnected: ${url}`);
+      logger.warn("[SOCKET]", `Disconnected: ${logEndpoint(url)}`);
       this.triggerError(url, "Connection closed");
       this.scheduleReconnect(url);
     });
     ws.addEventListener("error", (err) => {
-      logger.error("[SOCKET]", `Socket error for ${url}:`, err);
+      if (this.sockets.get(url) !== ws) return;
+      logger.error("[SOCKET]", `Socket error for ${logEndpoint(url)}`);
       this.triggerError(url, err);
     });
   }
@@ -5281,6 +5218,7 @@ var SocketManager = class _SocketManager {
     if (!this.sockets.has(url)) {
       this.connect(url);
     }
+    return () => this.unsubscribe(url, listener, onError);
   }
   unsubscribe(url, listener, onError) {
     this.listeners.get(url)?.delete(listener);
@@ -5291,29 +5229,13 @@ var SocketManager = class _SocketManager {
       this.disconnect(url);
     }
   }
-  // eslint-disable-next-line
-  send(url, data) {
-    const ws = this.sockets.get(url);
-    if (ws && this.connected.get(url)) {
-      ws.send(typeof data === "string" ? data : JSON.stringify(data));
-    } else {
-      logger.warn("[SOCKET]", `Cannot send: not connected to ${url}`);
-      this.triggerError(url, "Not connected");
-    }
-  }
   disconnect(url) {
     const ws = this.sockets.get(url);
     this.clearReconnect(url);
     this.sockets.delete(url);
     this.listeners.delete(url);
     this.errorListeners.delete(url);
-    this.connected.delete(url);
     if (ws) ws.close();
-  }
-  disconnectAll() {
-    for (const url of this.sockets.keys()) {
-      this.disconnect(url);
-    }
   }
   triggerError(url, err) {
     const handlers = this.errorListeners.get(url);
@@ -5322,7 +5244,11 @@ var SocketManager = class _SocketManager {
         try {
           cb(err);
         } catch (e) {
-          logger.error("[SOCKET]", `Error handler threw for ${url}:`, e);
+          logger.error(
+            "[SOCKET]",
+            `Error handler threw for ${logEndpoint(url)}:`,
+            e
+          );
         }
       }
     }
@@ -5615,6 +5541,152 @@ function getSubscriptionLatencyTest(section) {
   };
 }
 
+// src/anticheburnet/services/clashStreams.service.ts
+var CLASH_STREAM_TIMEOUT_MS = 3e3;
+function startClashStreams(streams, startFallback) {
+  if (!canUseDirectClashApi()) {
+    startFallback();
+    return () => {
+    };
+  }
+  const entries = Object.entries(streams);
+  const waiting = new Set(entries.map(([stream]) => stream));
+  const subscriptions = [];
+  let stopped = false;
+  const timer = setTimeout(fallback, CLASH_STREAM_TIMEOUT_MS);
+  function stop() {
+    stopped = true;
+    clearTimeout(timer);
+    for (const unsubscribe of subscriptions.splice(0)) unsubscribe();
+  }
+  function fallback() {
+    if (!stopped) {
+      stop();
+      startFallback();
+    }
+  }
+  void getClashApiSecret2().then((secret) => {
+    if (stopped) return;
+    for (const [stream, receive] of entries) {
+      subscriptions.push(
+        socket.subscribe(
+          getClashWsUrl(stream, secret),
+          (message) => {
+            if (stopped) return;
+            try {
+              receive(JSON.parse(message));
+            } catch {
+              fallback();
+              return;
+            }
+            waiting.delete(stream);
+            if (!waiting.size) clearTimeout(timer);
+          },
+          () => queueMicrotask(fallback)
+        )
+      );
+    }
+  }).catch(fallback);
+  return stop;
+}
+
+// src/anticheburnet/tabs/dashboard/dashboardStats.ts
+var STATS_POLL_INTERVAL_MS = 3e3;
+function counter(value) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    throw new Error("Invalid Clash API counter");
+  }
+  return value;
+}
+function connectionsStats(data) {
+  const payload = data;
+  return {
+    uploadTotal: counter(payload.uploadTotal),
+    downloadTotal: counter(payload.downloadTotal),
+    memory: counter(payload.memory),
+    connections: Array.isArray(payload.connections) ? payload.connections.length : 0
+  };
+}
+function applyConnections(data) {
+  const { downloadTotal, uploadTotal, memory, connections } = data;
+  store.set({
+    trafficTotalWidget: {
+      loading: false,
+      failed: false,
+      data: { downloadTotal, uploadTotal }
+    },
+    systemInfoWidget: {
+      loading: false,
+      failed: false,
+      data: { memory, connections }
+    }
+  });
+}
+function setBandwidth(up, down) {
+  store.set({
+    bandwidthWidget: { loading: false, failed: false, data: { up, down } }
+  });
+}
+function startDashboardStats() {
+  let stopped = false;
+  let polling = false;
+  let timer;
+  let previous;
+  async function poll() {
+    if (polling || stopped) return;
+    polling = true;
+    try {
+      const result = await AnticheburNETShellMethods.getClashApiConnections();
+      if (stopped) return;
+      if (!result.success) throw new Error(result.error);
+      const stats = connectionsStats(result.data);
+      applyConnections(stats);
+      const time = performance.now();
+      const seconds = previous ? (time - previous.time) / 1e3 : 0;
+      if (previous && seconds > 0) {
+        setBandwidth(
+          Math.max(0, stats.uploadTotal - previous.up) / seconds,
+          Math.max(0, stats.downloadTotal - previous.down) / seconds
+        );
+      }
+      previous = { up: stats.uploadTotal, down: stats.downloadTotal, time };
+    } catch {
+      if (stopped) return;
+      previous = void 0;
+      const { bandwidthWidget, trafficTotalWidget, systemInfoWidget } = store.get();
+      store.set({
+        bandwidthWidget: { ...bandwidthWidget, loading: false, failed: true },
+        trafficTotalWidget: {
+          ...trafficTotalWidget,
+          loading: false,
+          failed: true
+        },
+        systemInfoWidget: { ...systemInfoWidget, loading: false, failed: true }
+      });
+    } finally {
+      polling = false;
+    }
+  }
+  const stopStreams = startClashStreams(
+    {
+      traffic: (data) => {
+        const { up, down } = data;
+        setBandwidth(counter(up), counter(down));
+      },
+      connections: (data) => applyConnections(connectionsStats(data))
+    },
+    () => {
+      void poll();
+      timer = setInterval(() => void poll(), STATS_POLL_INTERVAL_MS);
+    }
+  );
+  return () => {
+    stopped = true;
+    stopStreams();
+    clearInterval(timer);
+  };
+}
+
 // src/anticheburnet/tabs/dashboard/subscriptionAutoUpdate.ts
 function mountSubscriptionAutoUpdate(container) {
   let active = true;
@@ -5683,7 +5755,7 @@ var actionStateUnsubscribe = null;
 var dashboardMounted = false;
 var dashboardMountId = 0;
 var dashboardDataUpdatesStarted = false;
-var dashboardDataUpdatesId = 0;
+var stopDashboardStats;
 var pageUnloading = false;
 var followedSubscriptionJobs = /* @__PURE__ */ new Set();
 var followedLatencyJobs = /* @__PURE__ */ new Set();
@@ -6052,98 +6124,6 @@ function stopActionStateWatcher() {
   actionStateUnsubscribe();
   actionStateUnsubscribe = null;
 }
-async function connectToClashSockets(dataUpdatesId) {
-  const mountId = dashboardMountId;
-  const clashApiSecret = await getClashApiSecret2();
-  if (!dashboardMounted || mountId !== dashboardMountId || dataUpdatesId !== dashboardDataUpdatesId || getDashboardServiceAvailability() === "stopped") {
-    return;
-  }
-  socket.subscribe(
-    `${getClashWsUrl()}/traffic?token=${clashApiSecret}`,
-    (msg) => {
-      if (dataUpdatesId !== dashboardDataUpdatesId || getDashboardServiceAvailability() === "stopped") {
-        return;
-      }
-      const parsedMsg = JSON.parse(msg);
-      store.set({
-        bandwidthWidget: {
-          loading: false,
-          failed: false,
-          data: { up: parsedMsg.up, down: parsedMsg.down }
-        }
-      });
-    },
-    (_err) => {
-      if (dataUpdatesId !== dashboardDataUpdatesId || getDashboardServiceAvailability() === "stopped") {
-        return;
-      }
-      logger.error(
-        "[DASHBOARD]",
-        "connectToClashSockets - traffic: failed to connect to",
-        getClashWsUrl()
-      );
-      store.set({
-        bandwidthWidget: {
-          loading: false,
-          failed: true,
-          data: { up: 0, down: 0 }
-        }
-      });
-    }
-  );
-  socket.subscribe(
-    `${getClashWsUrl()}/connections?token=${clashApiSecret}`,
-    (msg) => {
-      if (dataUpdatesId !== dashboardDataUpdatesId || getDashboardServiceAvailability() === "stopped") {
-        return;
-      }
-      const parsedMsg = JSON.parse(msg);
-      store.set({
-        trafficTotalWidget: {
-          loading: false,
-          failed: false,
-          data: {
-            downloadTotal: parsedMsg.downloadTotal,
-            uploadTotal: parsedMsg.uploadTotal
-          }
-        },
-        systemInfoWidget: {
-          loading: false,
-          failed: false,
-          data: {
-            connections: parsedMsg.connections?.length,
-            memory: parsedMsg.memory
-          }
-        }
-      });
-    },
-    (_err) => {
-      if (dataUpdatesId !== dashboardDataUpdatesId || getDashboardServiceAvailability() === "stopped") {
-        return;
-      }
-      logger.error(
-        "[DASHBOARD]",
-        "connectToClashSockets - connections: failed to connect to",
-        getClashWsUrl()
-      );
-      store.set({
-        trafficTotalWidget: {
-          loading: false,
-          failed: true,
-          data: { downloadTotal: 0, uploadTotal: 0 }
-        },
-        systemInfoWidget: {
-          loading: false,
-          failed: true,
-          data: {
-            connections: 0,
-            memory: 0
-          }
-        }
-      });
-    }
-  );
-}
 function getDashboardServiceAvailability() {
   const service = store.get().servicesInfoWidget;
   return getServiceAvailability({
@@ -6154,22 +6134,21 @@ function getDashboardServiceAvailability() {
 }
 function stopDashboardDataUpdates() {
   dashboardDataUpdatesStarted = false;
-  dashboardDataUpdatesId += 1;
   if (sectionsRefreshTimer) {
     clearInterval(sectionsRefreshTimer);
     sectionsRefreshTimer = null;
   }
   sectionsRefreshQueued = false;
-  socket.resetAll();
+  stopDashboardStats?.();
+  stopDashboardStats = void 0;
 }
 function startDashboardDataUpdates() {
   if (dashboardDataUpdatesStarted || !dashboardMounted || getDashboardServiceAvailability() === "stopped") {
     return;
   }
   dashboardDataUpdatesStarted = true;
-  const dataUpdatesId = ++dashboardDataUpdatesId;
   void fetchDashboardSections({ force: true });
-  void connectToClashSockets(dataUpdatesId);
+  stopDashboardStats = startDashboardStats();
   sectionsRefreshTimer = setInterval(() => {
     void fetchDashboardSections();
   }, SECTIONS_REFRESH_INTERVAL_MS);
@@ -8889,6 +8868,19 @@ function renderButton({
   );
 }
 
+// src/helpers/downloadAsTxt.ts
+function downloadAsTxt(text, filename) {
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  const safeName = filename.endsWith(".txt") ? filename : `${filename}.txt`;
+  link.download = safeName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+}
+
 // src/partials/modal/renderModal.ts
 function renderModal(text, name, options) {
   let rawText = text ?? "";
@@ -11238,9 +11230,13 @@ function render3() {
 // src/anticheburnet/tabs/monitoring/initController.ts
 function normalizeConnectionsPayload(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return {};
+    throw new Error("Invalid Clash API connections payload");
   }
-  return value;
+  const { connections } = value;
+  if (connections !== null && !Array.isArray(connections)) {
+    throw new Error("Invalid Clash API connections payload");
+  }
+  return { connections: connections ?? [] };
 }
 var RENDER_INTERVAL_MS = 500;
 var CONNECTIONS_RPC_POLL_INTERVAL_MS = 1500;
@@ -11254,11 +11250,11 @@ var monitoringControllerInitialized = false;
 var serviceStateUnsubscribe = null;
 var renderTimer = null;
 var connectionsPollTimer = null;
-var connectionsSocketUrl = "";
+var stopConnectionsStream;
 var connectionsUpdatesId = 0;
 var renderSkippedForSelection = false;
 var pendingConnectionsPayload = null;
-var pollingConnections = false;
+var pollingConnectionsId;
 var activeTab = "active";
 var selectedDeviceFilter = ALL_FILTER_VALUE;
 var searchQuery = "";
@@ -12219,7 +12215,9 @@ async function loadLocalDevices() {
 }
 async function loadRouteDisplayNames() {
   try {
-    buildRouteDisplayNames(await CustomAnticheburNETMethods.getConfigSections());
+    buildRouteDisplayNames(
+      await CustomAnticheburNETMethods.getConfigSections()
+    );
   } catch (error) {
     logger.warn("[MONITORING]", "loadRouteDisplayNames: failed", error);
     buildRouteDisplayNames([]);
@@ -12229,14 +12227,14 @@ async function loadRouteDisplayNames() {
   }
 }
 async function pollConnectionsSnapshot() {
-  if (pollingConnections || !monitoringMounted || monitoringPaused || serviceAvailability !== "running") {
+  if (pollingConnectionsId === connectionsUpdatesId || !monitoringMounted || monitoringPaused || serviceAvailability !== "running") {
     return;
   }
-  const mountId = monitoringMountId;
-  pollingConnections = true;
+  const updatesId = connectionsUpdatesId;
+  pollingConnectionsId = updatesId;
   try {
     const response = await AnticheburNETShellMethods.getClashApiConnections();
-    if (!monitoringMounted || mountId !== monitoringMountId || serviceAvailability !== "running") {
+    if (!monitoringMounted || updatesId !== connectionsUpdatesId || serviceAvailability !== "running") {
       return;
     }
     if (!response.success) {
@@ -12247,7 +12245,7 @@ async function pollConnectionsSnapshot() {
     }
     applyConnectionsPayload(normalizeConnectionsPayload(response.data));
   } catch (error) {
-    if (!monitoringMounted || mountId !== monitoringMountId || serviceAvailability !== "running") {
+    if (!monitoringMounted || updatesId !== connectionsUpdatesId || serviceAvailability !== "running") {
       return;
     }
     logger.error("[MONITORING]", "connections polling failed", error);
@@ -12255,7 +12253,7 @@ async function pollConnectionsSnapshot() {
     loading = false;
     renderConnections();
   } finally {
-    pollingConnections = false;
+    if (pollingConnectionsId === updatesId) pollingConnectionsId = void 0;
   }
 }
 function startConnectionsPolling() {
@@ -12267,45 +12265,16 @@ function startConnectionsPolling() {
     void pollConnectionsSnapshot();
   }, CONNECTIONS_RPC_POLL_INTERVAL_MS);
 }
-async function connectToConnectionsSocket(updatesId) {
-  const mountId = monitoringMountId;
-  const clashApiSecret = await getClashApiSecret2();
-  if (!monitoringMounted || mountId !== monitoringMountId || updatesId !== connectionsUpdatesId || serviceAvailability !== "running") {
-    return;
-  }
-  connectionsSocketUrl = `${getClashWsUrl()}/connections?token=${clashApiSecret}`;
-  socket.subscribe(
-    connectionsSocketUrl,
-    (msg) => {
-      if (updatesId !== connectionsUpdatesId || serviceAvailability !== "running") {
-        return;
-      }
-      try {
-        applyConnectionsPayload(JSON.parse(msg));
-      } catch (error) {
-        logger.error("[MONITORING]", "connections socket parse failed", error);
-      }
-    },
-    (_err) => {
-      if (!monitoringMounted || mountId !== monitoringMountId || updatesId !== connectionsUpdatesId || serviceAvailability !== "running") {
-        return;
-      }
-      failed = true;
-      loading = false;
-      renderConnections();
-    }
-  );
-}
 function startConnectionsUpdates() {
   if (serviceAvailability !== "running") {
     return;
   }
-  if (canUseDirectClashApi()) {
-    const updatesId = ++connectionsUpdatesId;
-    void connectToConnectionsSocket(updatesId);
-    return;
-  }
-  startConnectionsPolling();
+  stopConnectionsStream = startClashStreams(
+    {
+      connections: (data) => applyConnectionsPayload(normalizeConnectionsPayload(data))
+    },
+    startConnectionsPolling
+  );
 }
 function stopConnectionsUpdates() {
   connectionsUpdatesId += 1;
@@ -12313,10 +12282,8 @@ function stopConnectionsUpdates() {
     clearInterval(connectionsPollTimer);
     connectionsPollTimer = null;
   }
-  if (connectionsSocketUrl) {
-    socket.disconnect(connectionsSocketUrl);
-    connectionsSocketUrl = "";
-  }
+  stopConnectionsStream?.();
+  stopConnectionsStream = void 0;
 }
 function setServiceAvailability(next) {
   if (serviceAvailability === next) {

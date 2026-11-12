@@ -2,6 +2,7 @@
 
 let fs = require("fs");
 let uci_core = require("core.uci");
+let core_version = require("singbox.version");
 
 const CONFIG_NAME = getenv("ANTICHEBURNET_CONFIG_NAME") || "anticheburnet";
 const LIB_DIR = getenv("ANTICHEBURNET_LIB") || "/usr/lib/anticheburnet";
@@ -946,16 +947,7 @@ function sing_box_version_info_from_output(output) {
     if (version == "")
         return null;
 
-    let tags = "";
-    for (let line in split(as_string(output), "\n")) {
-        line = as_string(line);
-        if (substr(line, 0, 5) == "Tags:") {
-            tags = trim(substr(line, 5));
-            break;
-        }
-    }
-
-    return { version, tags };
+    return { version, tags: core_version.build_tags(output) };
 }
 
 function sing_box_cached_version_info(signature) {
@@ -972,11 +964,6 @@ function sing_box_cached_version_info(signature) {
                 return { hit: true, info: null };
         }
     }
-
-    let legacy = split(as_string(fs.readfile(SING_BOX_VERSION_CACHE_FILE)), "\n");
-    let legacy_version = as_string(legacy[1] || "");
-    if (as_string(legacy[0] || "") == signature && index(legacy_version, "extended") >= 0)
-        return { hit: true, info: { version: legacy_version, tags: "" } };
 
     return null;
 }
@@ -1006,7 +993,7 @@ function sing_box_version_info() {
     if (!file_executable(SING_BOX_BIN_PATH))
         return null;
 
-    let shared = require("singbox.version").cached(SING_BOX_BIN_PATH);
+    let shared = core_version.cached(SING_BOX_BIN_PATH);
     if (shared != null) return sing_box_version_info_from_output(shared.output);
 
     let signature = sing_box_signature();
@@ -1066,33 +1053,17 @@ function capability_flags() {
     };
 
     if (file_executable(SING_BOX_BIN_PATH)) {
-        if (marker_is("extended-compressed")) {
-            result.sing_box_extended = 1;
-            result.sing_box_compressed = 1;
-            result.sing_box_tailscale = 1;
-        }
-        else if (marker_is("extended")) {
-            result.sing_box_extended = 1;
-            result.sing_box_tailscale = 1;
-        }
-        else if (marker_is("tiny") || tiny_package_installed()) {
-            result.sing_box_tiny = 1;
-        }
-        else if (component_action_running_for("sing_box")) {
-            result.sing_box_tailscale = 1;
-        }
-        else {
-            let info = sing_box_version_info();
-            if (info != null && index(info.version, "extended") >= 0) {
+        result.sing_box_compressed = marker_is("extended-compressed") ? 1 : 0;
+        result.sing_box_extended = result.sing_box_compressed || marker_is("extended") ? 1 : 0;
+        if (result.sing_box_extended == 0)
+            result.sing_box_tiny = marker_is("tiny") || tiny_package_installed() ? 1 : 0;
+
+        let info = component_action_running_for("sing_box") ? null : sing_box_version_info();
+        if (info != null) {
+            if (index(info.version, "extended") >= 0)
                 result.sing_box_extended = 1;
-                result.sing_box_tailscale = 1;
-            }
-            else if (info != null) {
-                if (match(info.tags, /(^|[,: \t])with_tailscale([, \t]|$)/) != null)
-                    result.sing_box_tailscale = 1;
-                if (result.sing_box_tailscale == 0)
-                    result.sing_box_tiny = 1;
-            }
+            result.sing_box_tailscale = core_version.has_build_tag(info.tags, "with_tailscale") ? 1 : 0;
+            result.sing_box_tiny = result.sing_box_extended == 0 && result.sing_box_tailscale == 0 ? 1 : 0;
         }
     }
 
@@ -1440,7 +1411,10 @@ function latency_clash_method(latency_type) {
 
 function latency_worker(path, latency_type, tag, timeout) {
     let method = latency_clash_method(latency_type).method;
-    let status = command_status(command_from_args([ BIN_PATH, "clash_api", method, tag, timeout, path ]) + " >/dev/null 2>&1");
+    let args = [ BIN_PATH, "clash_api", method, tag, timeout ];
+    if (latency_type == "proxy_list")
+        push(args, path);
+    let status = command_status(command_from_args(args) + " >/dev/null 2>&1");
     if (status == 0)
         write_finished_action_state(path, true, "Latency test completed", status);
     else

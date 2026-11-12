@@ -1,5 +1,4 @@
 import {
-  getClashWsUrl,
   isCopyableProxyLink,
   onMount,
   preserveScrollForPage,
@@ -18,7 +17,6 @@ import {
   setLocalLatencyAction,
   setLocalSubscriptionAction,
   shouldNotifyOwnedUiAction,
-  socket,
   store,
   StoreType,
 } from '../../services';
@@ -29,7 +27,6 @@ import {
   renderWidget,
 } from './partials';
 import { fetchServicesInfo } from '../../fetchers/fetchServicesInfo';
-import { getClashApiSecret } from '../../methods/custom/getClashApiSecret';
 import { AnticheburNET } from '../../types';
 import {
   getCachedRuntimeUiState,
@@ -45,6 +42,7 @@ import {
   preserveSubscriptionLatency,
 } from './subscriptionLatency';
 
+import { startDashboardStats } from './dashboardStats';
 import { mountSubscriptionAutoUpdate } from './subscriptionAutoUpdate';
 
 let unmountSubscriptionAutoUpdate: (() => void) | null = null;
@@ -59,7 +57,7 @@ let actionStateUnsubscribe: (() => void) | null = null;
 let dashboardMounted = false;
 let dashboardMountId = 0;
 let dashboardDataUpdatesStarted = false;
-let dashboardDataUpdatesId = 0;
+let stopDashboardStats: (() => void) | undefined;
 let pageUnloading = false;
 const followedSubscriptionJobs = new Set<string>();
 const followedLatencyJobs = new Set<string>();
@@ -547,125 +545,6 @@ function stopActionStateWatcher() {
   actionStateUnsubscribe = null;
 }
 
-async function connectToClashSockets(dataUpdatesId: number) {
-  const mountId = dashboardMountId;
-  const clashApiSecret = await getClashApiSecret();
-
-  if (
-    !dashboardMounted ||
-    mountId !== dashboardMountId ||
-    dataUpdatesId !== dashboardDataUpdatesId ||
-    getDashboardServiceAvailability() === 'stopped'
-  ) {
-    return;
-  }
-
-  socket.subscribe(
-    `${getClashWsUrl()}/traffic?token=${clashApiSecret}`,
-    (msg) => {
-      if (
-        dataUpdatesId !== dashboardDataUpdatesId ||
-        getDashboardServiceAvailability() === 'stopped'
-      ) {
-        return;
-      }
-
-      const parsedMsg = JSON.parse(msg);
-
-      store.set({
-        bandwidthWidget: {
-          loading: false,
-          failed: false,
-          data: { up: parsedMsg.up, down: parsedMsg.down },
-        },
-      });
-    },
-    (_err) => {
-      if (
-        dataUpdatesId !== dashboardDataUpdatesId ||
-        getDashboardServiceAvailability() === 'stopped'
-      ) {
-        return;
-      }
-
-      logger.error(
-        '[DASHBOARD]',
-        'connectToClashSockets - traffic: failed to connect to',
-        getClashWsUrl(),
-      );
-      store.set({
-        bandwidthWidget: {
-          loading: false,
-          failed: true,
-          data: { up: 0, down: 0 },
-        },
-      });
-    },
-  );
-
-  socket.subscribe(
-    `${getClashWsUrl()}/connections?token=${clashApiSecret}`,
-    (msg) => {
-      if (
-        dataUpdatesId !== dashboardDataUpdatesId ||
-        getDashboardServiceAvailability() === 'stopped'
-      ) {
-        return;
-      }
-
-      const parsedMsg = JSON.parse(msg);
-
-      store.set({
-        trafficTotalWidget: {
-          loading: false,
-          failed: false,
-          data: {
-            downloadTotal: parsedMsg.downloadTotal,
-            uploadTotal: parsedMsg.uploadTotal,
-          },
-        },
-        systemInfoWidget: {
-          loading: false,
-          failed: false,
-          data: {
-            connections: parsedMsg.connections?.length,
-            memory: parsedMsg.memory,
-          },
-        },
-      });
-    },
-    (_err) => {
-      if (
-        dataUpdatesId !== dashboardDataUpdatesId ||
-        getDashboardServiceAvailability() === 'stopped'
-      ) {
-        return;
-      }
-
-      logger.error(
-        '[DASHBOARD]',
-        'connectToClashSockets - connections: failed to connect to',
-        getClashWsUrl(),
-      );
-      store.set({
-        trafficTotalWidget: {
-          loading: false,
-          failed: true,
-          data: { downloadTotal: 0, uploadTotal: 0 },
-        },
-        systemInfoWidget: {
-          loading: false,
-          failed: true,
-          data: {
-            connections: 0,
-            memory: 0,
-          },
-        },
-      });
-    },
-  );
-}
-
 function getDashboardServiceAvailability() {
   const service = store.get().servicesInfoWidget;
   return getServiceAvailability({
@@ -677,7 +556,6 @@ function getDashboardServiceAvailability() {
 
 function stopDashboardDataUpdates() {
   dashboardDataUpdatesStarted = false;
-  dashboardDataUpdatesId += 1;
 
   if (sectionsRefreshTimer) {
     clearInterval(sectionsRefreshTimer);
@@ -685,7 +563,8 @@ function stopDashboardDataUpdates() {
   }
 
   sectionsRefreshQueued = false;
-  socket.resetAll();
+  stopDashboardStats?.();
+  stopDashboardStats = undefined;
 }
 
 function startDashboardDataUpdates() {
@@ -698,9 +577,8 @@ function startDashboardDataUpdates() {
   }
 
   dashboardDataUpdatesStarted = true;
-  const dataUpdatesId = ++dashboardDataUpdatesId;
   void fetchDashboardSections({ force: true });
-  void connectToClashSockets(dataUpdatesId);
+  stopDashboardStats = startDashboardStats();
   sectionsRefreshTimer = setInterval(() => {
     void fetchDashboardSections();
   }, SECTIONS_REFRESH_INTERVAL_MS);

@@ -53,6 +53,26 @@ grep -Fq 'get_system_info: [ "diagnostics/runtime.uc", "get-system-info", 0 ]' "
   fail "service/cli.uc must dispatch get_system_info through diagnostics/runtime.uc"
 [ "$(ANTICHEBURNET_VERSION=runtime-test ucode -L "$ANTICHEBURNET_LIB" "$DIAGNOSTICS_RUNTIME" show-version)" = "runtime-test" ] ||
   fail "diagnostics/runtime.uc show-version mode failed"
+
+{
+  sed '/^let mode = ARGV/,$d' "$DIAGNOSTICS_RUNTIME"
+  cat <<'UCODE'
+let cfg = { enable_yacd: "1", enable_yacd_wan_access: "0", yacd_secret_key: "test-local-secret" };
+settings = function() { return cfg; };
+let auth = clash_auth_args();
+if (length(auth) != 2 || auth[0] != "--header" || auth[1] != "Authorization: Bearer test-local-secret")
+    die("Local-only YACD requires the configured Clash token\n");
+cfg.enable_yacd = "0";
+if (length(clash_auth_args()) != 0)
+    die("Disabled YACD must omit the Clash token\n");
+cfg.enable_yacd = "1";
+cfg.yacd_secret_key = "";
+if (length(clash_auth_args()) != 0)
+    die("Empty YACD secret must omit the Clash token\n");
+UCODE
+} > "$WORK_DIR/clash-auth.uc"
+ucode -L "$ANTICHEBURNET_LIB" "$WORK_DIR/clash-auth.uc" || fail "Clash authentication failed"
+
 if grep -n -E 'require\("uci"\)\.cursor|uci -q|uci", "show"|uci", "-q"' "$DIAGNOSTICS_RUNTIME" >/dev/null 2>&1; then
   fail "diagnostics/runtime.uc must use core.uci instead of owning direct UCI cursor or CLI calls"
 fi
@@ -141,9 +161,17 @@ mkdir -p "$fake_bin"
 cat >"$fake_bin/curl" <<'SH'
 #!/usr/bin/env sh
 [ "$1" = '-q' ] && [ "$2" = '--noproxy' ] && [ "$3" = '*' ] || exit 64
+case "$*" in
+  *'--max-time '*) ;;
+  *) exit 65 ;;
+esac
 printf '%s\n' "$*" >>"$FAKE_CURL_LOG"
 case "$*" in
   *'127.0.0.1:9090/proxies') printf '%s\n' '{"proxies":{"urltest":{"type":"URLTest"},"provider-urltest":{"type":"urltest"},"proxy-a":{"type":"VLESS"},"proxy-b":{"type":"Trojan"}}}' ;;
+  *'127.0.0.1:9090/connections') printf '%s\n' '{"connections":[]}' ;;
+  *'providers/proxies/provider?revision=true') printf '%s\n' '{"revision":"test","capabilities":["happ-ruleset-update-v1"]}' ;;
+  *'/proxies/error/delay') printf '%s\n' '{"message":"Timeout"}' ;;
+  *'/group/empty/delay') printf '%s\n' '{}' ;;
   *) printf '%s\n' '{"delay":1}' ;;
 esac
 SH
@@ -170,6 +198,26 @@ PATH="$fake_bin:$PATH" \
   fail "group latency must bypass ambient proxy and curl settings"
 grep -Fq '/group/auto/delay' "$WORK_DIR/fake-curl-group.log" ||
   fail "group latency must retain the group URLTest endpoint"
+
+fake_clash_api() {
+  FAKE_CURL_LOG="$WORK_DIR/fake-curl-api.log" \
+  ANTICHEBURNET_UCI_STATE_FILE="$uci_state" \
+  ANTICHEBURNET_LIB="$ANTICHEBURNET_LIB" \
+  PATH="$fake_bin:$PATH" \
+    ucode -L "$ANTICHEBURNET_LIB" "$DIAGNOSTICS_RUNTIME" clash-api "$@"
+}
+fake_clash_api get_proxies >/dev/null || fail "proxy snapshot must bypass inherited proxies and curl config"
+fake_clash_api get_connections | grep -Fq '"connections"' || fail "connection snapshot must bypass inherited proxies and curl config"
+fake_clash_api provider_supports_rulesets provider || fail "provider capability probe must use direct controller access"
+fake_clash_api update_provider provider test || fail "provider update and verification must use direct controller access"
+grep -Fq -- '-X PUT -o /dev/null 127.0.0.1:9090/providers/proxies/provider' "$WORK_DIR/fake-curl-api.log" ||
+  fail "provider update must reach the controller before checking its revision"
+if fake_clash_api get_proxy_latency error 5000 >/dev/null; then
+  fail "a JSON error payload must not complete a proxy latency check successfully"
+fi
+if fake_clash_api get_group_latency empty 5000 >/dev/null; then
+  fail "a group response with no successful member delays must not be reported as success"
+fi
 
 latency_action_dir="$WORK_DIR/ui-state/latency-actions"
 mkdir -p "$latency_action_dir"

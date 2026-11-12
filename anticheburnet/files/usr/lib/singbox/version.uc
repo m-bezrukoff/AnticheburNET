@@ -62,4 +62,18 @@ function get(binary, cache_path) {
     return value;
 }
 
-return { cached, get };
+function build_tags(output) {
+    for (let line in split(output || "", "\n"))
+        if (substr(line, 0, 5) == "Tags:")
+            return trim(substr(line, 5));
+    return "";
+}
+
+function has_build_tag(tags, tag) {
+    for (let value in split(tags || "", /[, \t]+/))
+        if (value == tag)
+            return true;
+    return false;
+}
+
+return { cached, get, build_tags, has_build_tag };

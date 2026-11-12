@@ -18,7 +18,8 @@ function bool_value(value) {
 function config(settings, runtime) {
     let output_network_interface = option(settings, "output_network_interface", "");
     let mwan3_active = type(runtime) == "object" && bool_value(runtime.mwan3_active);
-    let sniff_inbounds = [ runtime_constants.TPROXY_INBOUND_TAG, runtime_constants.TPROXY_INBOUND6_TAG, runtime_constants.DNS_INBOUND_TAG ];
+    let tproxy_inbounds = [ runtime_constants.TPROXY_INBOUND_TAG, runtime_constants.TPROXY_INBOUND6_TAG ];
+    let sniff_inbounds = [ ...tproxy_inbounds, runtime_constants.DNS_INBOUND_TAG ];
     if (type(runtime) == "object" && bool_value(runtime.source_aware_dns))
         push(sniff_inbounds, runtime_constants.SOURCE_DNS_INBOUND_TAG);
     if (type(runtime) == "object" && type(runtime.dns_health_inbounds) == "array")
@@ -43,6 +44,15 @@ function config(settings, runtime) {
     if (type(runtime) == "object" && bool_value(runtime.source_aware_dns))
         push(result.rules, { action: "reject", inbound: runtime_constants.SOURCE_DNS_INBOUND_TAG });
 
+    if (bool_option(settings, "exclude_ntp", false))
+        push(result.rules, {
+            action: "route",
+            inbound: tproxy_inbounds,
+            network: "udp",
+            port: 123,
+            outbound: runtime_constants.DIRECT_OUTBOUND_TAG
+        });
+
     // Peer ports are arbitrary. Match the detected protocol before section
     // policies (including HAPP's global proxy route) select a tunnel.
     push(result.rules, {
@@ -64,7 +74,7 @@ function config(settings, runtime) {
     if (output_network_interface != "")
         result.default_interface = output_network_interface;
     if (bool_option(settings, "disable_quic", false))
-        push(result.rules, { action: "reject", inbound: runtime_constants.TPROXY_INBOUND_TAG, protocol: "quic" });
+        push(result.rules, { action: "reject", inbound: tproxy_inbounds, protocol: "quic" });
 
     return result;
 }

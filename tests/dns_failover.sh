@@ -4,6 +4,7 @@ set -eo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ANTICHEBURNET_LIB="$ROOT_DIR/anticheburnet/files/usr/lib"
 GENERATOR="$ANTICHEBURNET_LIB/singbox/generator.uc"
+RUNTIME="$ANTICHEBURNET_LIB/singbox/runtime.uc"
 FAILOVER="$ANTICHEBURNET_LIB/singbox/dns_failover.uc"
 WORK_DIR="$(mktemp -d)"
 
@@ -90,6 +91,9 @@ JSON
 
 generate "$WORK_DIR/single.json" "$WORK_DIR/single-config.json"
 generate "$WORK_DIR/multi.json" "$WORK_DIR/multi-config.json" "$WORK_DIR/state.json"
+sed 's/"dns_type": "doh",/"routing_strategy": "tunnel", "dns_type": "doh",/;s/"dns_detour_enabled": "1"/"dns_detour_enabled": "0"/' \
+  "$WORK_DIR/multi.json" > "$WORK_DIR/tunnel.json"
+generate "$WORK_DIR/tunnel.json" "$WORK_DIR/tunnel-config.json"
 
 ucode -e '
 let fs = require("fs");
@@ -126,7 +130,27 @@ for (let rule in multi.dns.rules || []) {
     }
 }
 assert(health_rules == 5, "each candidate and the canonical active DNS have an inbound-specific rule");
-' "$WORK_DIR/single-config.json" "$WORK_DIR/multi-config.json"
+
+let tunnel = cfg(ARGV[2]);
+assert(find_tag(tunnel.dns.servers, "dns-server").detour == "proxy-out", "full tunnel routes canonical main DNS through the tunnel");
+for (let i in [1, 2]) {
+    assert(find_tag(tunnel.dns.servers, "dns-health-main-" + i + "-server").detour == "proxy-out", "full tunnel tests main DNS candidates on the same route");
+    assert(find_tag(tunnel.dns.servers, "dns-health-bootstrap-" + i + "-server").detour == null, "bootstrap DNS candidates remain direct");
+}
+' "$WORK_DIR/single-config.json" "$WORK_DIR/multi-config.json" "$WORK_DIR/tunnel-config.json"
+
+awk '/^let mode = ARGV\[0\]/{exit} {print}' "$RUNTIME" > "$WORK_DIR/runtime-patch.uc"
+cat >> "$WORK_DIR/runtime-patch.uc" <<'UCODE'
+let tunnel = json(fs.readfile(ARGV[0]));
+let replacement = { tag: "dns-server", type: "https", server: "cloudflare-dns.com" };
+if (!replace_dns_server(tunnel, replacement) || replacement.detour != "proxy-out")
+    die("Switching the main resolver must preserve the applied full-tunnel detour\n");
+let direct = json(fs.readfile(ARGV[1]));
+replacement.detour = "unapplied-out";
+if (!replace_dns_server(direct, replacement) || replacement.detour != null)
+    die("Switching a direct main resolver must preserve its applied direct route\n");
+UCODE
+ucode -L "$ANTICHEBURNET_LIB" "$WORK_DIR/runtime-patch.uc" "$WORK_DIR/tunnel-config.json" "$WORK_DIR/single-config.json"
 
 cat >"$WORK_DIR/select-state.json" <<'JSON'
 {

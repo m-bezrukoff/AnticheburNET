@@ -550,7 +550,11 @@ cat >"$WORK_DIR/manual-transport-fixture.json" <<'JSON'
       "selector_proxy_links": [
         "vless://11111111-1111-4111-8111-111111111111@127.0.0.1:443?security=tls&type=ws&path=%2Fws&host=example.com&sni=example.com&alpn=h2%2Chttp%2F1.1&encryption=mlkem768x25519plus.native.test#WS",
         "vmess://eyJ2IjoiMiIsInBzIjoiVk1lc3MgV1MiLCJhZGQiOiIxMjcuMC4wLjEiLCJwb3J0IjoiNDQzIiwiaWQiOiIyMjIyMjIyMi0yMjIyLTQyMjItODIyMi0yMjIyMjIyMjIyMjIiLCJhaWQiOiI0Iiwic2N5IjoiYXV0byIsIm5ldCI6IndzIiwidHlwZSI6Im5vbmUiLCJob3N0Ijoidm1lc3MuZXhhbXBsZSIsInBhdGgiOiIvdm1lc3MiLCJ0bHMiOiJ0bHMiLCJzbmkiOiJ2bWVzcy5leGFtcGxlIiwiYWxwbiI6ImgyLGh0dHAvMS4xIiwiZnAiOiJjaHJvbWUifQ==#VMess",
-        "ss://YWVzLTEyOC1nY206cGFzcw@127.0.0.1:8388#SS"
+        "ss://YWVzLTEyOC1nY206cGFzcw@127.0.0.1:8388#SS",
+        "ss://aes-128-gcm:abc%23%3F%2B%40%2523+Z@example.test:8388/?plugin=obfs-local%3Bobfs%3Dhttp#encoded",
+        "ss://YWVzLTEyOC1nY206YWJ+@[2001:db8::1]:8388#standard",
+        "ss://YWVzLTEyOC1nY206YWJ+QDEyNy4wLjAuMTo4Mzg5#legacy",
+        "ss%3A%2F%2FYWVzLTEyOC1nY206cGFzcw%40127.0.0.1%3A8390"
       ],
       "domain_suffix": [ "example.org" ]
     }
@@ -1395,6 +1399,15 @@ assert(vmess.tls.server_name == "vmess.example", "manual VMess TLS SNI");
 assert(length(vmess.tls.alpn) == 1 && vmess.tls.alpn[0] == "http/1.1", "manual VMess WS ALPN normalized");
 assert(vmess.tls.utls.fingerprint == "chrome", "manual VMess fingerprint");
 assert(outbound(manual, "proxy-3-out").type == "shadowsocks", "manual Shadowsocks link");
+let ss_encoded = outbound(manual, "proxy-4-out");
+assert(ss_encoded.password == "abc#?+@%23+Z", "manual Shadowsocks credentials decode after the URL is split");
+assert(ss_encoded.plugin == "obfs-local" && ss_encoded.plugin_opts == "obfs=http", "manual Shadowsocks inline plugin options");
+let ss_standard = outbound(manual, "proxy-5-out");
+assert(ss_standard.password == "ab~" && ss_standard.server == "2001:db8::1", "manual Shadowsocks standard Base64 with literal plus and IPv6");
+let ss_legacy = outbound(manual, "proxy-6-out");
+assert(ss_legacy.password == "ab~" && ss_legacy.server_port == 8389, "manual Shadowsocks legacy Base64 authority with literal plus");
+let ss_percent_encoded = outbound(manual, "proxy-7-out");
+assert(ss_percent_encoded.password == "pass" && ss_percent_encoded.server_port == 8390, "manual Shadowsocks percent-encoded link remains supported");
 
 let vpn = cfg("vpn");
 assert(outbound(vpn, "renamed_awg-interface-1-out").bind_interface == "tun0", "renamed VPN interface outbound");

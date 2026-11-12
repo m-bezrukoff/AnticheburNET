@@ -22,4 +22,8 @@ for (let mode in [ "happ", "tunnel", "selected" ]) {
         "Changing tunnel section must rebuild both sing-box and nftables");
     previous = next;
 }
+let ntp_default = signatures({});
+let ntp_enabled = signatures({ exclude_ntp: "1" });
+check(ntp_default.singbox != ntp_enabled.singbox && ntp_default.nft != ntp_enabled.nft,
+    "Exclude NTP must update both the FakeIP route and nftables exclusions");
 print("Routing strategy and tunnel Apply signature checks passed\n");

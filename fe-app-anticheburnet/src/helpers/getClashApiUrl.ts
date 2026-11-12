@@ -8,14 +8,19 @@ export function canUseDirectClashApi(): boolean {
   return (
     typeof location?.hostname === 'string' &&
     location.hostname !== '' &&
-    location.protocol !== 'https:'
+    location.protocol === 'http:'
   );
 }
 
-export function getClashWsUrl(): string {
+export function getClashWsUrl(
+  stream: 'connections' | 'traffic',
+  secret: string,
+): string {
   const { hostname } = window.location;
 
-  return `ws://${hostname}:9090`;
+  const url = new URL(`ws://${hostname}:9090/${stream}`);
+  url.searchParams.set('token', secret);
+  return url.href;
 }
 
 export function getClashHttpUrl(): string {

@@ -1551,86 +1551,62 @@ function monotonic_milliseconds() {
 
 function download_subscription(url, filepath, http_proxy_address, headers_filepath, effective_user_agent, effective_hwid, device_headers, request_budget_ms) {
     request_budget_ms = int(request_budget_ms || 15000);
-    let retries = 1;
     let timeout = request_budget_ms <= 2000 ? 1 : 5;
     let deadline = monotonic_milliseconds() + request_budget_ms;
     let stamp = clock();
     let suffix = sprintf(".part.%d.%d", stamp[0], stamp[1]);
     let tmpfile = filepath + suffix;
     let headers_tmpfile = headers_filepath != "" ? headers_filepath + suffix : "";
-    let resolution_failed = false;
-
     unlink_path(tmpfile);
     if (headers_tmpfile != "")
         unlink_path(headers_tmpfile);
 
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        let remaining_ms = deadline - monotonic_milliseconds();
-        if (remaining_ms <= 0) return 28;
-        let args = [
-            "curl", "-q", "-fL", "-sS",
-            "--connect-timeout", timeout,
-            "--max-time", sprintf("%.3f", remaining_ms / 1000.0)
-        ];
+    let args = [
+        "curl", "-q", "-fL", "-sS", "--globoff", "--proto", "=http,https", "--proto-redir", "=http,https",
+        "--connect-timeout", timeout
+    ];
 
-        if (http_proxy_address != "") {
-            push(args, "-x");
-            push(args, "http://" + http_proxy_address);
-            push(args, "--noproxy", "");
-        }
-        if (headers_tmpfile != "") {
-            push(args, "-D");
-            push(args, headers_tmpfile);
-        }
+    if (http_proxy_address != "")
+        push(args, "-x", "http://" + http_proxy_address, "--noproxy", "");
+    else
+        push(args, "--noproxy", "*");
 
-        push(args, "-o");
-        push(args, tmpfile);
-        let request_headers = [
-            "User-Agent: " + get_subscription_user_agent(effective_user_agent),
-            "X-HWID: " + get_subscription_hwid(effective_hwid)
-        ];
-        for (let header in device_request_headers(device_headers))
-            push(request_headers, header);
-        for (let header in request_headers) {
-            push(args, "-H");
-            push(args, header);
-        }
-        push(args, url);
+    if (headers_tmpfile != "")
+        push(args, "-D", headers_tmpfile);
 
-        let status = command_status_from_args(args);
-        if (status == 0 && file_nonempty(tmpfile)) {
-            move_file(tmpfile, filepath);
-            if (headers_filepath != "") {
-                if (file_nonempty(headers_tmpfile))
-                    move_file(headers_tmpfile, headers_filepath);
-                else {
+    push(args, "-o", tmpfile);
+    let request_headers = [
+        "User-Agent: " + get_subscription_user_agent(effective_user_agent),
+        "X-HWID: " + get_subscription_hwid(effective_hwid)
+    ];
+    for (let header in device_request_headers(device_headers))
+        push(request_headers, header);
+    for (let header in request_headers)
+        push(args, "-H", header);
+    let remaining_ms = deadline - monotonic_milliseconds();
+    if (remaining_ms <= 0)
+        return 28;
+    push(args, "--max-time", sprintf("%.3f", remaining_ms / 1000.0), "--", url);
+
+    let status = command_status_from_args(args);
+    if (status == 0 && file_nonempty(tmpfile)) {
+        let has_headers = headers_tmpfile != "" && file_nonempty(headers_tmpfile);
+        if (!has_headers || move_file(headers_tmpfile, headers_filepath)) {
+            if (move_file(tmpfile, filepath)) {
+                if (!has_headers && headers_filepath != "")
                     unlink_path(headers_filepath);
-                    unlink_path(headers_tmpfile);
-                }
+                unlink_path(headers_tmpfile);
+                return 0;
             }
-            return 0;
+            if (has_headers)
+                unlink_path(headers_filepath);
         }
-
-        unlink_path(tmpfile);
-        unlink_path(headers_tmpfile);
-
-        if (status == 5 || status == 6) {
-            resolution_failed = true;
-            if (attempt < retries) continue;
-            break;
-        }
-
-        if (status == 7 || status == 28 || status == 35 || status == 52 || status == 56) {
-            if (attempt < retries) continue;
-            return status;
-        }
-        // HTTP/profile errors are handled by the compatibility loop.
-        return status == 0 ? 1 : status;
+        status = 23; // Local write error, as reported by curl.
     }
 
     unlink_path(tmpfile);
     unlink_path(headers_tmpfile);
-    return resolution_failed ? 6 : 1;
+    return status == 0 ? 1 : status;
 }
 
 function copy_valid_metadata_output(metadata_tmpfile, metadata_output_path) {
@@ -1793,7 +1769,12 @@ function download_subscription_into_cache(section_name_value, subscription_url, 
             if (metadata_output_path != "")
                 unlink_path(metadata_output_path);
             if (download_status == 5 || download_status == 6) {
-                log_message("Subscription download failed for rule '" + section_name_value + "' because the subscription host could not be resolved; compatibility retries skipped", "warn");
+                let target = download_status == 5 ? "download proxy" : "subscription host";
+                log_message("Subscription download failed for rule '" + section_name_value + "' because the " + target + " could not be resolved; compatibility retries skipped", "warn");
+                break;
+            }
+            if (download_status == 23) {
+                log_message("Failed to write the subscription response for rule '" + section_name_value + "'", "warn");
                 break;
             }
             if (download_status == 7 || download_status == 28 || download_status == 35 || download_status == 52 || download_status == 56) {

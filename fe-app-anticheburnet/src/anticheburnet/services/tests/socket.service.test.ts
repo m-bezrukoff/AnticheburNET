@@ -28,19 +28,19 @@ class FakeWebSocket {
   close() {
     this.emit('close');
   }
-  send() {}
 }
 
 describe('socket service', () => {
+  const subscriptions: Array<() => void> = [];
+
   beforeEach(() => {
     vi.useFakeTimers();
-    socket.resetAll();
     FakeWebSocket.instances = [];
     vi.stubGlobal('WebSocket', FakeWebSocket);
   });
 
   afterEach(() => {
-    socket.resetAll();
+    for (const unsubscribe of subscriptions.splice(0)) unsubscribe();
     vi.useRealTimers();
     vi.unstubAllGlobals();
   });
@@ -48,7 +48,7 @@ describe('socket service', () => {
   it('keeps the initial subscriber when the first connection fails', () => {
     const onError = vi.fn();
 
-    socket.subscribe('ws://router.test', vi.fn(), onError);
+    subscriptions.push(socket.subscribe('ws://router.test', vi.fn(), onError));
     FakeWebSocket.instances[0].emit('error');
 
     expect(onError).toHaveBeenCalledOnce();
@@ -57,7 +57,7 @@ describe('socket service', () => {
   it('reconnects after unexpected closure and preserves subscribers', () => {
     const listener = vi.fn();
 
-    socket.subscribe('ws://router.test', listener);
+    subscriptions.push(socket.subscribe('ws://router.test', listener));
     FakeWebSocket.instances[0].emit('close');
     vi.advanceTimersByTime(1000);
 
@@ -69,7 +69,7 @@ describe('socket service', () => {
   });
 
   it('uses 1, 2, then 5 second reconnect delays', () => {
-    socket.subscribe('ws://router.test', vi.fn());
+    subscriptions.push(socket.subscribe('ws://router.test', vi.fn()));
 
     FakeWebSocket.instances[0].emit('close');
     vi.advanceTimersByTime(1000);
@@ -82,10 +82,37 @@ describe('socket service', () => {
   });
 
   it('does not reconnect after manual disconnect', () => {
-    socket.subscribe('ws://router.test', vi.fn());
-    socket.disconnect('ws://router.test');
+    const unsubscribe = socket.subscribe('ws://router.test', vi.fn());
+    unsubscribe();
     vi.advanceTimersByTime(10000);
 
     expect(FakeWebSocket.instances).toHaveLength(1);
+  });
+
+  it('keeps other subscribers and ignores events from the previous socket', () => {
+    const url = 'ws://router.test/connections?token=example';
+    const first = vi.fn();
+    const second = vi.fn();
+    const stopFirst = socket.subscribe(url, first);
+    const stopSecond = socket.subscribe(url, second);
+    const oldSocket = FakeWebSocket.instances[0];
+    const event = { data: 'sample' } as MessageEvent;
+
+    stopFirst();
+    oldSocket.emit('message', event);
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledOnce();
+    stopSecond();
+
+    const next = vi.fn();
+    const onError = vi.fn();
+    subscriptions.push(socket.subscribe(url, next, onError));
+    oldSocket.emit('message', event);
+    oldSocket.emit('error');
+    expect(next).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+
+    FakeWebSocket.instances[1].emit('message', event);
+    expect(next).toHaveBeenCalledWith('sample');
   });
 });

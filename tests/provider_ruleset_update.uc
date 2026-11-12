@@ -7,11 +7,12 @@ let old_path = work + "/" + join("", ["aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaa", "a
 // Keep the same directory; only the content-addressed basename changes.
 let new_path = work + "/" + join("", ["bbbbbbbbbbbbbbbb", "bbbbbbbbbbbbbbbb", "bbbbbbbbbbbbbbbb", "bbbbbbbbbbbbbbbb"]) + ".json";
 let rule = { type: "local", tag: "main-out-happ-geoip-cnU=", format: "source", path: old_path };
-let old = { configuration: { route: { final: "main-out", rule_set: [rule] }, dns: { strategy: "ipv4_only" } },
+let old = { configuration: { route: { final: "main-out", rule_set: [rule] },
+    dns: { strategy: "ipv4_only", servers: [{ tag: "dns-server", type: "udp", server: "192.0.2.53" }] } },
     outbounds: [{ type: "direct", tag: "main-out" }] };
 let fresh = json(sprintf("%J", old)); fresh.configuration.route.rule_set[0].path = new_path;
-let current_config = { route: old.configuration.route, providers: [{ type: "anticheburnet", tag: "anticheburnet-subscriptions", path: current_path + ".providers.json" }] };
-let candidate_config = { route: fresh.configuration.route, providers: [{ type: "anticheburnet", tag: "anticheburnet-subscriptions", path: candidate_path + ".providers.json" }] };
+let current_config = { route: old.configuration.route, dns: old.configuration.dns, providers: [{ type: "anticheburnet", tag: "anticheburnet-subscriptions", path: current_path + ".providers.json" }] };
+let candidate_config = { route: fresh.configuration.route, dns: fresh.configuration.dns, providers: [{ type: "anticheburnet", tag: "anticheburnet-subscriptions", path: candidate_path + ".providers.json" }] };
 uci_settings = function() { return { config_path: current_path }; };
 temp_path = function() { return candidate_path; };
 sing_box_version = function() { return "1.14.1-extended-2.7.2-anticheburnet.5"; };
@@ -43,32 +44,52 @@ module_success = function(args) {
     check(config.providers[0].path == current_path + ".providers.json", "Saved config must reference the permanent provider file");
     check(config.route.rule_set[0].path == payload.configuration.route.rule_set[0].path,
         "Disk configuration and provider must use the same GeoIP generation");
-    return scenario == "success" || confirmations > 1;
+    check(payload.configuration.dns.servers[0].server == "192.0.2.53", "Live provider must keep its DNS snapshot");
+    return scenario == "success" || scenario == "failover" || scenario == "failover-outbounds" || confirmations > 1;
 };
-for (let name in ["success", "rejected", "config-failure", "old-core", "routing-change", "dns-change", "different-source", "different-format", "different-tag", "unmanaged-set"]) {
+for (let name in ["success", "rejected", "config-failure", "old-core", "routing-change", "dns-change", "different-source", "different-format", "different-tag", "unmanaged-set",
+    "failover", "failover-outbounds", "failover-rejected", "failover-dns-change"]) {
     scenario = name; events = []; confirmations = 0;
     let incoming = json(sprintf("%J", fresh));
+    let running = json(sprintf("%J", current_config));
+    let staged = json(sprintf("%J", candidate_config));
     if (name == "routing-change") incoming.configuration.route.final = "changed";
     if (name == "dns-change") incoming.configuration.dns.strategy = "prefer_ipv6";
     if (name == "different-source") incoming.configuration.route.rule_set[0].path = "/another/" + split(new_path, "/")[-1];
     if (name == "different-format") incoming.configuration.route.rule_set[0].format = "binary";
     if (name == "different-tag") incoming.configuration.route.rule_set[0].tag = "other-happ-geoip-cnU=";
     if (name == "unmanaged-set") incoming.configuration.route.rule_set[0].tag = "custom-rules";
-    fs.writefile(current_path, sprintf("%J", current_config));
-    fs.writefile(candidate_path, sprintf("%J", candidate_config));
+    let failover = index(name, "failover") == 0;
+    if (failover) {
+        running.dns.servers[0].server = "192.0.2.54";
+        staged.dns.servers[0].server = name == "failover-dns-change" ? "192.0.2.55" : "192.0.2.54";
+        incoming.configuration.dns = staged.dns;
+    }
+    if (name == "failover-outbounds") {
+        staged.route.rule_set[0].path = old_path;
+        incoming.configuration.route.rule_set[0].path = old_path;
+        push(incoming.outbounds, { type: "direct", tag: "added-out" });
+    }
+    fs.writefile(current_path, sprintf("%J", running));
+    fs.writefile(candidate_path, sprintf("%J", staged));
     fs.writefile(current_path + ".providers.json", sprintf("%J", old));
     fs.writefile(candidate_path + ".providers.json", sprintf("%J", incoming));
     fs.writefile(current_path + ".awg.json", "[]");
     fs.writefile(candidate_path + ".awg.json", "[]");
-    check(update_providers(false) == (name == "success"), "Only compatible confirmed GeoIP updates may succeed: " + name);
-    let expected = name == "success" ? ["capability", "prepare", "provider", "config", "confirm1", "selection", "commit"] :
-        name == "rejected" ? ["capability", "prepare", "provider", "config", "confirm1", "confirm2", "selection", "rollback"] :
+    let ruleset_success = name == "success" || name == "failover";
+    let success = ruleset_success || name == "failover-outbounds";
+    check(update_providers(false) == success, "Only compatible confirmed provider updates may succeed: " + name);
+    let expected = ruleset_success ? ["capability", "prepare", "provider", "config", "confirm1", "selection", "commit"] :
+        name == "failover-outbounds" ? ["prepare", "provider", "confirm1", "selection", "commit"] :
+        name == "rejected" || name == "failover-rejected" ? ["capability", "prepare", "provider", "config", "confirm1", "confirm2", "selection", "rollback"] :
         name == "config-failure" ? ["capability", "prepare", "provider", "config", "rollback"] : name == "old-core" ? ["capability"] : [];
     check(sprintf("%J", events) == sprintf("%J", expected), "Unexpected transaction order: " + name);
     let saved = read_json_file(current_path), payload = read_json_file(current_path + ".providers.json");
-    let expected_path = name == "success" ? new_path : old_path;
+    let expected_path = ruleset_success ? new_path : old_path;
     check(saved.route.rule_set[0].path == expected_path && payload.configuration.route.rule_set[0].path == expected_path,
         "Rejected/failed updates must restore both disk files: " + name);
-    check((fs.stat(current_path + ".providers.pending") != null) == (name != "success"), "Failures must remain pending");
+    check(saved.dns.servers[0].server == running.dns.servers[0].server, "Applied DNS must survive the provider transaction: " + name);
+    check(payload.configuration.dns.servers[0].server == old.configuration.dns.servers[0].server, "Stored provider DNS snapshot must survive: " + name);
+    check((fs.stat(current_path + ".providers.pending") != null) == !success, "Failures must remain pending");
 }
 print("Automatic GeoIP provider transactions and rollback checks passed\n");

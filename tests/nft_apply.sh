@@ -237,6 +237,16 @@ assert_contains "$NFT_LOG" $'nft\tadd\trule\tinet\tAnticheburNETTable\tdns_redir
 if grep -Fq $'anticheburnet_dns_sources\tudp\tdport\t53\tmeta\tmark' "$NFT_LOG"; then
   fail "source-aware DNS must not use TPROXY marks"
 fi
+for family in ip ip6; do
+  sources=anticheburnet_dns_sources
+  if [ "$family" = ip6 ]; then sources=anticheburnet_dns_sources6; fi
+  for protocol in tcp udp; do
+    assert_line_before "$NFT_LOG" \
+      "$(printf 'mangle\tiifname\t@anticheburnet_interfaces\t%s\tsaddr\t@%s\t%s\tdport\t53\treturn' "$family" "$sources" "$protocol")" \
+      $'mangle\tjump\tpriority_rules' \
+      "source-aware $family/$protocol DNS must bypass TPROXY marking"
+  done
+done
 assert_contains "$NFT_LOG" $'nft\tadd\trule\tinet\tAnticheburNETTable\tmangle\tiifname\t@anticheburnet_interfaces\tip6\tdaddr\t@localv6\tip6\tdaddr\t!=\tfc00::/18\treturn' "runtime local6 return preserves FakeIP6 capture"
 assert_contains "$NFT_LOG" $'nft\tadd\trule\tinet\tAnticheburNETTable\tmangle\tjump\tpriority_rules' "runtime priority jump"
 assert_contains "$NFT_LOG" $'nft\tadd\trule\tinet\tAnticheburNETTable\tmangle\tiifname\t@anticheburnet_interfaces\tip\tdaddr\t@anticheburnet_subnets\tmeta\tl4proto\ttcp\tmeta\tmark\tset\t0x00100000\tcounter' "runtime common tcp rule"
@@ -251,7 +261,10 @@ assert_line_before "$NFT_LOG" \
   $'nft\tadd\trule\tinet\tAnticheburNETTable\tmangle_output\tmeta\tskuid\t65533\tmeta\tmark\tset\t0x00200000\tcounter\treturn' \
   $'nft\tadd\trule\tinet\tAnticheburNETTable\tmangle_output\tjump\tpriority_output_rules' \
   "ByeDPI owner bypass must run before Priority output routing"
-assert_contains "$NFT_LOG" $'nft\tinsert\trule\tinet\tAnticheburNETTable\tmangle\tudp\tdport\t123\treturn' "runtime ntp exclusion"
+for chain in mangle mangle_output; do
+  assert_contains "$NFT_LOG" "$(printf 'nft\tinsert\trule\tinet\tAnticheburNETTable\t%s\tip\tdaddr\t!=\t198.18.0.0/15\tudp\tdport\t123\treturn' "$chain")" "runtime $chain IPv4 NTP exclusion preserves FakeIP"
+  assert_contains "$NFT_LOG" "$(printf 'nft\tinsert\trule\tinet\tAnticheburNETTable\t%s\tip6\tdaddr\t!=\tfc00::/18\tudp\tdport\t123\treturn' "$chain")" "runtime $chain IPv6 NTP exclusion preserves FakeIP"
+done
 
 cat >"$WORK_DIR/runtime-base-uci.state" <<'EOF_UCI'
 anticheburnet.settings=settings
@@ -263,7 +276,7 @@ ANTICHEBURNET_UCI_STATE_FILE="$WORK_DIR/runtime-base-uci.state" \
   nft_ucode nft-create-runtime-base-from-uci AnticheburNETTable localv4 anticheburnet_subnets anticheburnet_ports anticheburnet_ip_ports anticheburnet_interfaces 0x00100000 0x00200000 198.18.0.0/15 1602
 assert_contains "$NFT_LOG" $'nft\tadd\telement\tinet\tAnticheburNETTable\tanticheburnet_interfaces\t{ br-lan }' "runtime base from UCI br-lan interface"
 assert_contains "$NFT_LOG" $'nft\tadd\telement\tinet\tAnticheburNETTable\tanticheburnet_interfaces\t{ tun0 }' "runtime base from UCI tun0 interface"
-assert_contains "$NFT_LOG" $'nft\tinsert\trule\tinet\tAnticheburNETTable\tmangle\tudp\tdport\t123\treturn' "runtime base from UCI ntp exclusion"
+assert_contains "$NFT_LOG" $'nft\tinsert\trule\tinet\tAnticheburNETTable\tmangle\tip\tdaddr\t!=\t198.18.0.0/15\tudp\tdport\t123\treturn' "runtime base from UCI NTP exclusion"
 
 : > "$NFT_LOG"
 nft_ucode nft-create-runtime-output-rules AnticheburNETTable localv4 anticheburnet_subnets anticheburnet_ports anticheburnet_ip_ports 0x00100000 198.18.0.0/15

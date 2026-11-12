@@ -1,14 +1,16 @@
 import { logger } from './logger.service';
 
-// eslint-disable-next-line
-type Listener = (data: any) => void;
+type Listener = (data: string) => void;
 type ErrorListener = (error: Event | string) => void;
+
+function logEndpoint(url: string): string {
+  return url.split(/[?#]/, 1)[0];
+}
 
 class SocketManager {
   private static instance: SocketManager;
   private sockets = new Map<string, WebSocket>();
   private listeners = new Map<string, Set<Listener>>();
-  private connected = new Map<string, boolean>();
   private errorListeners = new Map<string, Set<ErrorListener>>();
   private reconnectAttempts = new Map<string, number>();
   private reconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -22,37 +24,7 @@ class SocketManager {
     return SocketManager.instance;
   }
 
-  resetAll(): void {
-    const sockets = [...this.sockets.entries()];
-    for (const timer of this.reconnectTimers.values()) clearTimeout(timer);
-    this.sockets.clear();
-    this.listeners.clear();
-    this.errorListeners.clear();
-    this.connected.clear();
-    this.reconnectAttempts.clear();
-    this.reconnectTimers.clear();
-
-    for (const [url, ws] of sockets) {
-      try {
-        if (
-          ws.readyState === WebSocket.OPEN ||
-          ws.readyState === WebSocket.CONNECTING
-        ) {
-          ws.close();
-        }
-      } catch (err) {
-        logger.error(
-          '[SOCKET]',
-          `resetAll: failed to close socket ${url}`,
-          err,
-        );
-      }
-    }
-
-    logger.info('[SOCKET]', 'All connections and state have been reset.');
-  }
-
-  connect(url: string): void {
+  private connect(url: string): void {
     if (this.sockets.has(url)) return;
 
     let ws: WebSocket;
@@ -62,8 +34,7 @@ class SocketManager {
     } catch (err) {
       logger.error(
         '[SOCKET]',
-        `failed to construct WebSocket for ${url}:`,
-        err,
+        `failed to construct WebSocket for ${logEndpoint(url)}`,
       );
       this.triggerError(url, err instanceof Event ? err : String(err));
       this.scheduleReconnect(url);
@@ -71,24 +42,29 @@ class SocketManager {
     }
 
     this.sockets.set(url, ws);
-    this.connected.set(url, false);
     if (!this.listeners.has(url)) this.listeners.set(url, new Set());
     if (!this.errorListeners.has(url)) this.errorListeners.set(url, new Set());
 
     ws.addEventListener('open', () => {
-      this.connected.set(url, true);
+      if (this.sockets.get(url) !== ws) return;
       this.reconnectAttempts.delete(url);
-      logger.info('[SOCKET]', 'Connected to', url);
+      logger.info('[SOCKET]', 'Connected to', logEndpoint(url));
     });
 
     ws.addEventListener('message', (event) => {
+      if (this.sockets.get(url) !== ws || typeof event.data !== 'string')
+        return;
       const handlers = this.listeners.get(url);
       if (handlers) {
         for (const handler of handlers) {
           try {
             handler(event.data);
           } catch (err) {
-            logger.error('[SOCKET]', `Handler error for ${url}:`, err);
+            logger.error(
+              '[SOCKET]',
+              `Handler error for ${logEndpoint(url)}:`,
+              err,
+            );
           }
         }
       }
@@ -97,19 +73,23 @@ class SocketManager {
     ws.addEventListener('close', () => {
       if (this.sockets.get(url) !== ws) return;
       this.sockets.delete(url);
-      this.connected.set(url, false);
-      logger.warn('[SOCKET]', `Disconnected: ${url}`);
+      logger.warn('[SOCKET]', `Disconnected: ${logEndpoint(url)}`);
       this.triggerError(url, 'Connection closed');
       this.scheduleReconnect(url);
     });
 
     ws.addEventListener('error', (err) => {
-      logger.error('[SOCKET]', `Socket error for ${url}:`, err);
+      if (this.sockets.get(url) !== ws) return;
+      logger.error('[SOCKET]', `Socket error for ${logEndpoint(url)}`);
       this.triggerError(url, err);
     });
   }
 
-  subscribe(url: string, listener: Listener, onError?: ErrorListener): void {
+  subscribe(
+    url: string,
+    listener: Listener,
+    onError?: ErrorListener,
+  ): () => void {
     if (!this.errorListeners.has(url)) {
       this.errorListeners.set(url, new Set());
     }
@@ -125,9 +105,15 @@ class SocketManager {
     if (!this.sockets.has(url)) {
       this.connect(url);
     }
+
+    return () => this.unsubscribe(url, listener, onError);
   }
 
-  unsubscribe(url: string, listener: Listener, onError?: ErrorListener): void {
+  private unsubscribe(
+    url: string,
+    listener: Listener,
+    onError?: ErrorListener,
+  ): void {
     this.listeners.get(url)?.delete(listener);
     if (onError) {
       this.errorListeners.get(url)?.delete(onError);
@@ -137,31 +123,13 @@ class SocketManager {
     }
   }
 
-  // eslint-disable-next-line
-  send(url: string, data: any): void {
-    const ws = this.sockets.get(url);
-    if (ws && this.connected.get(url)) {
-      ws.send(typeof data === 'string' ? data : JSON.stringify(data));
-    } else {
-      logger.warn('[SOCKET]', `Cannot send: not connected to ${url}`);
-      this.triggerError(url, 'Not connected');
-    }
-  }
-
-  disconnect(url: string): void {
+  private disconnect(url: string): void {
     const ws = this.sockets.get(url);
     this.clearReconnect(url);
     this.sockets.delete(url);
     this.listeners.delete(url);
     this.errorListeners.delete(url);
-    this.connected.delete(url);
     if (ws) ws.close();
-  }
-
-  disconnectAll(): void {
-    for (const url of this.sockets.keys()) {
-      this.disconnect(url);
-    }
   }
 
   private triggerError(url: string, err: Event | string): void {
@@ -171,7 +139,11 @@ class SocketManager {
         try {
           cb(err);
         } catch (e) {
-          logger.error('[SOCKET]', `Error handler threw for ${url}:`, e);
+          logger.error(
+            '[SOCKET]',
+            `Error handler threw for ${logEndpoint(url)}:`,
+            e,
+          );
         }
       }
     }

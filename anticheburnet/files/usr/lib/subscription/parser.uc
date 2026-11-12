@@ -561,12 +561,12 @@ function base64_decode(value) {
     return b64dec(value);
 }
 
-function urldecode(value) {
+function urldecode(value, preserve_plus) {
     value = as_string(value);
-    if (index(value, "%") < 0 && index(value, "+") < 0)
+    if (index(value, "%") < 0 && (preserve_plus || index(value, "+") < 0))
         return value;
 
-    if (index(value, "+") >= 0)
+    if (!preserve_plus && index(value, "+") >= 0)
         value = replace(value, /\+/g, " ");
     if (index(value, "%") < 0)
         return value;
@@ -998,16 +998,12 @@ function process_socks(raw, url) {
 function is_shadowsocks_userinfo_format(value) {
     if (type(value) != "string")
         return false;
-    let first = index(value, ":");
-    if (first <= 0 || first >= length(value) - 1)
-        return false;
-    let rest = substr(value, first + 1);
-    let second = index(rest, ":");
-    return second < 0 || index(substr(rest, second + 1), ":") < 0;
+    let separator = index(value, ":");
+    return separator > 0 && separator < length(value) - 1;
 }
 
 function process_shadowsocks(raw) {
-    if (!starts_with(raw, "ss://"))
+    if (lc(substr(raw, 0, 5)) != "ss://")
         return null;
 
     let body = substr(raw, 5);
@@ -1028,11 +1024,11 @@ function process_shadowsocks(raw) {
     let userinfo, hostport;
     let at_pos = rindex(body, "@");
     if (at_pos >= 0) {
-        userinfo = substr(body, 0, at_pos);
-        hostport = substr(body, at_pos + 1);
+        userinfo = urldecode(substr(body, 0, at_pos), true);
+        hostport = urldecode(substr(body, at_pos + 1), true);
     }
     else {
-        let decoded = base64_decode(body);
+        let decoded = base64_decode(urldecode(body, true));
         if (!decoded)
             return null;
         at_pos = rindex(decoded, "@");
@@ -1042,7 +1038,6 @@ function process_shadowsocks(raw) {
         hostport = substr(decoded, at_pos + 1);
     }
 
-    userinfo = urldecode(userinfo);
     if (!is_shadowsocks_userinfo_format(userinfo)) {
         let decoded = base64_decode(userinfo);
         if (!decoded)
@@ -3095,6 +3090,7 @@ function parse_subscription_source_entry_tsv(entry) {
 function module_exports() {
     return {
         base64_decode,
+        process_shadowsocks,
         clash_yaml_records,
         parse_subscription_source_entry,
         validate_subscription,

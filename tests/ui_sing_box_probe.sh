@@ -32,6 +32,10 @@ printf 'probe\n' >>"$ANTICHEBURNET_TEST_SING_BOX_PROBE_COUNT"
 if [ "${ANTICHEBURNET_TEST_SING_BOX_PROBE_MODE:-fast}" = "slow" ]; then
   exec sleep 30
 fi
+if [ "${ANTICHEBURNET_TEST_SING_BOX_PROBE_MODE:-fast}" = "bundled" ]; then
+  printf 'sing-box version 1.14.3-extended-2.7.3-anticheburnet.8\n\nTags: with_quic,with_wireguard\n'
+  exit 0
+fi
 printf 'sing-box version 1.13.14\n\n'
 printf 'Tags: with_quic,with_tailscale\n'
 SH
@@ -116,5 +120,15 @@ while IFS= read -r pid; do
   fi
 done <"$PROBE_PIDS"
 : >"$PROBE_PIDS"
+
+rm -f "$CACHE_FILE"
+printf 'extended-compressed\n' >"$WORK_DIR/missing-variant"
+bundled="$(ANTICHEBURNET_TEST_SING_BOX_PROBE_MODE=bundled ui_capabilities)"
+JSON_VALUE="$bundled" node - <<'NODE'
+const value = JSON.parse(process.env.JSON_VALUE);
+if (value.sing_box_extended !== 1 || value.sing_box_compressed !== 1 || value.sing_box_tailscale !== 0) {
+  throw new Error('The extended marker must not imply Tailscale support');
+}
+NODE
 
 printf 'UI sing-box probe checks passed\n'

@@ -2137,20 +2137,19 @@ function download_to_file(url, filepath, proxy_address) {
     // OpenWrt's wget (uclient-fetch) cannot tunnel HTTPS using HTTP CONNECT.
     // curl is a package dependency and supports the sing-box mixed inbound.
     let args = [
-        "curl", "-q", "-fL", "-sS",
+        "curl", "-q", "-fL", "-sS", "--globoff", "--proto", "=http,https", "--proto-redir", "=http,https",
         "--connect-timeout", "10", "--max-time", "60",
         "--noproxy", "", "--proxy",
         as_string(proxy_address) != "" ? "http://" + as_string(proxy_address) : "",
         "-o", filepath, "--", url
     ];
-    let attempt = 1;
-    while (attempt <= 3) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
         if (command_success_from_args(args))
             return true;
 
         log_message("Attempt " + attempt + "/3 to download " + as_string(url) + " failed", "warn");
-        command_success_from_args([ "sleep", "2" ]);
-        attempt++;
+        if (attempt < 3)
+            command_success_from_args([ "sleep", "2" ]);
     }
 
     return false;
@@ -2627,58 +2626,6 @@ function list_update_pid_end() {
     remove_file(LIST_UPDATE_PID_FILE);
 }
 
-function dns_probe_passed(proxy_address) {
-    if (as_string(proxy_address) != "") {
-        log_message("DNS check skipped because list downloads use service proxy", "info");
-        return true;
-    }
-
-    let attempt = 1;
-    while (attempt <= 10) {
-        let output = command_output_from_args([ "dig", "+short", "openwrt.org", "A", "+timeout=3", "+tries=1" ]);
-        for (let line in split(output, "\n")) {
-            if (match(as_string(line), /^[0-9]+\./) != null) {
-                log_message("DNS check passed", "info");
-                return true;
-            }
-        }
-
-        log_message("DNS is unavailable [" + attempt + "/10]", "info");
-        command_success_from_args([ "sleep", "3" ]);
-        attempt++;
-    }
-
-    log_message("DNS check failed after 10 attempts; skipping remote lists update until the next attempt", "error");
-    return false;
-}
-
-function github_probe(proxy_address) {
-    let attempt = 1;
-    let timeout = 5;
-    while (attempt <= 10) {
-        let args = [ "curl", "-s", "-m", "" + timeout ];
-        if (as_string(proxy_address) != "") {
-            push(args, "-x");
-            push(args, "http://" + as_string(proxy_address));
-        }
-        push(args, "https://github.com");
-
-        if (command_success_from_args(args)) {
-            log_message(as_string(proxy_address) != "" ? "GitHub connection check passed (via proxy)" : "GitHub connection check passed", "info");
-            return true;
-        }
-
-        log_message("GitHub is unavailable [" + attempt + "/10] (max-timeout=" + timeout + ")", "info");
-        if (timeout < 10)
-            timeout++;
-        command_success_from_args([ "sleep", "3" ]);
-        attempt++;
-    }
-
-    log_message("GitHub connection check failed after 10 attempts; trying configured list downloads individually", "info");
-    return false;
-}
-
 function write_list_update_timestamp(timestamp) {
     ensure_dir(RUNTIME_STATE_DIR);
     write_file(LIST_UPDATE_STATE_FILE, as_string(timestamp) + "\n");
@@ -2694,13 +2641,6 @@ function list_update() {
     log_message("Starting lists update", "info");
     if (!list_update_pid_begin())
         exit(0);
-
-    let proxy_address = service_proxy_address(settings, "lists");
-    if (!dns_probe_passed(proxy_address)) {
-        list_update_pid_end();
-        exit(1);
-    }
-    github_probe(proxy_address);
 
     log_message("Downloading and processing lists", "info");
     let sections = uci_sections("section");

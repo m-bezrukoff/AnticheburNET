@@ -1,19 +1,23 @@
 // Appended to subscription/cache.uc; all network and filesystem writes are mocked.
 function check(value, message) { if (!value) die(message + "\n"); }
-let elapsed = 0, statuses = [], durations = [], calls = [], moved = false;
+let elapsed = 0, statuses = [], durations = [], calls = [], moved = false, blocked_path = "";
 monotonic_milliseconds = function() { return elapsed; };
 unlink_path = function(path) {};
 file_nonempty = function(path) { return true; };
-move_file = function(source, target) { moved = true; return true; };
+move_file = function(source, target) {
+    if (target == blocked_path) return false;
+    if (target == "/fixture/body") moved = true;
+    return true;
+};
 command_status_from_args = function(args) {
     let index = length(calls);
     push(calls, args);
     elapsed += durations[index];
     return statuses[index];
 };
-function run_case(codes, times, budget, expected, attempts) {
+function run_case(codes, times, budget, expected, attempts, proxy) {
     elapsed = 0; statuses = codes; durations = times; calls = []; moved = false;
-    let result = download_subscription("https://fixture.test/sub", "/fixture/body", "", "/fixture/headers", "Happ", "fixture", {}, budget);
+    let result = download_subscription("https://fixture.test/sub", "/fixture/body", proxy || "", "/fixture/headers", "Happ", "fixture", {}, budget);
     check(result == expected && length(calls) == attempts, "Unexpected retry result or attempt count");
     check(moved == (expected == 0), "Only a successful download may replace the response");
     check(elapsed <= budget, "Retries exceeded the shared deadline");
@@ -21,6 +25,18 @@ function run_case(codes, times, budget, expected, attempts) {
 run_case([7], [3000], 15000, 7, 1);
 check(calls[0][index(calls[0], "--max-time") + 1] == "15.000", "Background request must receive its full time budget");
 check(calls[0][index(calls[0], "--connect-timeout") + 1] == 5, "Background connection timeout must allow slow connections");
+check(calls[0][1] == "-q" && calls[0][index(calls[0], "--noproxy") + 1] == "*" && index(calls[0], "-x") < 0,
+    "Direct downloads must bypass curl config and inherited proxies");
+check(calls[0][index(calls[0], "--proto") + 1] == "=http,https" && calls[0][index(calls[0], "--proto-redir") + 1] == "=http,https",
+    "Only HTTP and HTTPS should be allowed for subscription requests and redirects");
+run_case([0], [100], 15000, 0, 1, "127.0.0.1:1080");
+check(calls[0][index(calls[0], "-x") + 1] == "http://127.0.0.1:1080" && calls[0][index(calls[0], "--noproxy") + 1] == "",
+    "Explicit service proxy must override environment proxies and exclusions");
+blocked_path = "/fixture/headers";
+run_case([0], [100], 15000, 23, 1);
+blocked_path = "/fixture/body";
+run_case([0], [100], 15000, 23, 1);
+blocked_path = "";
 run_case([6], [100], 15000, 6, 1);
 run_case([28], [15000], 15000, 28, 1);
 run_case([7], [1000], 2000, 7, 1);

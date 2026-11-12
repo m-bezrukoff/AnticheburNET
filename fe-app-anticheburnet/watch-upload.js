@@ -46,20 +46,23 @@ const syncDirs = [
 ];
 
 async function uploadFile(filePath, baseDir, remoteBase) {
-  const relativePath = path.relative(baseDir, filePath);
+  const relativePath = path.relative(baseDir, filePath).split(path.sep).join('/');
   const remotePath = path.posix.join(remoteBase, relativePath);
 
   console.log(`↑ Uploading: ${relativePath} -> ${remotePath}`);
   try {
-    await sftp.fastPut(filePath, remotePath);
+    await sftp.mkdir(path.posix.dirname(remotePath), true);
+    await sftp.put(filePath, remotePath);
     console.log(`✓ Uploaded: ${relativePath}`);
+    return true;
   } catch (err) {
     console.error(`✗ Failed: ${relativePath}: ${err.message}`);
+    return false;
   }
 }
 
 async function deleteFile(filePath, baseDir, remoteBase) {
-  const relativePath = path.relative(baseDir, filePath);
+  const relativePath = path.relative(baseDir, filePath).split(path.sep).join('/');
   const remotePath = path.posix.join(remoteBase, relativePath);
 
   console.log(`⨯ Removing: ${relativePath}`);
@@ -72,14 +75,19 @@ async function deleteFile(filePath, baseDir, remoteBase) {
 }
 
 async function uploadAllFiles() {
+  let failed = 0;
   for (const { local, remote } of syncDirs) {
     console.log(`📂 Uploading all from ${local}`);
-    const files = await glob(`${local}/**/*`, { nodir: true });
+    const files = await glob('**/*', { cwd: local, nodir: true });
     for (const file of files) {
-      await uploadFile(file, local, remote);
+      if (!(await uploadFile(path.resolve(local, file), local, remote))) failed += 1;
     }
   }
-  console.log('✅ Initial upload complete!');
+  if (failed) {
+    console.error(`Initial upload finished with ${failed} failed files`);
+  } else {
+    console.log('✅ Initial upload complete!');
+  }
 }
 
 async function main() {
@@ -88,22 +96,27 @@ async function main() {
 
   await uploadAllFiles();
 
-  for (const { local, remote } of syncDirs) {
-    chokidar
-      .watch(local, { ignoreInitial: true })
-      .on('all', async (event, filePath) => {
-        if (event === 'add' || event === 'change') {
-          await uploadFile(filePath, local, remote);
-        } else if (event === 'unlink') {
-          await deleteFile(filePath, local, remote);
-        }
-      });
-  }
+  let pending = Promise.resolve();
+  const watchers = syncDirs.map(({ local, remote }) =>
+    chokidar.watch(local, { ignoreInitial: true }).on('all', (event, filePath) => {
+      if (event === 'add' || event === 'change') {
+        pending = pending.then(() => uploadFile(filePath, local, remote));
+      } else if (event === 'unlink') {
+        pending = pending.then(() => deleteFile(filePath, local, remote));
+      }
+    }),
+  );
 
-  process.on('SIGINT', async () => {
+  process.once('SIGINT', async () => {
     console.log('👋 Disconnecting...');
-    await sftp.end();
-    process.exit();
+    try {
+      await Promise.all(watchers.map((watcher) => watcher.close()));
+      await pending;
+      await sftp.end();
+    } catch (err) {
+      process.exitCode = 1;
+      console.error('Failed to disconnect:', err.message);
+    }
   });
 }
 

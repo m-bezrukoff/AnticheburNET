@@ -3,6 +3,16 @@ import { validateShadowsocksUrl } from '../validateShadowsocksUrl';
 
 const validUrls = [
   [
+    'legacy Base64 authority',
+    `ss://${Buffer.from('aes-256-gcm:test-password@example.com:8388').toString('base64')}#legacy`,
+  ],
+  ['URL-safe Base64 user info', 'ss://YWVzLTI1Ni1nY2064oC-@[2001:db8::1]:8388'],
+  [
+    'percent-encoded password and SIP002 plugin path',
+    'ss://aes-128-gcm:abc%23%3F%2B%40%2523+Z@example.test:8388/?plugin=obfs-local%3Bobfs%3Dhttp#encoded',
+  ],
+
+  [
     'no-client',
     'ss://MjAyMi1ibGFrZTMtYWVzLTI1Ni1nY206ZG1DbHkvWmgxNVd3OStzK0dGWGlGVElrcHc3Yy9xQ0lTYUJyYWk3V2hoWT0@127.0.0.1:25144?type=tcp#shadowsocks-no-client',
   ],
@@ -21,6 +31,12 @@ const validUrls = [
 ];
 
 const invalidUrls = [
+  ['Hyphenated token is not user info', 'ss://not-base64-@example.com:8388'],
+  [
+    'Invalid port in legacy authority',
+    `ss://${Buffer.from('aes-256-gcm:test-password@example.com:99999').toString('base64')}`,
+  ],
+
   ['No prefix', 'uuid@127.0.0.1:443?type=tcp'],
   ['No host', 'ss://password@:443?type=tcp'],
   ['No port', 'ss://password@127.0.0.1?type=tcp'],

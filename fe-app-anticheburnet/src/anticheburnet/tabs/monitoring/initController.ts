@@ -1,4 +1,4 @@
-import { canUseDirectClashApi, getClashWsUrl, onMount } from '../../../helpers';
+import { onMount } from '../../../helpers';
 import { prettyBytes } from '../../../helpers/prettyBytes';
 import { showToast } from '../../../helpers/showToast';
 import {
@@ -7,10 +7,13 @@ import {
   renderSearchIcon24,
   renderXIcon24,
 } from '../../../icons';
-import { CustomAnticheburNETMethods, AnticheburNETShellMethods } from '../../methods';
+import {
+  CustomAnticheburNETMethods,
+  AnticheburNETShellMethods,
+} from '../../methods';
 import { getOutboundTagBySection } from '../../runtimeTags';
-import { getClashApiSecret } from '../../methods/custom/getClashApiSecret';
-import { logger, socket, store, StoreType } from '../../services';
+import { startClashStreams } from '../../services/clashStreams.service';
+import { logger, store, StoreType } from '../../services';
 import { AnticheburNET } from '../../types';
 import {
   getCachedRuntimeUiState,
@@ -64,10 +67,14 @@ interface MonitoredConnection extends ClashConnection {
 
 function normalizeConnectionsPayload(value: unknown): ClashConnectionsPayload {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {};
+    throw new Error('Invalid Clash API connections payload');
   }
 
-  return value as ClashConnectionsPayload;
+  const { connections } = value as { connections?: unknown };
+  if (connections !== null && !Array.isArray(connections)) {
+    throw new Error('Invalid Clash API connections payload');
+  }
+  return { connections: connections ?? [] };
 }
 
 const RENDER_INTERVAL_MS = 500;
@@ -83,11 +90,11 @@ let monitoringControllerInitialized = false;
 let serviceStateUnsubscribe: (() => void) | null = null;
 let renderTimer: ReturnType<typeof setInterval> | null = null;
 let connectionsPollTimer: ReturnType<typeof setInterval> | null = null;
-let connectionsSocketUrl = '';
+let stopConnectionsStream: (() => void) | undefined;
 let connectionsUpdatesId = 0;
 let renderSkippedForSelection = false;
 let pendingConnectionsPayload: ClashConnectionsPayload | null = null;
-let pollingConnections = false;
+let pollingConnectionsId: number | undefined;
 
 let activeTab: MonitoringTabId = 'active';
 let selectedDeviceFilter = ALL_FILTER_VALUE;
@@ -1241,7 +1248,8 @@ async function closeAllConnections() {
   renderControls();
 
   try {
-    const response = await AnticheburNETShellMethods.closeAllClashApiConnections();
+    const response =
+      await AnticheburNETShellMethods.closeAllClashApiConnections();
 
     if (!response.success) {
       showToast(_('Failed to close connections'), 'error');
@@ -1343,7 +1351,9 @@ async function loadLocalDevices() {
 
 async function loadRouteDisplayNames() {
   try {
-    buildRouteDisplayNames(await CustomAnticheburNETMethods.getConfigSections());
+    buildRouteDisplayNames(
+      await CustomAnticheburNETMethods.getConfigSections(),
+    );
   } catch (error) {
     logger.warn('[MONITORING]', 'loadRouteDisplayNames: failed', error);
     buildRouteDisplayNames([]);
@@ -1355,7 +1365,7 @@ async function loadRouteDisplayNames() {
 
 async function pollConnectionsSnapshot() {
   if (
-    pollingConnections ||
+    pollingConnectionsId === connectionsUpdatesId ||
     !monitoringMounted ||
     monitoringPaused ||
     serviceAvailability !== 'running'
@@ -1363,15 +1373,15 @@ async function pollConnectionsSnapshot() {
     return;
   }
 
-  const mountId = monitoringMountId;
-  pollingConnections = true;
+  const updatesId = connectionsUpdatesId;
+  pollingConnectionsId = updatesId;
 
   try {
     const response = await AnticheburNETShellMethods.getClashApiConnections();
 
     if (
       !monitoringMounted ||
-      mountId !== monitoringMountId ||
+      updatesId !== connectionsUpdatesId ||
       serviceAvailability !== 'running'
     ) {
       return;
@@ -1388,7 +1398,7 @@ async function pollConnectionsSnapshot() {
   } catch (error) {
     if (
       !monitoringMounted ||
-      mountId !== monitoringMountId ||
+      updatesId !== connectionsUpdatesId ||
       serviceAvailability !== 'running'
     ) {
       return;
@@ -1399,7 +1409,7 @@ async function pollConnectionsSnapshot() {
     loading = false;
     renderConnections();
   } finally {
-    pollingConnections = false;
+    if (pollingConnectionsId === updatesId) pollingConnectionsId = undefined;
   }
 }
 
@@ -1414,66 +1424,18 @@ function startConnectionsPolling() {
   }, CONNECTIONS_RPC_POLL_INTERVAL_MS);
 }
 
-async function connectToConnectionsSocket(updatesId: number) {
-  const mountId = monitoringMountId;
-  const clashApiSecret = await getClashApiSecret();
-
-  if (
-    !monitoringMounted ||
-    mountId !== monitoringMountId ||
-    updatesId !== connectionsUpdatesId ||
-    serviceAvailability !== 'running'
-  ) {
-    return;
-  }
-
-  connectionsSocketUrl = `${getClashWsUrl()}/connections?token=${clashApiSecret}`;
-
-  socket.subscribe(
-    connectionsSocketUrl,
-    (msg) => {
-      if (
-        updatesId !== connectionsUpdatesId ||
-        serviceAvailability !== 'running'
-      ) {
-        return;
-      }
-
-      try {
-        applyConnectionsPayload(JSON.parse(msg) as ClashConnectionsPayload);
-      } catch (error) {
-        logger.error('[MONITORING]', 'connections socket parse failed', error);
-      }
-    },
-    (_err) => {
-      if (
-        !monitoringMounted ||
-        mountId !== monitoringMountId ||
-        updatesId !== connectionsUpdatesId ||
-        serviceAvailability !== 'running'
-      ) {
-        return;
-      }
-
-      failed = true;
-      loading = false;
-      renderConnections();
-    },
-  );
-}
-
 function startConnectionsUpdates() {
   if (serviceAvailability !== 'running') {
     return;
   }
 
-  if (canUseDirectClashApi()) {
-    const updatesId = ++connectionsUpdatesId;
-    void connectToConnectionsSocket(updatesId);
-    return;
-  }
-
-  startConnectionsPolling();
+  stopConnectionsStream = startClashStreams(
+    {
+      connections: (data) =>
+        applyConnectionsPayload(normalizeConnectionsPayload(data)),
+    },
+    startConnectionsPolling,
+  );
 }
 
 function stopConnectionsUpdates() {
@@ -1484,10 +1446,8 @@ function stopConnectionsUpdates() {
     connectionsPollTimer = null;
   }
 
-  if (connectionsSocketUrl) {
-    socket.disconnect(connectionsSocketUrl);
-    connectionsSocketUrl = '';
-  }
+  stopConnectionsStream?.();
+  stopConnectionsStream = undefined;
 }
 
 function setServiceAvailability(next: ServiceAvailability) {

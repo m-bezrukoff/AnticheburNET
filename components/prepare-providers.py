@@ -37,6 +37,17 @@ edit("common/dialer/detour.go", "\td.initOnce.Do(d.init)\n\treturn d.dialer, d.i
     dialer := d.outboundManager.Default()
     if dialer == nil { return nil, E.New("default outbound not found") }
     return dialer, nil""", "default outbound not found")
+# The live lookup above replaces the pinned core's once-only cache.
+detour_file = source / "common/dialer/detour.go"
+detour = detour_file.read_text(encoding="utf-8")
+if "func (d *DetourDialer) init()" in detour:
+    start = detour.index("func (d *DetourDialer) init()")
+    end = detour.index("func (d *DetourDialer) DialContext(", start)
+    detour = (detour[:start] + detour[end:]).replace('\n\t"sync"', "")
+    for field in ("dialer", "initOnce", "initErr"):
+        line = next(line for line in detour.splitlines() if line.startswith(f"\t{field} "))
+        detour = detour.replace(line + "\n", "", 1)
+    detour_file.write_text(detour, encoding="utf-8", newline="\n")
 # Include a revision in GET /providers/proxies/{name} for runtime verification.
 edit("experimental/clashapi/provider.go", 'info.Put("updatedAt", p.UpdatedAt())', 'info.Put("updatedAt", p.UpdatedAt())\n\tif p, ok := p.(interface{ Revision() string }); ok { info.Put("revision", p.Revision()) }', 'Revision() string')
 edit("experimental/clashapi/provider.go", "render.JSON(w, r, providerInfo(server, provider))", """if value, ok := provider.(interface{ Revision() string }); ok && r.URL.Query().Get("revision") == "true" {

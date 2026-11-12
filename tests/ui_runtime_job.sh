@@ -87,6 +87,24 @@ printf '%s\n' "$latency_clash_method" | grep -Fq 'return { method: "get_proxy_la
 printf '%s\n' "$latency_clash_method" | grep -Fq 'return { method: "get_proxy_latency", timeout: "10000" };' ||
   fail "proxy latency checks must default to a 10000 ms timeout"
 
+cat >"$WORK_DIR/latency-cli" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >"$LATENCY_CLI_ARGS"
+SH
+chmod +x "$WORK_DIR/latency-cli"
+latency_state="$WORK_DIR/latency-state.json"
+printf '%s\n' '{"success":true,"running":true,"kind":"latency","started_at":100}' >"$latency_state"
+LATENCY_CLI_ARGS="$WORK_DIR/latency-args" ANTICHEBURNET_BIN="$WORK_DIR/latency-cli" \
+  ui_ucode latency-worker "$latency_state" proxy proxy-out 10000
+expected="$(printf '%s\n' clash_api get_proxy_latency proxy-out 10000)"
+[ "$(cat "$WORK_DIR/latency-args")" = "$expected" ] ||
+  fail "a single proxy check must not pass its state file as the latency URL"
+LATENCY_CLI_ARGS="$WORK_DIR/latency-args" ANTICHEBURNET_BIN="$WORK_DIR/latency-cli" \
+  ui_ucode latency-worker "$latency_state" proxy_list '["proxy-out"]' 10000
+expected="$(printf '%s\n' clash_api get_proxy_latencies '["proxy-out"]' 10000 "$latency_state")"
+[ "$(cat "$WORK_DIR/latency-args")" = "$expected" ] ||
+  fail "a proxy list check must pass its state file for progress reporting"
+
 for mode in \
   get-ui-capabilities \
   get-ui-state \

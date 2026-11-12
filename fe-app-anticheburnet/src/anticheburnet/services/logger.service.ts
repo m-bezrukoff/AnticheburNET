@@ -1,19 +1,12 @@
-import { downloadAsTxt } from '../../helpers/downloadAsTxt';
-
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 class Logger {
-  private logs: string[] = [];
-  private readonly levels: LogLevel[] = ['debug', 'info', 'warn', 'error'];
-
   private format(level: LogLevel, ...args: unknown[]): string {
     return `[${level.toUpperCase()}] ${args.join(' ')}`;
   }
 
   private push(level: LogLevel, ...args: unknown[]): void {
-    if (!this.levels.includes(level)) level = 'info';
     const message = this.format(level, ...args);
-    this.logs.push(message);
 
     switch (level) {
       case 'error':
@@ -44,22 +37,6 @@ class Logger {
 
   error(...args: unknown[]): void {
     this.push('error', ...args);
-  }
-
-  clear(): void {
-    this.logs = [];
-  }
-
-  getLogs(): string {
-    return this.logs.join('\n');
-  }
-
-  download(filename = 'logs.txt'): void {
-    if (typeof document === 'undefined') {
-      console.warn('Logger.download() доступен только в браузере');
-      return;
-    }
-    downloadAsTxt(this.getLogs(), filename);
   }
 }
 

@@ -17,7 +17,7 @@ export PATH="$work/bin:$PATH"
 previous_nft=''
 previous_state=''
 for strategy in selected happ tunnel; do
-  printf '{"settings":{"routing_strategy":"%s"},"section":[{".name":"main","enabled":"1","action":"connection","selector_proxy_links":["socks5://example.com:1080"]}]}' "$strategy" > "$work/fixture"
+  printf '{"settings":{"routing_strategy":"%s"},"section":[{".name":"main","enabled":"1","action":"connection","selector_proxy_links":["socks5://example.com:1080"]},{".name":"direct","action":"bypass","fully_routed_ips":["192.0.2.12/32","2001:db8::12/128"]}]}' "$strategy" > "$work/fixture"
   : > "$NFT_TEST_LOG"
   ucode -L "$LIB" "$NFT" nft-add-happ-real-ip-rules-fixture "$work/fixture" TestTable interfaces 0x04000000
   if [ "$strategy" = selected ]; then
@@ -26,6 +26,16 @@ for strategy in selected happ tunnel; do
     [ "$(wc -l < "$NFT_TEST_LOG")" -eq 4 ]
     grep -Fq 'mangle iifname @interfaces meta mark 0 meta l4proto tcp meta mark set 0x04000000 counter' "$NFT_TEST_LOG"
     grep -Fq 'mangle_output meta mark 0 meta l4proto udp meta mark set 0x04000000 counter' "$NFT_TEST_LOG"
+  fi
+  : > "$NFT_TEST_LOG"
+  ucode -L "$LIB" "$NFT" nft-populate-runtime-sets-fixture "$work/fixture" 1 '' TestTable subnets ports ip_ports interfaces localv4 0x04000000 subnets6 ip_ports6 localv6
+  if [ "$strategy" = selected ]; then
+    grep -Fq 'anticheburnet_dns_sources { 192.0.2.12/32 }' "$NFT_TEST_LOG"
+    grep -Fq 'anticheburnet_dns_sources6 { 2001:db8::12/128 }' "$NFT_TEST_LOG"
+    grep -Fq 'anticheburnet_rule_direct_fully_sources { 192.0.2.12/32 }' "$NFT_TEST_LOG"
+  elif [ -s "$NFT_TEST_LOG" ]; then
+    printf 'Global mode %s must skip source-aware DNS and per-section nft sets\n' "$strategy" >&2
+    exit 1
   fi
   nft="$(ucode -L "$LIB" "$NFT" nft-runtime-signature-fixture "$work/fixture")"
   state="$(ucode -L "$LIB" "$STATE" nft-signature-fixture "$work/fixture")"

@@ -10,6 +10,7 @@ let byedpi_validator_module = null;
 let constants_module = null;
 let core_url = require("core.url");
 let core_ip = require("core.ip");
+let core_version = require("singbox.version");
 let rule_config = require("config.rule");
 let connections = require("config.connections");
 
@@ -1838,31 +1839,6 @@ function sing_box_is_extended(ctx, version) {
     return sing_box_version_is_extended(version != null ? version : get_sing_box_version(ctx));
 }
 
-function sing_box_output_has_build_tag(output, tag) {
-    tag = as_string(tag);
-    if (tag == "")
-        return false;
-
-    for (let token in split(replace(as_string(output), /[,: \t\r\n]+/g, " "), " "))
-        if (token == tag)
-            return true;
-
-    return false;
-}
-
-function sing_box_supports_tailscale(ctx, version, version_output) {
-    if (command_exists("sing-box") && sing_box_compressed_marker_set(ctx))
-        return true;
-
-    if (sing_box_is_extended(ctx, version))
-        return true;
-
-    if (as_string(version_output) == "")
-        version_output = command_output_from_args([ "sing-box", "version" ]);
-
-    return sing_box_output_has_build_tag(version_output, "with_tailscale");
-}
-
 function managed_sing_box_service_script(marker) {
     marker = as_string(marker);
     if (marker == "")
@@ -1922,8 +1898,8 @@ function service_exists(service) {
 }
 
 function validate_extended_server_features(ctx, sing_box_version, sing_box_version_output) {
-    if (sing_box_is_extended(ctx, sing_box_version))
-        return;
+    let is_extended = sing_box_is_extended(ctx, sing_box_version);
+    let tailscale = core_version.has_build_tag(core_version.build_tags(sing_box_version_output), "with_tailscale");
 
     for (let section in sections_by_type("server")) {
         if (!server_enabled(section))
@@ -1933,13 +1909,13 @@ function validate_extended_server_features(ctx, sing_box_version, sing_box_versi
         let protocol = option(section, "protocol", "vless");
         let transport = option(section, "transport", "tcp");
 
-        if (protocol == "mtproto")
+        if (protocol == "mtproto" && !is_extended)
             fail_requirement("Server '" + name + "' uses MTProto proxy, but sing-box-extended is not installed. Install sing-box-extended or disable this server. Aborted.", "fatal");
 
-        if (protocol == "tailscale" && !sing_box_supports_tailscale(ctx, sing_box_version, sing_box_version_output))
-            fail_requirement("Server '" + name + "' uses Tailscale, but the installed sing-box binary was built without Tailscale support. Install full sing-box or sing-box-extended, or disable this server. Aborted.", "fatal");
+        if (protocol == "tailscale" && !tailscale)
+            fail_requirement("Server '" + name + "' uses Tailscale, but the installed sing-box binary was built without Tailscale support. Install a build with with_tailscale or disable this server. Aborted.", "fatal");
 
-        if (transport == "xhttp")
+        if (transport == "xhttp" && !is_extended)
             fail_requirement("Server '" + name + "' uses XHTTP transport, but sing-box-extended is not installed. Install sing-box-extended or change the transport. Aborted.", "fatal");
     }
 }

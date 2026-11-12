@@ -110,6 +110,9 @@ if ucode -L "$ANTICHEBURNET_LIB" "$SINGBOX_RUNTIME_UC" is-extended "1.12.4" >/de
 fi
 ucode -L "$ANTICHEBURNET_LIB" "$SINGBOX_RUNTIME_UC" supports-tailscale "" "$(printf 'Tags: with_quic,with_tailscale\n')" >/dev/null ||
   fail "with_tailscale build tag should be detected"
+if ucode -L "$ANTICHEBURNET_LIB" "$SINGBOX_RUNTIME_UC" supports-tailscale '1.14.3-extended-2.7.3-anticheburnet.8' 'Tags: with_quic,with_wireguard' >/dev/null; then
+  fail "an extended version without with_tailscale should not advertise Tailscale"
+fi
 
 SB_VERSION_STATE_FILE="$WORK_DIR/version" \
   ucode -L "$ANTICHEBURNET_LIB" "$SINGBOX_RUNTIME_UC" write-version-state 1.2.3 >/dev/null ||

@@ -947,6 +947,21 @@ function stdin_json() {
     write_json(value);
 }
 
+function clash_latency_json(group) {
+    let value = read_stdin_json();
+    if (type(value) != "object")
+        exit(1);
+
+    let delays = group ? value : { delay: value.delay };
+    for (let tag, delay in delays) {
+        if (type(delay) == "int" && delay >= 0) {
+            write_json(value);
+            return;
+        }
+    }
+    exit(1);
+}
+
 function json_error(message) {
     write_json({ error: as_string(message) });
 }
@@ -1905,6 +1920,8 @@ else if (mode == "url-encode")
     url_encode(ARGV[1]);
 else if (mode == "stdin-json")
     stdin_json();
+else if (mode == "clash-latency-json")
+    clash_latency_json(ARGV[1] == "group");
 else if (mode == "stdin-first-line-last-field")
     stdin_first_line_last_field();
 else if (mode == "stdin-first-line")

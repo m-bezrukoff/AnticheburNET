@@ -18,7 +18,6 @@ const mocks = vi.hoisted(() => ({
   fetchServicesInfo: vi.fn(),
 }));
 vi.mock('../../../../helpers', () => ({
-  getClashWsUrl: () => '',
   isCopyableProxyLink: () => true,
   onMount: () => Promise.resolve(),
   preserveScrollForPage: (run: () => unknown) => run(),
@@ -33,9 +32,7 @@ vi.mock('../../../methods', () => ({
   },
   AnticheburNETShellMethods: { ...mocks, uiActionAck: vi.fn() },
 }));
-vi.mock('../../../methods/custom/getClashApiSecret', () => ({
-  getClashApiSecret: async () => '',
-}));
+vi.mock('../dashboardStats', () => ({ startDashboardStats: () => () => {} }));
 vi.mock('../../../fetchers/fetchServicesInfo', () => ({
   fetchServicesInfo: mocks.fetchServicesInfo,
 }));
@@ -48,7 +45,6 @@ vi.mock('../partials', () => ({
 vi.mock('../../../services', async () => ({
   store: (await import('../../../services/store.service')).store,
   logger: { debug: vi.fn(), error: vi.fn() },
-  socket: { subscribe: vi.fn(), resetAll: vi.fn() },
   markUiActionOwned: vi.fn(),
   setLocalLatencyAction: vi.fn(),
   setLocalSubscriptionAction: vi.fn(),

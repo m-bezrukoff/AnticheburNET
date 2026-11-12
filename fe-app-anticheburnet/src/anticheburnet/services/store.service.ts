@@ -19,6 +19,7 @@ function jsonStableStringify<T, V>(obj: T): string {
 }
 
 function jsonEqual<A, B>(a: A, b: B): boolean {
+  if (Object.is(a, b)) return true;
   try {
     return jsonStableStringify(a) === jsonStableStringify(b);
   } catch {
@@ -61,27 +62,15 @@ export class StoreService<T extends Record<string, any>> {
   }
 
   reset<K extends keyof T>(keys?: K[]): void {
-    const prev = this.value;
-    const next = structuredClone(this.value);
-
     if (keys && keys.length > 0) {
+      const next: Partial<T> = {};
       keys.forEach((key) => {
         next[key] = structuredClone(this.initial[key]);
       });
+      this.set(next);
     } else {
-      Object.assign(next, structuredClone(this.initial));
+      this.set(structuredClone(this.initial));
     }
-
-    if (jsonEqual(prev, next)) return;
-
-    this.value = next;
-
-    const diff: Partial<T> = {};
-    for (const key in next) {
-      if (!jsonEqual(next[key], prev[key])) diff[key] = next[key];
-    }
-
-    this.listeners.forEach((cb) => cb(this.value, prev, diff));
   }
 
   subscribe(cb: Listener<T>): () => void {

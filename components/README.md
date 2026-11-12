@@ -66,7 +66,7 @@ Services and user configuration are documented in [the OpenWrt 25.12 guide](../d
 
 ## Dynamic subscription providers
 
-Component `sing-box-extended` 1.14.3-r8 (`anticheburnet.8`) includes the managed
+Component `sing-box-extended` 1.14.3-r9 (`anticheburnet.9`) includes the managed
 provider installed by `prepare-providers.py`. Build this component together with
 the backend; older component APKs do not implement its atomic update API.
 After installing both, Apply configuration once to migrate an existing flat

@@ -166,12 +166,16 @@ case "$*" in
   *) exit 65 ;;
 esac
 printf '%s\n' "$*" >>"$FAKE_CURL_LOG"
+for arg do
+  case "$arg" in
+    *'/proxies/error/delay') printf '%s\n' '{"message":"Timeout"}'; exit 0 ;;
+    *'/group/empty/delay') printf '%s\n' '{}'; exit 0 ;;
+  esac
+done
 case "$*" in
   *'127.0.0.1:9090/proxies') printf '%s\n' '{"proxies":{"urltest":{"type":"URLTest"},"provider-urltest":{"type":"urltest"},"proxy-a":{"type":"VLESS"},"proxy-b":{"type":"Trojan"}}}' ;;
   *'127.0.0.1:9090/connections') printf '%s\n' '{"connections":[]}' ;;
   *'providers/proxies/provider?revision=true') printf '%s\n' '{"revision":"test","capabilities":["happ-ruleset-update-v1"]}' ;;
-  *'/proxies/error/delay?'*) printf '%s\n' '{"message":"Timeout"}' ;;
-  *'/group/empty/delay?'*) printf '%s\n' '{}' ;;
   *) printf '%s\n' '{"delay":1}' ;;
 esac
 SH

@@ -484,6 +484,15 @@ export const styles = `
     cursor: wait;
 }
 
+.fkp_monitoring-page__table tbody .fkp_monitoring-page__row--direct {
+    background-color: rgba(46, 125, 50, 0.2);
+    background-color: color-mix(in srgb, var(--fkp-monitoring-success-color) 20%, transparent);
+}
+
+.fkp_monitoring-page__table tbody .fkp_monitoring-page__row--direct > td {
+    background-color: transparent;
+}
+
 .fkp_monitoring-page__row--closing {
     opacity: 0.55;
 }

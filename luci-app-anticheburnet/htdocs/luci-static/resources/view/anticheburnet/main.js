@@ -11785,6 +11785,7 @@ function renderTableCell(label, children) {
 function renderConnectionRow(connection) {
   const target = getTargetCellParts(connection);
   const source = getSourceCellParts(connection);
+  const route = getRoute(connection);
   const isClosing = closingConnectionIds.has(connection.id);
   const closeButton = activeTab === "active" ? E(
     "button",
@@ -11801,7 +11802,10 @@ function renderConnectionRow(connection) {
   return E(
     "tr",
     {
-      class: isClosing ? "fkp_monitoring-page__row--closing" : ""
+      class: [
+        route === "direct" ? "fkp_monitoring-page__row--direct" : "",
+        isClosing ? "fkp_monitoring-page__row--closing" : ""
+      ].filter(Boolean).join(" ")
     },
     [
       renderTableCell(_("Host"), [renderValue(target.primary)]),
@@ -11809,7 +11813,7 @@ function renderConnectionRow(connection) {
         renderValue(getNetwork(connection), "fkp_monitoring-page__network")
       ]),
       renderTableCell(_("Route"), [
-        renderValue(getRoute(connection), "fkp_monitoring-page__route")
+        renderValue(route, "fkp_monitoring-page__route")
       ]),
       renderTableCell(_("Time"), [
         renderValue(formatConnectionDuration(connection))
@@ -12911,6 +12915,15 @@ var styles5 = `
 .fkp_monitoring-page .btn.fkp_monitoring-page__row-action:disabled {
     opacity: 0.45;
     cursor: wait;
+}
+
+.fkp_monitoring-page__table tbody .fkp_monitoring-page__row--direct {
+    background-color: rgba(46, 125, 50, 0.2);
+    background-color: color-mix(in srgb, var(--fkp-monitoring-success-color) 20%, transparent);
+}
+
+.fkp_monitoring-page__table tbody .fkp_monitoring-page__row--direct > td {
+    background-color: transparent;
 }
 
 .fkp_monitoring-page__row--closing {

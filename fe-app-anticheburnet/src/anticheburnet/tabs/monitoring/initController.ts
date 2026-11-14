@@ -796,6 +796,7 @@ function renderTableCell(label: string, children: (Node | string)[]) {
 function renderConnectionRow(connection: MonitoredConnection) {
   const target = getTargetCellParts(connection);
   const source = getSourceCellParts(connection);
+  const route = getRoute(connection);
   const isClosing = closingConnectionIds.has(connection.id);
   const closeButton =
     activeTab === 'active'
@@ -816,7 +817,12 @@ function renderConnectionRow(connection: MonitoredConnection) {
   return E(
     'tr',
     {
-      class: isClosing ? 'fkp_monitoring-page__row--closing' : '',
+      class: [
+        route === 'direct' ? 'fkp_monitoring-page__row--direct' : '',
+        isClosing ? 'fkp_monitoring-page__row--closing' : '',
+      ]
+        .filter(Boolean)
+        .join(' '),
     },
     [
       renderTableCell(_('Host'), [renderValue(target.primary)]),
@@ -824,7 +830,7 @@ function renderConnectionRow(connection: MonitoredConnection) {
         renderValue(getNetwork(connection), 'fkp_monitoring-page__network'),
       ]),
       renderTableCell(_('Route'), [
-        renderValue(getRoute(connection), 'fkp_monitoring-page__route'),
+        renderValue(route, 'fkp_monitoring-page__route'),
       ]),
       renderTableCell(_('Time'), [
         renderValue(formatConnectionDuration(connection)),
